@@ -2,3 +2,6 @@
 # Do not let checkout line-ending conversion invalidate those checksums.
 /src-tauri/resources/runtime/** -text
 /src-tauri/boot-helper/*.efi binary
+
+# This Markdown template is imported verbatim by the frontend and native app.
+/src/lib/connection-skill-template.md text eol=lf

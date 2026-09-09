@@ -49,7 +49,7 @@ describe("browser platform adapter", () => {
     await platformApi.deleteEnvironment(cloud.id)
     expect(localStorage.getItem(`opendock.cloud.${cloud.id}`)).toBeNull()
   })
-  it("Skills includes current My PC mounts and permissions, without private links or other environments' folders", async () => {
+  it.each(["\n", "\r\n"])("Skills includes current My PC mounts and permissions, without private links or other environments' folders (%j line endings)", async newline => {
     const target = await createTestEnvironment("PC Skills")
     const other = await createTestEnvironment("Private folders")
     await platformApi.setEnvironmentStatus(target.id, "running")
@@ -57,8 +57,8 @@ describe("browser platform adapter", () => {
     const read = await workspaceApi.share(target.id, "C:\\Shared input", true)
     const write = await workspaceApi.share(target.id, "C:\\Shared project", false)
     await workspaceApi.share(other.id, "C:\\Not for this environment", false)
-    const text = await platformApi.connectionSkills(target.id)
-    const data = JSON.parse(text.split("```json\n")[1]!.split("\n```")[0]!)
+    const text = (await platformApi.connectionSkills(target.id)).replace(/\r?\n/g, newline)
+    const data = JSON.parse(text.replaceAll("\r\n", "\n").split("```json\n")[1]!.split("\n```")[0]!)
     expect(data.myPc.connected).toBe(true)
     expect(data.myPc.folders).toEqual(expect.arrayContaining([
       expect.objectContaining({ shareId: read.id, hostPath: read.path, mountPath: read.mountPath, readOnly: true, writable: false, usableNow: true }),

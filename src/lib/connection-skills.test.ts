@@ -6,9 +6,18 @@ import type { Connection, Environment, PlatformState } from "@/types/platform"
 const node = (id: string, kind: Environment["kind"] = "container", status: Environment["status"] = "running") => ({ id, name: id, kind, status, runtime: "builtin:alpine", lastError: "private-runtime-token", controlEndpoint: "private-control-token" }) as Environment
 const link = (sourceId = "A", targetId = "B"): Connection => ({ id: `conn-${sourceId}-${targetId}`, sourceId, targetId, active: true, permissions: ["files", "ports"], ports: ["3000"], direction: "bidirectional", enforcementStatus: "enforced", createdAt: "test", lastError: "private-rule-token" })
 const state = (environments: Environment[], connections: Connection[]) => ({ environments, connections }) as PlatformState
-const config = (text: string) => JSON.parse(text.split("```json\n")[1]!.split("\n```")[0]!)
+const config = (text: string) => JSON.parse(text.replaceAll("\r\n", "\n").split("```json\n")[1]!.split("\n```")[0]!)
 
 describe("connection Skills", () => {
+  it.each(["\n", "\r\n"])("reads the configuration and app snapshot with %j line endings", newline => {
+    const text = previewConnectionSkill(state([node("A"), node("B")], [link()]), "A", [])
+      .replace(/\r?\n/g, newline)
+    const data = config(text)
+    expect(data.sourceId).toBe("A")
+    expect(data.connections).toHaveLength(1)
+    expect(data.connections[0].peerId).toBe("B")
+    expect(readSkillSnapshot(text)).toEqual(data)
+  })
   it("uses cloud loopback endpoints and never tells a disconnected cloud node to power on", () => {
     const cloud = { ...node("A", "cloud"), consoleEndpoint: "http://127.0.0.1:5678", controlEndpoint: "socks5h://127.0.0.1:1234" }
     const data = config(previewConnectionSkill(state([cloud, node("B")], [link()]), "A", []))
