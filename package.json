@@ -36,6 +36,7 @@
     "test:startup": "cargo test --manifest-path src-tauri/Cargo.toml bundled_runtime_warm_verification_uses_the_metadata_cache -- --ignored --nocapture",
     "benchmark": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/benchmark-runtime.ps1",
     "verify": "npm run lint && npm test && npm run build && npm run cli:test && npm run check:native && npm run test:native",
+    "verify:windows": "pwsh -NoProfile -File scripts/check-windows-test-prerequisites.ps1 && npm ci && npx playwright install chromium --no-shell && npm audit --audit-level=moderate && npm run release:check && npm run lint && npm test && npm run build && cargo +stable test --locked --manifest-path cli/Cargo.toml && cargo +stable test --locked --manifest-path runtime/cuda/host/Cargo.toml && cargo +stable check --locked --manifest-path src-tauri/Cargo.toml --all-targets && cargo +stable test --locked --manifest-path src-tauri/Cargo.toml --lib && npm run cli:bundle && npm run test:e2e && npm run test:harness",
     "runtime:build": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-bundled-runtime.ps1",
     "desktop:dev": "tauri dev",
     "desktop:dev:admin": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start-desktop-dev-admin.ps1",

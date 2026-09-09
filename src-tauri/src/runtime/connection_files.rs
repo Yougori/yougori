@@ -186,9 +186,14 @@ impl SharedFiles {
     }
 }
 fn script_hash() -> String {
+    html_script_hash(include_str!("connection_files.html"))
+}
+fn html_script_hash(html: &str) -> String {
     use base64::Engine;
     use sha2::{Digest, Sha256};
-    let html = include_str!("connection_files.html");
+    // HTML parsing normalizes CRLF and bare CR before CSP hashes the script.
+    // Match that even if the source was checked out or edited on Windows.
+    let html = html.replace("\r\n", "\n").replace('\r', "\n");
     let script = html
         .split_once("<script>")
         .unwrap()

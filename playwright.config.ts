@@ -9,6 +9,9 @@ export default defineConfig({
   reporter: [["line"], ["json", { outputFile: "artifacts/e2e-results.json" }]],
   use: {
     baseURL: "http://127.0.0.1:1422",
+    // Feature tests start after onboarding. The first-launch instruction tests
+    // explicitly use an empty profile and still exercise the automatic guide.
+    storageState: { cookies: [], origins: [{ origin: "http://127.0.0.1:1422", localStorage: [{ name: "opendock.instructions.seen.v1", value: "1" }] }] },
     screenshot: "off",
     trace: "off",
     video: "off",
@@ -23,7 +26,7 @@ export default defineConfig({
   projects: [
     {
       name: "desktop-chrome",
-      use: { ...devices["Desktop Chrome"], channel: process.env.PLAYWRIGHT_BROWSER_CHANNEL || "chrome", viewport: { width: 1440, height: 920 } },
+      use: { ...devices["Desktop Chrome"], channel: process.env.PLAYWRIGHT_BROWSER_CHANNEL || "chromium", viewport: { width: 1440, height: 920 } },
     },
   ],
 })

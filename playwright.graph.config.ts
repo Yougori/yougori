@@ -9,7 +9,7 @@ export default defineConfig({
   reporter: "line",
   use: {
     ...devices["Desktop Chrome"],
-    channel: process.env.PLAYWRIGHT_BROWSER_CHANNEL || "chrome",
+    channel: process.env.PLAYWRIGHT_BROWSER_CHANNEL || "chromium",
     viewport: { width: 1280, height: 1000 },
     baseURL: "http://127.0.0.1:1421",
     // Existing feature tests represent returning users. First-launch tests

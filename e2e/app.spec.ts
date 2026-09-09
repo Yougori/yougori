@@ -2,11 +2,12 @@ import { expect, test } from "@playwright/test"
 
 test.beforeEach(async ({ page }) => {
   await page.goto("/")
-  await expect(page.getByRole("group", { name: "Dashboard actions" })).toBeVisible()
+  // Navigation first loads the startup document; wait for the actual app.
+  await expect(page.getByRole("group", { name: "Dashboard actions" })).toBeVisible({ timeout: 30_000 })
 })
 
 test("first launch is empty and does not invent running environments or GPU availability", async ({ page }) => {
-  await expect(page.getByText("No environments yet.", { exact: true })).toBeVisible()
+  await expect(page.getByText("Your workspace starts here", { exact: true })).toBeVisible()
   await expect(page.locator("[data-environment-id]")).toHaveCount(0)
   for (const name of ["Instructions", "Load local backup", "Cloud environment", "New environment"]) {
     await expect(page.getByRole("button", { name, exact: true })).toBeVisible()
@@ -19,7 +20,7 @@ test("storage reclamation is reachable and browser preview does not invent freed
   await action.click()
   await expect(page.getByText("Storage reclamation requires the desktop runtime.", { exact: true })).toBeVisible()
   await expect(action).toBeEnabled()
-  await expect(page.getByText("No environments yet.", { exact: true })).toBeVisible()
+  await expect(page.getByText("Your workspace starts here", { exact: true })).toBeVisible()
 })
 
 test("unimplemented computer branches cannot be selected or created", async ({ page }) => {
@@ -29,7 +30,7 @@ test("unimplemented computer branches cannot be selected or created", async ({ p
   await expect(dialog.getByRole("radio", { name: /Computer branch/ })).toBeDisabled()
   await expect(dialog.getByRole("radio", { name: "Container", exact: true })).toBeChecked()
   await dialog.getByRole("button", { name: "Cancel", exact: true }).click()
-  await expect(page.getByText("No environments yet.", { exact: true })).toBeVisible()
+  await expect(page.getByText("Your workspace starts here", { exact: true })).toBeVisible()
 })
 
 test("theme changes persist after reloading the application", async ({ page }) => {
@@ -51,7 +52,7 @@ test("cloud connection remains opt-in and cancellation creates no node", async (
   await expect(dialog).toBeVisible()
   await dialog.getByRole("button", { name: "Cancel", exact: true }).click()
   await expect(dialog).toBeHidden()
-  await expect(page.getByText("No environments yet.", { exact: true })).toBeVisible()
+  await expect(page.getByText("Your workspace starts here", { exact: true })).toBeVisible()
 })
 
 test("dashboard actions remain reachable without horizontal overflow at compact width", async ({ page }) => {

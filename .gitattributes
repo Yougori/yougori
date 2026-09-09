@@ -5,3 +5,6 @@
 
 # This Markdown template is imported verbatim by the frontend and native app.
 /src/lib/connection-skill-template.md text eol=lf
+
+# Inline-script CSP hashes must match the browser's normalized HTML text.
+/src-tauri/src/runtime/connection_files.html text eol=lf

@@ -44,7 +44,7 @@ export function OverviewPage({ onOpenEnvironment, onSelectEnvironment }: {
   return (
     <div className="workspace-overview flex flex-col gap-4">
       <div className="relative">
-      <div className="absolute inset-x-0 bottom-full flex h-8 items-center empty:hidden sm:h-10 lg:h-12 [&>*]:w-full" ref={setGraphErrorContainer} />
+      <div className="absolute inset-x-0 bottom-full flex h-8 items-center empty:hidden sm:h-10 [&>*]:w-full" ref={setGraphErrorContainer} />
       <section aria-label="Host resources and storage" className="workspace-metrics grid divide-y md:grid-cols-5 md:divide-x md:divide-y-0">
         <div className="flex min-w-0 flex-col gap-1.5 px-3 py-3">
           <div className="flex items-baseline justify-between gap-2">

@@ -33,10 +33,7 @@ jobs:
       - name: Verify shipped payloads and architecture
         run: npm run release:check
       - name: Require test-only shell and Python prerequisites (do not silently skip)
-        run: |
-          if (!(Test-Path -LiteralPath 'C:/Program Files/Git/bin/bash.exe')) { throw 'Installer fixture tests require Git Bash on this runner.' }
-          & py -3 --version
-          if ($LASTEXITCODE) { throw 'Tutorial HTTP tests require the Python 3 launcher on this runner.' }
+        run: pwsh -NoProfile -File scripts/check-windows-test-prerequisites.ps1
       - name: Frontend lint, unit tests and build
         run: |
           npm run lint

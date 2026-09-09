@@ -112,6 +112,14 @@ async fn shared_file_service_rejects_browser_cross_origin_and_rebinding() {
     assert!(response.contains("frame-ancestors 'none'"));
     assert!(!response.contains("Access-Control-Allow-Origin"));
 }
+#[test]
+fn inline_script_csp_hash_matches_html_newline_normalization() {
+    let html = include_str!("../connection_files.html").replace("\r\n", "\n").replace('\r', "\n");
+    let expected = html_script_hash(&html);
+    assert_eq!(html_script_hash(&html.replace('\n', "\r\n")), expected);
+    assert_eq!(html_script_hash(&html.replace('\n', "\r")), expected);
+    assert_eq!(script_hash(), expected);
+}
 #[tokio::test]
 async fn disconnect_closes_mount_servers_even_with_inflight_share_references() {
     let root = tempfile::tempdir().unwrap();

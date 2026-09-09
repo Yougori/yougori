@@ -18,12 +18,21 @@ pub(super) fn macos_qemu_prefix(arch: &str) -> PathBuf {
 }
 
 pub(super) fn guest_boot_timeout() -> std::time::Duration {
-    std::time::Duration::from_secs(if cfg!(target_os = "macos") { 180 } else { 35 })
+    // Software emulation and shared hosts can need more than 35 seconds just
+    // to reach containerd. This is a maximum, not a delay: callers return as
+    // soon as the authenticated guest health probe succeeds.
+    std::time::Duration::from_secs(if cfg!(target_os = "macos") { 180 } else { 120 })
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn guest_boot_budget_allows_software_emulation_but_remains_bounded() {
+        assert!(guest_boot_timeout() >= std::time::Duration::from_secs(120));
+        assert!(guest_boot_timeout() <= std::time::Duration::from_secs(180));
+    }
 
     #[test]
     fn apple_silicon_never_tries_x86_hardware_virtualization() {

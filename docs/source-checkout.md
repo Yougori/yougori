@@ -24,6 +24,23 @@ The bundled runtime lives in `src-tauri/resources/runtime/`; EFI helpers are in
 an ordinary Windows source checkout. Linux and macOS prerequisites and
 limitations remain in their platform guides.
 
+## Full Windows verification before pushing
+
+With the Node/npm versions above, stable Rust, Git Bash, Python 3 with the `py`
+launcher, and PowerShell 7 available, run:
+
+```powershell
+npm run verify:windows
+```
+
+This runs the Windows workflow's dependency, checksum, frontend, native, portable
+CLI, browser and process-harness checks locally. It installs Playwright's pinned
+Chromium; the normal browser suite uses the same channel as CI. First-launch
+onboarding is tested separately from returning-user interactions. No tests are
+disabled, and this command does not commit, push, publish or trigger GitHub Actions.
+It does not replace the Linux packaging/runtime checks or hardware-specific
+release certification described in the platform guides.
+
 ## Maintainer runtime rebuilds
 
 1. Prepare 7-Zip and Ubuntu 22.04 in WSL, then follow the runtime-build section

@@ -101,7 +101,7 @@ impl RuntimeManager {
         {
             // QMP is ready before Alpine finishes booting. Probe with a read-only
             // request; never blindly retry terminal creation or other mutations.
-            let deadline = tokio::time::Instant::now() + if cfg!(target_os = "macos") { super::host_platform::guest_boot_timeout() } else { Duration::from_secs(20) };
+            let deadline = tokio::time::Instant::now() + super::host_platform::guest_boot_timeout();
             loop {
                 if self
                     .client

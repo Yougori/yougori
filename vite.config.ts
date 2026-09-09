@@ -30,7 +30,9 @@ export default defineConfig({
     strictPort: true,
     host: host || false,
     hmr: host ? { protocol: "ws", host, port: 1421 } : undefined,
-    watch: { ignored: ["**/src-tauri/**"] },
+    // Native builds and runtime caches can contain hundreds of thousands of
+    // files. Watching them can starve startup/module requests after a build.
+    watch: { ignored: ["**/src-tauri/**", "**/target/**", "**/build/**", "**/artifacts/**", "**/test-results*/**", "**/playwright-report/**"] },
     warmup: testAdapter ? { clientFiles: ["./src/main.tsx", "./src/components/guest-workspace.tsx", "./src/components/dialogs/create-environment-dialog.tsx"] } : undefined,
   },
   build: {

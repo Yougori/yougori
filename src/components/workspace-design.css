@@ -29,6 +29,7 @@
 .workspace-header .dashboard-action {
   border-radius: 7px;
   height: 34px;
+  min-width: 36px;
   padding-inline: 11px;
   font-size: 12px;
 }
@@ -133,4 +134,11 @@
   .workspace-metrics > div:last-child { grid-column: 1 / -1; }
   .workspace-graph-caption { justify-content: center; text-align: center; }
   .workspace-header .dashboard-actions { display: flex; flex-wrap: wrap; }
+}
+
+/* Narrow windows need scrolling, not a zero-height graph beneath the
+   fixed-size toolbar, metrics and docks. Keep real pointer targets separate. */
+@media (max-width: 767px) {
+  .workspace-app { height: auto; min-height: 100dvh; overflow: visible; }
+  .workspace-graph [data-environment-canvas] { min-height: 320px; }
 }

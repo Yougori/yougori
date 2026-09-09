@@ -9,9 +9,9 @@ import { createHash } from "node:crypto"
 import { terminalInstallers } from "../src/lib/terminal-installers"
 import { overviewSteps } from "../src/lib/instructions-tour"
 
-test("shared file browser uploads chunks, edits, downloads and respects read-only and disconnect", async ({ page }) => {
-  const html = await readFile(resolve("src-tauri/src/runtime/connection_files.html"), "utf8")
-  const script = html.split("<script>")[1].split("</script>")[0]
+for (const newline of ["\n", "\r\n", "\r"]) test(`shared file browser uploads chunks, edits, downloads and respects read-only and disconnect (${JSON.stringify(newline)} line endings)`, async ({ page }) => {
+  const html = (await readFile(resolve("src-tauri/src/runtime/connection_files.html"), "utf8")).replace(/\r\n?|\n/g, newline)
+  const script = html.replace(/\r\n?/g, "\n").split("<script>")[1].split("</script>")[0]
   const hash = createHash("sha256").update(script).digest("base64")
   const files = new Map<string, Buffer>([["project.txt", Buffer.from("before")]])
   let writable = true, active = true, writes = 0
@@ -387,7 +387,12 @@ test("graph uses the available width and a taller responsive canvas", async ({ p
   const graph = (await page.locator("[data-environment-graph]").boundingBox())!
   const canvas = (await page.locator("[data-environment-canvas]").boundingBox())!
   expect(graph.width).toBeGreaterThan(1800)
-  expect(canvas.height).toBeGreaterThanOrEqual(640)
+  // The redesigned workspace fills the space left by its toolbar and docks,
+  // rather than imposing the old fixed 640px minimum and scrolling the page.
+  expect(canvas.height).toBeGreaterThan(1080 / 2)
+  expect(graph.y + graph.height).toBeLessThanOrEqual(1080)
+  await page.setViewportSize({ width: 1920, height: 880 })
+  await expect.poll(async () => (await page.locator("[data-environment-canvas]").boundingBox())!.height).toBeCloseTo(canvas.height - 200, 0)
 })
 
 for (const kind of ["container", "fullVm"] as const) {
@@ -760,22 +765,22 @@ test("dashboard action styling stays compact, accessible and usable in both them
       await expect(toolbar.locator("svg")).toHaveCount(0)
       const boxes = await toolbar.locator(".dashboard-action").evaluateAll(elements => elements.map(element => {
         const box = element.getBoundingClientRect()
-        return { x: box.x, y: box.y, right: box.right, height: box.height, width: box.width, radius: getComputedStyle(element).borderRadius, backgroundImage: getComputedStyle(element).backgroundImage }
+        return { x: box.x, y: box.y, right: box.right, height: box.height, width: box.width, radius: getComputedStyle(element).borderRadius, cloud: element.matches('[data-tour="cloud-environment"]'), backgroundImage: getComputedStyle(element).backgroundImage }
       }))
       expect(boxes).toHaveLength(6)
       for (const box of boxes) {
         expect(box.x).toBeGreaterThanOrEqual(0)
         expect(box.right).toBeLessThanOrEqual(width)
-        expect(box.height).toBe(36)
+        expect(box.height).toBe(34)
         expect(box.width).toBeGreaterThanOrEqual(36)
-        expect(box.radius).toBe("10px")
+        expect(box.radius).toBe(box.cloud ? "0px 7px 7px 0px" : "7px")
         expect(box.backgroundImage).toBe("none")
         if (width >= 1024) expect(Math.abs(box.y - boxes[0].y)).toBeLessThan(1)
       }
-      if (width < 640) {
-        expect(boxes[1].y).toBe(boxes[0].y)
-        expect(boxes[2].y).toBeGreaterThan(boxes[0].y)
-        expect(boxes[3].y).toBe(boxes[2].y)
+      // The toolbar now wraps naturally instead of imposing two fixed columns.
+      for (let i = 0; i < boxes.length; i++) for (const other of boxes.slice(i + 1)) {
+        const box = boxes[i]
+        expect(box.right <= other.x || other.right <= box.x || box.y + box.height <= other.y || other.y + other.height <= box.y).toBe(true)
       }
       const launch = page.locator('[data-environment-id="Alpha"] .node-launch')
       expect(await launch.evaluate(element => getComputedStyle(element).height)).toBe("28px")
@@ -798,6 +803,7 @@ test("dashboard action styling stays compact, accessible and usable in both them
 test("persistent notifications do not block mobile dialog actions and can be dismissed", async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 640 })
   await openGraph(page)
+  expect((await page.locator("[data-environment-canvas]").boundingBox())!.height).toBeGreaterThanOrEqual(320)
   await page.evaluate(async () => {
     const path = "/src/components/ui/toast.tsx"
     const { toastManager } = await import(path)
