@@ -2,6 +2,16 @@ name: Linux desktop preview (no publishing)
 
 on:
   push:
+    # Skip documentation/log-only pushes, but keep all code and payload checks.
+    # Do not ignore all Markdown/text: product guides and notices are packaged.
+    paths-ignore:
+      - 'docs/**'
+      - 'README.md'
+      - 'CHANGELOG.md'
+      - 'CONTRIBUTING.md'
+      - 'githuberror.txt'
+      - 'linux-x64.txt'
+  # Always report PR checks, including checks required by branch protection.
   pull_request:
   workflow_dispatch:
 
