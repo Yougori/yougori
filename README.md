@@ -306,7 +306,7 @@ npm run test:workspace
 npm run test:graph
 ```
 
-The appliance test pulls a small OCI image, so it needs network access. It exercises real container lifecycle, batched telemetry, cgroups, GPU/network policies, connections, and snapshot export/re-import/release. The VM tests cover the q35/QMP/VNC path, transactional disk-restore rollback/finalize, and a real direct-kernel microVM boot with authenticated command execution and clean shutdown. None needs an external runtime.
+The appliance test pulls a small OCI image, so it needs network access. It exercises real container lifecycle, batched telemetry, cgroups, GPU/network policies, connections, and snapshot export/re-import/release. The VM tests cover the q35/QMP/VNC path, transactional disk-restore rollback/finalize, and a real direct-kernel microVM boot with authenticated command execution and clean shutdown. None needs an external runtime. 
 
 The workspace tests use temporary runtime data to verify independent PTYs, localhost service discovery/forwarding, narrow local-network allowances, read-only/writable selected-folder mounts, revocation, and full-VM QMP forwarding/display connections. They do not create public Cloudflare tunnels. The graph suite covers pointer/touch/keyboard connections, fixed docks, compact rows, file-sharing dialogs, multiple publication targets, and independent terminal tabs, with screenshots/video/traces disabled.
 
