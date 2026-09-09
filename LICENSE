@@ -1,0 +1,118 @@
+YOUGORI INTERNAL-USE LICENSE
+Version 1.0
+
+Copyright (c) 2026 Yougori LLC
+All rights reserved except as expressly granted below.
+
+1. Scope
+
+"Licensor" means Yougori LLC. "Software" means the
+original Yougori code and accompanying materials that Licensor has authority
+to license under these terms. Separately licensed components are excluded
+and remain governed by their own licenses as explained in section 5.
+
+"You" means the individual using the Software, or the organization on whose
+behalf that individual is authorized to use it. Exercising the permissions
+granted here is subject to compliance with these terms. This license applies
+to copies provided under version 1.0; a later license does not automatically
+replace it for those copies.
+
+2. Permitted use
+
+Subject to these terms, Licensor grants you a non-exclusive, royalty-free,
+non-transferable license to install, run, and make reasonable backup copies
+of the Software for your own personal use or your organization's internal
+business use, including for-profit activities. Where source code is lawfully
+supplied, you may inspect and
+modify it solely for those purposes. Employees and contractors may use the
+Software on your behalf for your internal activities, subject to these terms.
+
+3. Restrictions
+
+Unless Licensor separately authorizes it in writing, you may not:
+
+(a) sell, resell, rent, lease, sublicense, or otherwise distribute the
+    Software, its source code, or modified versions to third parties,
+    whether for payment or free of charge;
+(b) offer Yougori itself to third parties as a hosted or managed service,
+    or give them access to its dashboard, CLI, automation API, or equivalent
+    management controls, whether directly or through a wrapper or rebranding;
+(c) incorporate the Software or portions of it into a product distributed
+    or licensed to third parties; or
+(d) remove or obscure applicable copyright or license notices.
+
+Private copies used by authorized employees or contractors under section 2
+are permitted. Giving customers access only to your own applications or
+services, as described in section 4, is also permitted and is not prohibited
+hosting under section 3(b). Any rights that applicable law does not allow to
+be restricted remain unaffected.
+
+4. Your work and ownership
+
+You retain your rights in your own data, applications, and other output
+created or run using the Software. These terms do not restrict selling or
+sharing that work merely because you used Yougori, provided it does not
+include protected portions of the Software. You may develop, run, host, and
+charge customers for your own applications and services using Yougori,
+including through its networking and service-publishing features. Customers
+may access those applications and services, but not Yougori's management
+controls under this license. Running a container or VM through Yougori does
+not, by itself, make that workload part of the Software.
+
+Licensor retains ownership of its Software; these terms do not transfer
+ownership of your independently created modifications to Licensor. Those
+modifications remain subject to the applicable restrictions when they contain
+or are derived from the Software. No right to use Yougori branding to imply
+endorsement or to market another product as Yougori is granted.
+
+5. Separately licensed components
+
+Third-party software and any files already supplied under separate license
+notices retain those licenses. This includes applicable QEMU, GPL, LGPL,
+MPL, BSD, Apache, and MIT components, and separately licensed project code.
+Nothing here limits rights to use, modify, reverse engineer, redistribute,
+or sell those components that their respective licenses grant, or changes
+associated source-availability, notice, or other compliance obligations.
+If these terms conflict with a component's applicable license, that license
+controls for the component. This document does not relicense existing code
+or establish that any particular combination of components is compatible.
+
+The restrictions, termination provisions, and liability terms in this license
+do not replace those of separately licensed components. Existing permissions
+for copies already supplied under other licenses are not withdrawn. Source,
+patches, interface definitions, and build material that Licensor supplies as
+corresponding source for a separately licensed component may be used,
+modified, and redistributed under that component's applicable license to the
+extent needed to exercise its rights; sections 2 and 3 do not restrict that
+material. Consult the supplied THIRD_PARTY_NOTICES.md and component notices.
+
+6. Termination
+
+Your rights under this license end if you materially breach its terms and
+fail to remedy the breach within 30 days after receiving written notice
+from Licensor. On termination, stop using and delete copies of the Software
+covered by this license. This does not terminate independent rights under
+separate component licenses or require deletion of your own data or output.
+
+7. Warranty and liability
+
+To the extent permitted by applicable law, the Software is provided "AS IS",
+without warranties, including warranties of merchantability, fitness for a
+particular purpose, or non-infringement. To that same extent, Licensor is not
+liable for damages arising from use of or inability to use the Software.
+Nothing in these terms excludes liability or mandatory consumer rights that
+applicable law does not permit to be excluded.
+
+8. Other permissions
+
+Rights not expressly granted are reserved. Requests for redistribution,
+resale, or service-provider rights require a separate written agreement
+with Yougori LLC. No rights in third-party material are granted beyond those
+its own license provides. If a provision is unenforceable, the remaining
+provisions apply to the extent permitted by law. This license does not limit
+mandatory consumer protections, lawful interoperability rights, or any other
+rights that applicable law does not permit to be waived.
+
+This is a restricted-use license, not an open-source license. The SPDX-style
+identifier used in project metadata is LicenseRef-Yougori-Internal-Use-1.0;
+it is a project-specific reference, not an OSI approval or SPDX-listed license.

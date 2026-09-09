@@ -1,0 +1,29 @@
+import { defineConfig, devices } from "@playwright/test"
+
+export default defineConfig({
+  testDir: "./e2e",
+  fullyParallel: true,
+  workers: 2,
+  globalSetup: "./e2e/global-setup.ts",
+  retries: 0,
+  reporter: [["line"], ["json", { outputFile: "artifacts/e2e-results.json" }]],
+  use: {
+    baseURL: "http://127.0.0.1:1422",
+    screenshot: "off",
+    trace: "off",
+    video: "off",
+  },
+  webServer: {
+    // Never reuse or stop a developer's live Tauri/Vite session on port 1420.
+    command: "npx vite --host 127.0.0.1 --port 1422 --strictPort",
+    env: { VITE_OPENDOCK_TEST_ADAPTER: "1", OPENDOCK_E2E_CACHE: "node_modules/.vite-tests-main" },
+    url: "http://127.0.0.1:1422",
+    reuseExistingServer: false,
+  },
+  projects: [
+    {
+      name: "desktop-chrome",
+      use: { ...devices["Desktop Chrome"], channel: process.env.PLAYWRIGHT_BROWSER_CHANNEL || "chrome", viewport: { width: 1440, height: 920 } },
+    },
+  ],
+})

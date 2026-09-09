@@ -1,0 +1,675 @@
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub enum EnvironmentKind {
+    Cloud,
+    Container,
+    MicroVm,
+    FullVm,
+    ComputerBranch,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub enum EnvironmentStatus {
+    Running,
+    Stopped,
+    Paused,
+    Provisioning,
+    Error,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub enum RuntimeProviderKind {
+    CloudSsh,
+    OpenDockOci,
+    OpenDockCuda,
+    Qemu,
+    NativeSandbox,
+}
+
+impl RuntimeProviderKind {
+    pub fn is_container(&self) -> bool {
+        matches!(self, Self::OpenDockOci | Self::OpenDockCuda)
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub enum BranchType {
+    ExactCopy,
+    AppsSettings,
+    AppsOnly,
+    CleanOs,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub enum SandboxFileAccess {
+    ReadOnly,
+    ReadWrite,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct SandboxShare {
+    pub path: String,
+    pub access: SandboxFileAccess,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct SandboxPolicy {
+    pub executable: String,
+    #[serde(default)]
+    pub arguments: String,
+    #[serde(default)]
+    pub shares: Vec<SandboxShare>,
+    #[serde(default)]
+    pub network_access: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
+#[serde(rename_all = "camelCase")]
+pub enum Priority {
+    Low,
+    Normal,
+    High,
+    Critical,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ResourceRange {
+    pub min: f64,
+    pub preferred: f64,
+    pub max: f64,
+    pub current: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ResourcePolicy {
+    pub cpu: ResourceRange,
+    pub memory_gb: ResourceRange,
+    pub priority: Priority,
+    // Compatibility with old state, snapshots, backups and API clients. The
+    // allocation mode is no longer configurable, even if they send false.
+    #[serde(skip_deserializing, default = "allocation_always_enabled")]
+    pub dynamic: bool,
+}
+
+fn allocation_always_enabled() -> bool { true }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Environment {
+    pub id: String,
+    pub name: String,
+    pub kind: EnvironmentKind,
+    pub status: EnvironmentStatus,
+    pub runtime: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub provider: Option<RuntimeProviderKind>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub runtime_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub runtime_path: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub control_endpoint: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub console_endpoint: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub container_command: Option<String>,
+    #[serde(default)]
+    pub network_access: bool,
+    #[serde(default)]
+    pub gpu_access: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sandbox_policy: Option<SandboxPolicy>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub last_error: Option<String>,
+    pub description: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub branch_type: Option<BranchType>,
+    pub created_at: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub last_opened_at: Option<String>,
+    pub cpu_usage: f64,
+    pub memory_usage_gb: f64,
+    pub storage_delta_gb: f64,
+    pub network_rx_mbps: f64,
+    pub resource_policy: ResourcePolicy,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub enum PermissionKind {
+    Network,
+    Ports,
+    Files,
+    Volumes,
+    Data,
+    Secrets,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub enum ConnectionDirection {
+    OneWay,
+    Bidirectional,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub enum EnforcementStatus {
+    Enforced,
+    Pending,
+    Error,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Connection {
+    pub id: String,
+    pub source_id: String,
+    pub target_id: String,
+    pub direction: ConnectionDirection,
+    pub permissions: Vec<PermissionKind>,
+    pub ports: Vec<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub volume: Option<String>,
+    pub active: bool,
+    pub created_at: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub enforcement_status: Option<EnforcementStatus>,
+    #[serde(default)]
+    pub provider_rule_ids: Vec<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub last_error: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum SnapshotStatus {
+    Ready,
+    Creating,
+    Failed,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SnapshotEnvironmentState {
+    pub runtime: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub provider: Option<RuntimeProviderKind>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub runtime_path: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub container_command: Option<String>,
+    #[serde(default)]
+    pub network_access: bool,
+    #[serde(default)]
+    pub gpu_access: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sandbox_policy: Option<SandboxPolicy>,
+    pub description: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub branch_type: Option<BranchType>,
+    pub resource_policy: ResourcePolicy,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Snapshot {
+    pub id: String,
+    pub environment_id: String,
+    pub name: String,
+    pub created_at: String,
+    pub size_gb: f64,
+    pub delta_gb: f64,
+    pub encrypted: bool,
+    pub status: SnapshotStatus,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub provider_snapshot_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub artifact_path: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub artifact_size_bytes: Option<u64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub checksum_sha256: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub environment_state: Option<SnapshotEnvironmentState>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub connections: Option<Vec<Connection>>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub enum BackupProvider {
+    AwsS3,
+    AzureBlob,
+    GoogleCloud,
+    S3Compatible,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BackupDestination {
+    pub id: String,
+    pub name: String,
+    pub provider: BackupProvider,
+    pub location: String,
+    pub encrypted: bool,
+    pub connected: bool,
+    pub last_verified_at: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub enum BackupRunStatus {
+    Complete,
+    Running,
+    Failed,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BackupRun {
+    pub id: String,
+    pub environment_id: String,
+    pub destination_id: String,
+    pub created_at: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub completed_at: Option<String>,
+    pub transferred_gb: f64,
+    pub deduplicated_gb: f64,
+    pub status: BackupRunStatus,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub remote_object: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub checksum_sha256: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub last_error: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum HostPressure {
+    Low,
+    Moderate,
+    High,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct HostMetrics {
+    pub hostname: String,
+    pub os: String,
+    pub cpu_model: String,
+    pub total_cpu: usize,
+    pub used_cpu_percent: f64,
+    #[serde(default)]
+    pub gpu_usage_percent: Option<f64>,
+    pub total_memory_gb: f64,
+    pub used_memory_gb: f64,
+    pub total_storage_gb: f64,
+    pub used_storage_gb: f64,
+    /// Mount point of the volume holding runtime data (not all host drives).
+    #[serde(default)]
+    pub storage_drive: Option<String>,
+    pub storage_saved_gb: f64,
+    pub pressure: HostPressure,
+    pub cpu_history: Vec<f64>,
+    #[serde(default)]
+    pub gpu_history: Vec<f64>,
+    pub memory_history: Vec<f64>,
+    pub updated_at: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum ProviderKind {
+    Container,
+    Virtualization,
+    Storage,
+    Backup,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum ProviderAvailability {
+    Ready,
+    Unavailable,
+    NeedsSetup,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProviderStatus {
+    pub id: String,
+    pub name: String,
+    pub kind: ProviderKind,
+    pub status: ProviderAvailability,
+    pub detail: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum ThemePreference {
+    Light,
+    Dark,
+    System,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AppSettings {
+    pub theme: ThemePreference,
+    pub launch_at_startup: bool,
+    pub minimize_to_tray: bool,
+    pub pause_on_battery: bool,
+    pub telemetry_enabled: bool,
+    pub data_directory: String,
+    pub snapshot_retention: usize,
+    pub bandwidth_limit_mbps: usize,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PlatformState {
+    /// User-declared graph service ports shared by desktop and CLI. A declaration
+    /// never opens a listener or grants network access by itself.
+    #[serde(default)]
+    pub manual_service_ports: std::collections::BTreeMap<String, Vec<u16>>,
+    /// Retired/staged reset generations awaiting deletion. Never erase the active generation.
+    #[serde(default)]
+    pub pending_factory_resets: Vec<FactoryResetCleanup>,
+    #[serde(default)]
+    pub schema_version: u32,
+    pub environments: Vec<Environment>,
+    pub connections: Vec<Connection>,
+    pub snapshots: Vec<Snapshot>,
+    pub destinations: Vec<BackupDestination>,
+    pub backup_runs: Vec<BackupRun>,
+    /// Durable intent records distinguish a crash before a VM restore state
+    /// commit (roll back the disk) from a crash after it (finalize the disk).
+    #[serde(default)]
+    pub pending_vm_restores: Vec<String>,
+    pub host: HostMetrics,
+    pub providers: Vec<ProviderStatus>,
+    pub settings: AppSettings,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct EnvironmentDeletionResult {
+    #[serde(flatten)]
+    pub state: PlatformState,
+    pub storage_cleanup: StorageCleanupResult,
+}
+
+#[derive(Debug, Default, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct StorageCleanupResult {
+    pub reclaimed_cache_bytes: u64,
+    pub reclaimed_disk_bytes: u64,
+    pub notes: Vec<String>,
+    pub warnings: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FactoryResetCleanup {
+    pub environment: Environment,
+    pub snapshots: Vec<Snapshot>,
+    pub committed: bool,
+}
+
+impl PlatformState {
+    pub fn seeded() -> Result<Self, serde_json::Error> {
+        serde_json::from_str(include_str!("../../src/data/seed.json"))
+    }
+
+    pub fn empty() -> Result<Self, serde_json::Error> {
+        let mut state = Self::seeded()?;
+        state.schema_version = 7;
+        state.environments.clear();
+        state.connections.clear();
+        state.snapshots.clear();
+        state.destinations.clear();
+        state.backup_runs.clear();
+        state.pending_vm_restores.clear();
+        Ok(state)
+    }
+
+    pub fn migrate(mut self) -> Result<Self, serde_json::Error> {
+        if self.schema_version < 2 {
+            let settings = self.settings;
+            self = Self::empty()?;
+            self.settings = settings;
+        }
+        if self.schema_version < 3 {
+            for environment in &mut self.environments {
+                if environment.kind == EnvironmentKind::ComputerBranch {
+                    environment.provider = Some(RuntimeProviderKind::NativeSandbox);
+                    environment.status = EnvironmentStatus::Stopped;
+                    environment.console_endpoint = None;
+                    if environment.sandbox_policy.is_none() {
+                        environment.last_error = Some(
+                            "This branch used the retired virtual-machine engine. Create a new Computer Branch and choose the application and folders it may access."
+                                .into(),
+                        );
+                    }
+                }
+            }
+        }
+        if self.schema_version < 4 {
+            // Before schema 4, "microVm" used the same UEFI/q35 launch path as a
+            // full VM. Keep those existing disks bootable instead of feeding their
+            // ISO/QCOW2 source to the new direct-kernel manifest loader.
+            for environment in &mut self.environments {
+                if environment.kind == EnvironmentKind::MicroVm {
+                    environment.kind = EnvironmentKind::FullVm;
+                }
+            }
+        }
+        if self.schema_version < 7 {
+            // Full VMs previously always had an uplink; their unused false
+            // network_access field must not unplug them during this upgrade.
+            for environment in &mut self.environments {
+                if environment.kind == EnvironmentKind::FullVm {
+                    environment.network_access = true;
+                }
+            }
+            for snapshot in &mut self.snapshots {
+                if self.environments.iter().any(|environment| environment.id == snapshot.environment_id && environment.kind == EnvironmentKind::FullVm) {
+                    if let Some(saved) = &mut snapshot.environment_state { saved.network_access = true; }
+                }
+            }
+        }
+        self.schema_version = 7;
+        Ok(self)
+    }
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateResourceRange {
+    pub min: f64,
+    pub preferred: f64,
+    pub max: f64,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateResourcePolicy {
+    pub cpu: CreateResourceRange,
+    pub memory_gb: CreateResourceRange,
+    pub priority: Priority,
+    #[serde(skip_deserializing, default = "allocation_always_enabled")]
+    pub dynamic: bool,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateEnvironmentRequest {
+    #[serde(default)]
+    pub storage_gb: Option<f64>,
+    pub name: String,
+    pub kind: EnvironmentKind,
+    pub runtime: String,
+    pub provider: RuntimeProviderKind,
+    #[serde(default)]
+    pub container_command: Option<String>,
+    #[serde(default)]
+    pub network_access: bool,
+    #[serde(default)]
+    pub gpu_access: bool,
+    #[serde(default)]
+    pub sandbox_policy: Option<SandboxPolicy>,
+    pub description: String,
+    pub branch_type: Option<BranchType>,
+    pub resource_policy: CreateResourcePolicy,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateConnectionRequest {
+    pub source_id: String,
+    pub target_id: String,
+    pub direction: ConnectionDirection,
+    pub permissions: Vec<PermissionKind>,
+    pub ports: Vec<String>,
+    pub volume: Option<String>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AddDestinationRequest {
+    pub name: String,
+    pub provider: BackupProvider,
+    pub location: String,
+    pub access_key: String,
+    pub secret_key: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub enum GuestSessionKind {
+    ContainerTerminal,
+    EmbeddedVnc,
+    HeadlessTerminal,
+    HeadlessSerial,
+    NativeApplication,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GuestSession {
+    pub kind: GuestSessionKind,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub websocket_url: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub password: Option<String>,
+    pub message: String,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ExecuteCommandRequest {
+    pub environment_id: String,
+    pub command: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CommandResult {
+    pub stdout: String,
+    pub stderr: String,
+    pub exit_code: i32,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn allocation_is_enabled_for_legacy_policies_and_creation_requests() {
+        for legacy_flag in [Some(false), Some(true), None] {
+            let mut saved = serde_json::json!({
+                "cpu": { "min": 1, "preferred": 2, "max": 4, "current": 0 },
+                "memoryGb": { "min": 1, "preferred": 2, "max": 4, "current": 0 },
+                "priority": "normal"
+            });
+            if let Some(flag) = legacy_flag { saved["dynamic"] = flag.into(); }
+            let policy: ResourcePolicy = serde_json::from_value(saved.clone()).unwrap();
+            assert!(policy.dynamic);
+            assert_eq!(policy.cpu.preferred, 2.0);
+            assert_eq!(serde_json::to_value(&policy).unwrap()["dynamic"], true);
+            let request: CreateResourcePolicy = serde_json::from_value(saved).unwrap();
+            assert!(request.dynamic);
+        }
+    }
+
+    #[test]
+    fn legacy_q35_micro_vm_is_migrated_to_a_full_vm() {
+        let mut state = PlatformState::empty().unwrap();
+        state.schema_version = 3;
+        state.environments.push(Environment {
+            id: "legacy-microvm".into(),
+            name: "Legacy microVM".into(),
+            kind: EnvironmentKind::MicroVm,
+            status: EnvironmentStatus::Stopped,
+            runtime: "C:\\managed\\installer.iso".into(),
+            provider: Some(RuntimeProviderKind::Qemu),
+            runtime_id: Some("legacy-microvm".into()),
+            runtime_path: Some("C:\\managed\\system.qcow2".into()),
+            control_endpoint: None,
+            console_endpoint: None,
+            container_command: None,
+            network_access: false,
+            gpu_access: false,
+            sandbox_policy: None,
+            last_error: None,
+            description: "Created before direct-kernel profiles".into(),
+            branch_type: None,
+            created_at: "2026-01-01T00:00:00Z".into(),
+            last_opened_at: None,
+            cpu_usage: 0.0,
+            memory_usage_gb: 0.0,
+            storage_delta_gb: 0.0,
+            network_rx_mbps: 0.0,
+            resource_policy: ResourcePolicy {
+                cpu: ResourceRange {
+                    min: 1.0,
+                    preferred: 1.0,
+                    max: 2.0,
+                    current: 0.0,
+                },
+                memory_gb: ResourceRange {
+                    min: 1.0,
+                    preferred: 2.0,
+                    max: 4.0,
+                    current: 0.0,
+                },
+                priority: Priority::Normal,
+                dynamic: true,
+            },
+        });
+
+        let migrated = state.migrate().unwrap();
+        assert_eq!(migrated.schema_version, 7);
+        assert_eq!(migrated.environments[0].kind, EnvironmentKind::FullVm);
+        assert!(migrated.environments[0].network_access);
+        let mut disconnected = migrated.clone();
+        disconnected.environments[0].network_access = false;
+        assert!(!disconnected.migrate().unwrap().environments[0].network_access);
+        assert_eq!(
+            migrated.environments[0].runtime,
+            "C:\\managed\\installer.iso"
+        );
+    }
+}

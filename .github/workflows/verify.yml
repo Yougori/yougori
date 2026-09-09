@@ -1,0 +1,82 @@
+name: Verify (no publishing)
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verify-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 90
+    env:
+      PLAYWRIGHT_BROWSER_CHANNEL: chromium
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24'
+          cache: npm
+      - name: Install locked frontend dependencies
+        run: npm ci
+      - name: Install Playwright's matching Chromium (test dependency only)
+        run: npx playwright install chromium --no-shell
+      - name: Dependency advisories
+        run: npm audit --audit-level=moderate
+      - name: Verify shipped payloads and architecture
+        run: npm run release:check
+      - name: Require test-only shell and Python prerequisites (do not silently skip)
+        run: |
+          if (!(Test-Path -LiteralPath 'C:/Program Files/Git/bin/bash.exe')) { throw 'Installer fixture tests require Git Bash on this runner.' }
+          & py -3 --version
+          if ($LASTEXITCODE) { throw 'Tutorial HTTP tests require the Python 3 launcher on this runner.' }
+      - name: Frontend lint, unit tests and build
+        run: |
+          npm run lint
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          npm test
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          npm run build
+          exit $LASTEXITCODE
+      - name: Native toolchain
+        run: rustup toolchain install stable --profile minimal --no-self-update
+      - name: CLI and native checks
+        run: |
+          cargo +stable test --locked --manifest-path cli/Cargo.toml
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          cargo +stable test --locked --manifest-path runtime/cuda/host/Cargo.toml
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          cargo +stable check --locked --manifest-path src-tauri/Cargo.toml --all-targets
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          cargo +stable test --locked --manifest-path src-tauri/Cargo.toml --lib
+          exit $LASTEXITCODE
+      - name: Build portable CLI and verify its Windows imports
+        env:
+          RUSTUP_TOOLCHAIN: stable
+        run: npm run cli:bundle
+      - name: Browser interaction tests (no images)
+        run: npm run test:e2e
+      - name: Bounded native-test harness regressions (disposable processes only)
+        run: npm run test:harness
+
+  guest-agent:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version: stable
+          cache-dependency-path: appliance/agent/go.sum
+      - name: Test Linux guest agent (not a Linux desktop certification)
+        working-directory: appliance/agent
+        run: go test -race ./...
+      - name: Test cloud agent path and permission boundaries
+        run: python3 -m unittest discover -s src-tauri/src/runtime/cloud -p test_agent.py

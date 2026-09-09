@@ -1,0 +1,65 @@
+node_modules
+dist
+.DS_Store
+*.local
+*.log
+src-tauri/target
+src-tauri/gen
+coverage
+.vite
+*.tsbuildinfo
+artifacts
+test-results
+test-results-*
+playwright-report
+build/gpu-bridge/
+build/secure-runtime/
+build/runtime-cache/
+build/cuda/
+build/linux/
+runtime/cuda/host/target/
+cli/target/
+src-tauri/resources/cli/
+
+# Generated runtime images/binaries can embed machine-specific build paths.
+# Keep them locally; build them from the source scripts for a fresh checkout.
+/src-tauri/resources/runtime/
+/src-tauri/boot-helper/*.efi
+
+# Development-agent configuration is local, not part of the product source.
+/.agents/
+/.codex/
+/.claude/
+/.cursor/
+/.gemini/
+/.windsurf/
+AGENTS.md
+CLAUDE.md
+GEMINI.md
+.cursorrules
+.windsurfrules
+/.github/copilot-instructions.md
+/.github/instructions/
+/skills-lock.json
+
+# Downloaded appliance build dependencies
+build/appliance-cache/
+
+# Local documents and generated PDF previews
+*.[pP][dD][fF]
+/output/pdf/
+/tmp/
+
+# Local credentials (keep safe templates versioned)
+.env
+.env.*
+!.env.example
+!.env.sample
+!.env.template
+
+# Editor and operating-system temporary files
+Thumbs.db
+Desktop.ini
+*.swp
+*.swo
+*~

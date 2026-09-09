@@ -1,0 +1,72 @@
+name: Linux desktop preview (no publishing)
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: linux-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  linux-x64:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 90
+    env:
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24'
+          cache: npm
+      - name: Linux desktop and virtualization dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends build-essential pkg-config libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev patchelf libssl-dev libxdo-dev qemu-system-x86 qemu-utils ovmf openssh-client ca-certificates xvfb xauth dbus-x11
+      - name: Rust toolchain
+        run: rustup toolchain install stable --profile minimal --no-self-update
+      - name: Frontend and packaging checks
+        run: |
+          npm ci
+          npm run lint
+          node --test scripts/release-preflight.test.mjs
+          npx vitest run src
+          npm run build
+          npm run release:check
+      - name: Linux native checks and unit tests
+        run: |
+          cargo +stable test --locked --manifest-path cli/Cargo.toml
+          cargo +stable check --locked --manifest-path src-tauri/Cargo.toml --all-targets
+          cargo +stable test --locked --manifest-path src-tauri/Cargo.toml --lib
+      - name: Build Debian installer
+        run: npm run desktop:build
+      - name: Disposable container, microVM and VM runtime tests
+        run: |
+          for test in workspace_container_end_to_end workspace_microvm_end_to_end workspace_fullvm_forwarding_and_viewers; do
+            timeout 300 cargo +stable test --locked --manifest-path src-tauri/Cargo.toml --lib "$test" -- --ignored --nocapture --test-threads=1
+          done
+      - name: Check package contents and dependency declarations
+        run: |
+          for package in src-tauri/target/release/bundle/deb/*.deb; do
+            dpkg-deb --info "$package"
+            dpkg-deb --contents "$package"
+            dpkg-deb --field "$package" Depends | grep qemu-system-x86
+            if dpkg-deb --contents "$package" | grep -Ei '\.(exe|dll)$'; then exit 1; fi
+          done
+      - name: Installed desktop and CLI smoke test (isolated app data, no screenshots)
+        run: |
+          sudo apt-get install -y --no-install-recommends ./src-tauri/target/release/bundle/deb/*.deb
+          timeout 100 dbus-run-session -- xvfb-run -a bash scripts/test-linux-installed.sh
+      - name: Upload preview installer (not a public release)
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: yougori-linux-x64-preview
+          path: src-tauri/target/release/bundle/deb/*.deb
+          if-no-files-found: error

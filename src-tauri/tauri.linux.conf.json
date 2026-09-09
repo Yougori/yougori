@@ -1,0 +1,22 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "bundle": {
+    "targets": ["deb"],
+    "resources": {
+      "../LICENSE": "LICENSE",
+      "../node_modules/@novnc/novnc/": "third-party-sources/novnc/",
+      "resources/runtime/appliance/": "runtime/appliance/",
+      "resources/cli/yougori-cli": "cli/yougori-cli",
+      "resources/cli/opendock-cli": "cli/opendock-cli",
+      "resources/THIRD_PARTY_NOTICES.md": "THIRD_PARTY_NOTICES.md",
+      "resources/WORKSPACE_LICENSES.txt": "WORKSPACE_LICENSES.txt"
+    },
+    "linux": {
+      "deb": {
+        "depends": ["qemu-system-x86 (>= 6.2)", "qemu-utils (>= 6.2)", "ovmf", "openssh-client", "ca-certificates", "libsecret-1-0"],
+        "recommends": ["gnome-keyring"],
+        "files": { "/usr/bin/yougori-cli": "resources/cli/yougori-cli" }
+      }
+    }
+  }
+}

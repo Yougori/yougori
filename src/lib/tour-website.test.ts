@@ -1,0 +1,71 @@
+import { spawn, spawnSync } from "node:child_process"
+import { existsSync } from "node:fs"
+import { describe, expect, it, vi } from "vitest"
+import { helloWebsiteCheck, helloWebsiteCommand, helloWebsitePython, verifyHelloWebsite } from "./tour-website"
+
+describe("Hello World tutorial", () => {
+  it("generates a single pasteable shell command with native Python setup and no file sharing", () => {
+    const command = helloWebsiteCommand("test-run")
+    expect(command).not.toMatch(/[\r\n]/)
+    expect(command.length).toBeLessThan(4096)
+    for (const manager of ["apk", "apt-get", "dnf", "microdnf", "yum", "zypper"]) expect(command).toContain(manager)
+    expect(command).not.toContain("http.server --directory")
+    expect(helloWebsitePython("test-run")).not.toContain("SimpleHTTPRequestHandler")
+    expect(helloWebsiteCheck("test-run")).toContain("127.0.0.1:3000")
+    expect(helloWebsiteCheck("test-run")).toContain("timeout=3")
+    expect(helloWebsiteCheck("test-run")).toContain("read(4096)")
+    for (const invalid of ["", "bad'; run-this", "x".repeat(81)]) expect(() => helloWebsiteCommand(invalid)).toThrow("Invalid tutorial")
+  })
+  it("checks the exact current tutorial's response, not merely an open port", async () => {
+    const execute = vi.fn().mockResolvedValue({ exitCode: 0, stdout: "opendock-hello-test-run\n", stderr: "" })
+    await verifyHelloWebsite(execute, "env-first", "test-run")
+    expect(execute).toHaveBeenCalledWith("env-first", helloWebsiteCheck("test-run"))
+    for (const result of [{ exitCode: 1, stdout: "opendock-hello-test-run" }, { exitCode: 0, stdout: "opendock-hello-old-run" }, { exitCode: 0, stdout: "some other website" }]) {
+      execute.mockResolvedValueOnce({ ...result, stderr: "" })
+      await expect(verifyHelloWebsite(execute, "env-first", "test-run")).rejects.toThrow("do not publish")
+    }
+  })
+})
+
+const python = process.platform === "win32" ? "py" : "python3"
+const pythonArgs = process.platform === "win32" ? ["-3"] : []
+const hasPython = spawnSync(python, [...pythonArgs, "--version"]).status === 0
+it.skipIf(!hasPython)("serves Hello World over real loopback HTTP without disclosing files or reflecting requests", async () => {
+  // An ephemeral loopback-only process. No container, public tunnel or files.
+  const child = spawn(python, [...pythonArgs, "-u", "-c", helloWebsitePython("test-run", "127.0.0.1", 0)], { windowsHide: true, stdio: ["ignore", "pipe", "pipe"] })
+  const closed = new Promise<void>(resolve => child.once("close", () => resolve()))
+  try {
+    const port = await new Promise<number>((resolve, reject) => {
+      let output = ""
+      const timeout = setTimeout(() => reject(new Error("Demo server did not start")), 8000)
+      child.once("error", error => { clearTimeout(timeout); reject(error) })
+      child.once("exit", () => { clearTimeout(timeout); reject(new Error("Demo server exited before ready")) })
+      child.stdout.on("data", data => { output += String(data); const match = /ready on port (\d+)/.exec(output); if (match) { clearTimeout(timeout); resolve(Number(match[1])) } })
+    })
+    for (const path of ["/", "/etc/passwd", "/.env?token=DO_NOT_REFLECT", "/../secret.txt"]) {
+      const response = await fetch(`http://127.0.0.1:${port}${path}`, { signal: AbortSignal.timeout(3000) })
+      expect(response.status).toBe(200)
+      expect(response.headers.get("cache-control")).toBe("no-store")
+      const body = await response.text()
+      expect(body).toContain("<h1>Hello World!</h1>")
+      expect(body).toContain("opendock-hello-test-run")
+      expect(body).not.toContain("DO_NOT_REFLECT")
+      expect(body).not.toContain("root:")
+    }
+    const response = await fetch(`http://127.0.0.1:${port}/`, { method: "POST", body: "do not execute", signal: AbortSignal.timeout(3000) })
+    expect(response.status).toBe(501)
+  } finally { child.kill(); await closed }
+}, 15000)
+
+const bash = process.platform === "win32" ? "C:/Program Files/Git/bin/bash.exe" : "/bin/bash"
+it.skipIf(!existsSync(bash))("both generated commands pass real shell syntax checking", () => {
+  for (const command of [helloWebsiteCommand("test-run"), helloWebsiteCheck("test-run")]) {
+    const result = spawnSync(bash, ["-n", "-c", command], { encoding: "utf8", windowsHide: true, timeout: 5000 })
+    expect(result.stderr).toBe("")
+    expect(result.status).toBe(0)
+  }
+  // Inspect the nested sh -c payload too, without executing its package setup.
+  const nested = spawnSync(bash, ["-c", `sh() { bash -n -c "$2"; }; ${helloWebsiteCommand("test-run")}`], { encoding: "utf8", windowsHide: true, timeout: 5000 })
+  expect(nested.stderr).toBe("")
+  expect(nested.status).toBe(0)
+})

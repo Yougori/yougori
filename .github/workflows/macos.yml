@@ -1,0 +1,52 @@
+name: macOS preview (manual, no publishing)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: macos-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  macos:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-14
+            arch: arm64
+          - runner: macos-15-intel
+            arch: x64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 120
+    env:
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      MACOSX_DEPLOYMENT_TARGET: '14.0'
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24'
+          cache: npm
+      - name: Native host architecture
+        run: node -e 'if (process.arch !== "${{ matrix.arch }}") process.exit(1)'
+      - name: Native macOS prerequisites
+        run: |
+          rustup toolchain install stable --profile minimal --no-self-update
+          rustup default stable
+          npm run macos:setup
+      - name: Tests and native application / DMG build
+        run: npm run macos:build
+      - name: Disposable guest lifecycle, terminal, sharing and VM console tests
+        run: npm run macos:test:runtime
+      - name: Upload preview only (not signed/notarized for distribution)
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: yougori-macos-${{ matrix.arch }}-preview
+          path: src-tauri/target/release/bundle/dmg/*.dmg
+          if-no-files-found: error

@@ -1,0 +1,136 @@
+/* Main workspace only. Guest desktops and runtime controls keep their behaviour. */
+.workspace-app {
+  --workspace-surface: #f5f2ec;
+  --workspace-canvas: #e8e5df;
+  --graph-dot: #b6b0a5;
+  --workspace-outline: #d7d2c9;
+  --workspace-shadow: 0 3px 12px #30291d08;
+}
+.dark .workspace-app {
+  --workspace-surface: #191c21;
+  --workspace-canvas: #111419;
+  --graph-dot: #3b414b;
+  --workspace-outline: #2d323a;
+  --workspace-shadow: 0 4px 16px #00000020;
+}
+
+.workspace-header { border-color: var(--workspace-outline); }
+.workspace-app { display: flex; flex-direction: column; height: 100dvh; min-height: 0; overflow: hidden; }
+.workspace-header { flex-shrink: 0; }
+.workspace-main { flex: 1; min-height: 0; display: flex; flex-direction: column; padding-bottom: 16px; }
+.workspace-overview { flex: 1; min-height: 0; }
+.workspace-overview > .relative { flex-shrink: 0; }
+.workspace-overview > section[aria-label="Environment graph"] { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.workspace-graph { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.workspace-graph > section, .workspace-graph-caption { flex-shrink: 0; }
+.workspace-graph [data-environment-canvas] { flex: 1; height: auto; min-height: 0; }
+.workspace-header > div { min-height: 72px; gap: 12px; }
+.workspace-header .dashboard-actions { gap: 5px; }
+.workspace-header .dashboard-action {
+  border-radius: 7px;
+  height: 34px;
+  padding-inline: 11px;
+  font-size: 12px;
+}
+.workspace-header .dashboard-action:not(.dashboard-action-primary):not([aria-expanded="true"]) {
+  border-color: transparent;
+  background: transparent;
+  color: var(--muted-foreground);
+}
+.workspace-header .dashboard-action:not(.dashboard-action-primary):hover {
+  background: var(--accent);
+  color: var(--foreground);
+}
+.workspace-header .dashboard-action-primary {
+  margin-left: 5px;
+  padding-inline: 16px;
+}
+.workspace-header .dashboard-theme { margin-right: 6px; }
+.workspace-header [role="group"][aria-label="Window controls"] { margin-left: 9px; }
+.workspace-header [data-tour="cloud-environment"] {
+  border-left-color: var(--workspace-outline) !important;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  margin-left: 4px;
+}
+
+.workspace-metrics {
+  overflow: hidden;
+  border: 1px solid var(--workspace-outline);
+  border-radius: 12px;
+  background: var(--workspace-surface);
+}
+.workspace-metrics > div { padding: 14px 18px; border-color: var(--workspace-outline); }
+.workspace-metrics .resource-metric-value { font-size: 19px; font-weight: 500; }
+.workspace-metrics .resource-metric-unit { font-size: 11px; }
+.workspace-metrics .resource-metric > svg { opacity: 0.85; }
+.workspace-running { display: flex; align-items: center; gap: 6px; margin-top: 5px; }
+.workspace-running > span { width: 6px; height: 6px; border-radius: 50%; background: var(--muted-foreground); }
+.workspace-running > .is-active { background: #3c927c; }
+.workspace-metrics button { font-size: 10px; height: 22px; background: transparent; padding-inline: 0; color: var(--muted-foreground); text-decoration: underline; text-underline-offset: 3px; }
+.workspace-metrics button:hover { color: var(--foreground); }
+
+.workspace-graph { background: var(--workspace-canvas); border-color: var(--workspace-outline); border-radius: 14px; }
+/* Keep dock surfaces below the wire SVG, with cards and sockets above it.
+   A background on the z-10 section itself hides the final segment of wires. */
+.workspace-graph > section { z-index: auto; border-color: transparent; background: transparent; }
+.workspace-graph > section::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: var(--workspace-surface);
+  border: 0 solid var(--workspace-outline);
+}
+.workspace-graph > section[aria-label="Service destinations"]::before { border-bottom-width: 1px; }
+.workspace-graph > section[aria-label="Environment capabilities"]::before { border-top-width: 1px; }
+.workspace-graph [data-publication-card],
+.workspace-graph [data-capability-card] { z-index: 10; }
+.workspace-graph [data-publication-card] > button:first-child,
+.workspace-graph [data-capability-card] > button:first-child {
+  background: var(--workspace-surface);
+  border-color: var(--workspace-outline);
+  border-radius: 8px;
+  box-shadow: none;
+  font-size: 12px !important;
+  font-weight: 500;
+  min-height: 42px;
+}
+.workspace-graph [data-publication-card] > button:first-child:hover,
+.workspace-graph [data-capability-card] > button:first-child:hover { background: var(--accent); }
+.workspace-graph [data-publication-card] > button:first-child > svg,
+.workspace-graph [data-capability-card] > button:first-child > svg { display: none; }
+.workspace-graph [data-capability-kind] { justify-content: center; }
+.workspace-graph-caption { background: var(--workspace-surface); border-color: var(--workspace-outline); }
+
+.workspace-node {
+  border-color: var(--workspace-outline);
+  border-top: 3px solid var(--node-accent);
+  border-radius: 10px;
+  background: var(--workspace-surface);
+  box-shadow: var(--workspace-shadow);
+}
+.workspace-node[data-selected="true"] { border-color: var(--node-accent); }
+.workspace-node:hover { box-shadow: 0 4px 18px #00000018; }
+.workspace-node > .p-3 { padding: 14px; }
+.workspace-node [data-node-drag-grip] { opacity: 0.4; }
+.workspace-node:hover [data-node-drag-grip] { opacity: 1; }
+.workspace-node dl { border-color: var(--workspace-outline); padding-top: 10px; }
+.workspace-node dl dd { font-size: 13px; font-weight: 500; }
+.workspace-node > .nodrag:last-of-type { border-color: var(--workspace-outline); }
+.workspace-node .node-launch { border-radius: 6px; min-width: 70px; }
+.workspace-node [aria-label="Attached capabilities"] button { background: transparent; border-color: var(--workspace-outline); }
+
+@media (max-width: 1199px) {
+  .workspace-header > div > p { display: none; }
+  .workspace-header > div { gap: 8px; }
+  .workspace-header .dashboard-action { padding-inline: 8px; font-size: 11px; }
+  .workspace-metrics > div { padding-inline: 12px; }
+}
+@media (max-width: 767px) {
+  .workspace-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .workspace-metrics > div:last-child { grid-column: 1 / -1; }
+  .workspace-graph-caption { justify-content: center; text-align: center; }
+  .workspace-header .dashboard-actions { display: flex; flex-wrap: wrap; }
+}

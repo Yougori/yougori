@@ -1,0 +1,266 @@
+use super::*;
+#[test]
+fn host_terminal_is_dashboard_only_and_inputs_are_bounded() {
+    assert!(require_dashboard("main").is_ok());
+    for label in ["environment-env-test", "guest", "main-other", ""] {
+        assert!(require_dashboard(label).is_err());
+    }
+    let mut request: HostRequest =
+        serde_json::from_value(serde_json::json!({"sessionId":"host-test","action":"create"}))
+            .unwrap();
+    assert!(validate_request(&request).is_ok());
+    request.cols = Some(0);
+    assert!(validate_request(&request).is_err());
+    request.cols = None;
+    request.session_id = "../../test".into();
+    assert!(validate_request(&request).is_err());
+    assert!(serde_json::from_value::<HostRequest>(
+        serde_json::json!({"sessionId":"host-test","action":"create","elevated":true})
+    )
+    .is_err());
+}
+#[test]
+fn host_output_is_bounded_chunked_and_reports_dropped_history() {
+    let mut output = OutputBuffer::default();
+    output.push(&vec![b'x'; BUFFER_LIMIT + 200]);
+    let chunk = output.read(0).unwrap();
+    assert!(chunk.truncated);
+    assert_eq!(STANDARD.decode(chunk.data).unwrap().len(), CHUNK_LIMIT);
+    assert_eq!(chunk.offset, 200 + CHUNK_LIMIT as u64);
+    assert!(output.read(output.end + 1).is_err());
+    output.done = true;
+    assert!(!output.read(0).unwrap().done);
+    assert!(output.read(output.end).unwrap().done);
+}
+
+#[test]
+fn host_workspace_is_created_only_on_use_and_keeps_existing_files() {
+    let profile = tempfile::tempdir().unwrap();
+    let path = workspace_directory(profile.path()).unwrap();
+    assert_eq!(path, profile.path().join("Yougori/Workspace"));
+    assert!(
+        !path.exists(),
+        "Inspecting terminal defaults must be read-only"
+    );
+    assert_eq!(
+        prepare_working_directory(profile.path(), None).unwrap(),
+        path
+    );
+    assert!(path.is_dir());
+    std::fs::write(path.join("keep.txt"), "user work").unwrap();
+    assert_eq!(
+        prepare_working_directory(profile.path(), Some(&path)).unwrap(),
+        path
+    );
+    assert_eq!(
+        std::fs::read_to_string(path.join("keep.txt")).unwrap(),
+        "user work"
+    );
+}
+
+#[test]
+fn renamed_host_workspace_reuses_legacy_work_without_moving_it() {
+    let profile = tempfile::tempdir().unwrap();
+    let legacy = profile.path().join("OpenDock/Workspace");
+    std::fs::create_dir_all(&legacy).unwrap();
+    std::fs::write(legacy.join("project.txt"), "keep my work").unwrap();
+    assert_eq!(prepare_working_directory(profile.path(), None).unwrap(), legacy);
+    assert_eq!(std::fs::read_to_string(legacy.join("project.txt")).unwrap(), "keep my work");
+    assert!(!profile.path().join("Yougori").exists());
+    std::fs::create_dir(profile.path().join("Yougori")).unwrap();
+    assert_eq!(prepare_working_directory(profile.path(), None).unwrap(), profile.path().join("Yougori/Workspace"));
+    assert!(legacy.join("project.txt").is_file());
+}
+
+#[test]
+fn renamed_host_workspace_rejects_conflicting_legacy_path() {
+    let profile = tempfile::tempdir().unwrap();
+    std::fs::write(profile.path().join("OpenDock"), "keep").unwrap();
+    assert!(prepare_working_directory(profile.path(), None).is_err());
+    assert!(!profile.path().join("Yougori").exists());
+}
+
+#[test]
+fn host_workspace_never_falls_back_to_home_or_replaces_conflicting_files() {
+    let profile = tempfile::tempdir().unwrap();
+    std::fs::write(profile.path().join("Yougori"), "existing personal file").unwrap();
+    assert!(prepare_working_directory(profile.path(), None).is_err());
+    assert_eq!(
+        std::fs::read_to_string(profile.path().join("Yougori")).unwrap(),
+        "existing personal file"
+    );
+    let selected = profile.path().join("Chosen project");
+    std::fs::create_dir(&selected).unwrap();
+    assert_eq!(
+        prepare_working_directory(profile.path(), Some(&selected)).unwrap(),
+        selected
+    );
+    let missing = profile.path().join("Missing project");
+    assert!(prepare_working_directory(profile.path(), Some(&missing)).is_err());
+    assert!(!missing.exists());
+    assert!(prepare_working_directory(profile.path(), Some(Path::new("relative"))).is_err());
+    assert!(workspace_directory(Path::new("relative")).is_err());
+}
+
+#[cfg(windows)]
+#[test]
+#[ignore = "Starts disposable real PowerShell sessions; no user guests or personal skills are changed"]
+fn host_terminal_real_powershell_cli_input_resize_and_owned_cleanup() {
+    use std::time::{Duration, Instant};
+    assert!(
+        !process::is_elevated().unwrap(),
+        "Run this test without elevation"
+    );
+    let dir = tempfile::Builder::new()
+        .prefix("Yougori host test é ")
+        .tempdir()
+        .unwrap();
+    let bundled = Path::new(env!("CARGO_MANIFEST_DIR")).join("resources/cli/yougori-cli.exe");
+    assert!(bundled.is_file(), "Run npm run cli:bundle first");
+    let cli_directory = dir.path().join("CLI with spaces é");
+    std::fs::create_dir(&cli_directory).unwrap();
+    let cli = cli_directory.join("yougori-cli.exe");
+    std::fs::copy(bundled, &cli).unwrap();
+    let cli = cli.canonicalize().unwrap();
+    let workspace = prepare_working_directory(dir.path(), None).unwrap();
+    let manager = HostTerminalManager::default();
+    let request = |id: &str, action: &str| HostRequest {
+        session_id: id.into(),
+        action: action.into(),
+        data: None,
+        offset: None,
+        cols: None,
+        rows: None,
+        cwd: None,
+    };
+    let config = || ShellConfig {
+        shell: shell_path().unwrap(),
+        cli: cli.clone(),
+        app: std::env::current_exe().unwrap(),
+        cwd: workspace.clone(),
+    };
+    let send = |id: &str, command: &str| {
+        let mut req = request(id, "write");
+        req.data = Some(STANDARD.encode(command));
+        manager.action(req, "main", None).unwrap();
+    };
+    let wait_file = |name: &str| {
+        let deadline = Instant::now() + Duration::from_secs(20);
+        while !workspace.join(name).is_file() {
+            if Instant::now() >= deadline {
+                for id in ["host-real-one", "host-real-two"] {
+                    let output = manager.action(request(id, "read"), "main", None).unwrap();
+                    eprintln!(
+                        "{id}: {}",
+                        String::from_utf8_lossy(&STANDARD.decode(output.data).unwrap())
+                    );
+                }
+                panic!("Timed out waiting for {name}");
+            }
+            std::thread::sleep(Duration::from_millis(100));
+        }
+    };
+    manager
+        .action(request("host-real-one", "create"), "main", Some(config()))
+        .unwrap();
+    manager
+        .action(request("host-real-two", "create"), "main", Some(config()))
+        .unwrap();
+    assert!(manager
+        .action(request("host-real-one", "read"), "cli-host", None)
+        .unwrap_err()
+        .contains("different client"));
+    assert!(manager
+        .action(request("host-real-one", "close"), "cli-host", None)
+        .is_err());
+    let mut resize = request("host-real-one", "resize");
+    resize.cols = Some(120);
+    resize.rows = Some(35);
+    manager.action(resize, "main", None).unwrap();
+    // These files prove that the shell executed, not merely echoed, its input.
+    send("host-real-one", "[IO.File]::WriteAllText((Join-Path (Get-Location) 'first.txt'), 'Hello ✓'); yougori-cli --version | Out-File -Encoding utf8 cli.txt\r");
+    send(
+        "host-real-two",
+        "[IO.File]::WriteAllText((Join-Path (Get-Location) 'second.txt'), 'Second shell')\r",
+    );
+    wait_file("first.txt");
+    wait_file("second.txt");
+    wait_file("cli.txt");
+    assert_eq!(
+        std::fs::read_to_string(workspace.join("first.txt")).unwrap(),
+        "Hello ✓"
+    );
+    assert!(
+        !dir.path().join("first.txt").exists(),
+        "PowerShell must not start in the profile root"
+    );
+    assert!(std::fs::read_to_string(workspace.join("cli.txt"))
+        .unwrap()
+        .contains("yougori-cli"));
+    send("host-real-one", "[IO.File]::WriteAllText((Join-Path (Get-Location) 'history-setting.txt'), [string](Get-PSReadLineOption).HistorySaveStyle)\r");
+    wait_file("history-setting.txt");
+    assert_eq!(
+        std::fs::read_to_string(workspace.join("history-setting.txt")).unwrap(),
+        "SaveNothing"
+    );
+
+    // Ctrl+C must interrupt the command without closing either terminal.
+    send("host-real-one", "[IO.File]::WriteAllText((Join-Path (Get-Location) 'sleeping.txt'), 'started'); Start-Sleep -Seconds 60\r");
+    wait_file("sleeping.txt");
+    send("host-real-one", "\u{3}");
+    std::thread::sleep(Duration::from_millis(300));
+    send(
+        "host-real-one",
+        "[IO.File]::WriteAllText((Join-Path (Get-Location) 'interrupted.txt'), 'continued')\r",
+    );
+    wait_file("interrupted.txt");
+    // A hidden child belongs to this terminal's job only.
+    let child_script = "[IO.File]::WriteAllText((Join-Path (Get-Location) 'child.txt'), [string]$PID); Start-Sleep -Seconds 120";
+    let encoded = STANDARD.encode(
+        child_script
+            .encode_utf16()
+            .flat_map(u16::to_le_bytes)
+            .collect::<Vec<_>>(),
+    );
+    send(
+        "host-real-one",
+        &format!("powershell.exe -NoProfile -EncodedCommand {encoded}\r"),
+    );
+    wait_file("child.txt");
+    let child_pid: u32 = std::fs::read_to_string(workspace.join("child.txt"))
+        .unwrap()
+        .parse()
+        .unwrap();
+    use windows_sys::Win32::{
+        Foundation::{CloseHandle, WAIT_OBJECT_0},
+        System::Threading::{OpenProcess, WaitForSingleObject, PROCESS_SYNCHRONIZE},
+    };
+    let child_handle = unsafe { OpenProcess(PROCESS_SYNCHRONIZE, 0, child_pid) };
+    assert!(!child_handle.is_null(), "Cannot inspect test-owned child");
+    manager
+        .action(request("host-real-one", "close"), "main", None)
+        .unwrap();
+    let child_stopped = unsafe { WaitForSingleObject(child_handle, 5000) };
+    unsafe {
+        CloseHandle(child_handle);
+    }
+    assert_eq!(
+        child_stopped, WAIT_OBJECT_0,
+        "Closing this tab left its child alive"
+    );
+    send(
+        "host-real-two",
+        "[IO.File]::WriteAllText((Join-Path (Get-Location) 'survived.txt'), 'still running')\r",
+    );
+    wait_file("survived.txt");
+    let output = manager
+        .action(request("host-real-two", "read"), "main", None)
+        .unwrap();
+    assert!(!output.done);
+    assert!(!output.data.is_empty());
+    manager.close_owner("main");
+    assert!(manager.sessions.lock().unwrap().is_empty());
+    assert!(manager
+        .action(request("host-real-two", "read"), "main", None)
+        .is_err());
+}

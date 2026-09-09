@@ -1,0 +1,47 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Yougori",
+  "version": "1.0.0",
+  "identifier": "com.opendock.desktop",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run release:check && npm run build && npm run cli:bundle",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "Yougori",
+        "width": 1440,
+        "height": 920,
+        "minWidth": 980,
+        "minHeight": 680,
+        "resizable": true,
+        "fullscreen": false,
+        "decorations": false,
+        "visible": false,
+        "backgroundColor": "#ece8e0"
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self' ipc: http://ipc.localhost; connect-src 'self' ipc: http://ipc.localhost ws://127.0.0.1:*; img-src 'self' asset: http://asset.localhost data: blob:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; worker-src 'self' blob:"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "license": "LicenseRef-Yougori-Internal-Use-1.0",
+    "licenseFile": "../LICENSE",
+    "targets": "all",
+    "windows": {
+      "allowDowngrades": false
+    },
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ]
+  }
+}
