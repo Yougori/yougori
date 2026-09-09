@@ -30,6 +30,11 @@
   },
   "bundle": {
     "active": true,
+    "publisher": "Yougori LLC",
+    "copyright": "Copyright (c) 2026 Yougori LLC",
+    "category": "DeveloperTool",
+    "shortDescription": "Your local environment workspace",
+    "longDescription": "Create and manage containers, microVMs and virtual machines from one desktop workspace.",
     "license": "LicenseRef-Yougori-Internal-Use-1.0",
     "licenseFile": "../LICENSE",
     "targets": "all",

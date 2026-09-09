@@ -13,7 +13,13 @@
     },
     "macOS": {
       "minimumSystemVersion": "14.0",
-      "hardenedRuntime": true
+      "hardenedRuntime": true,
+      "dmg": {
+        "background": "installer/dmg-background.png",
+        "windowSize": { "width": 720, "height": 460 },
+        "appPosition": { "x": 200, "y": 267 },
+        "applicationFolderPosition": { "x": 520, "y": 267 }
+      }
     }
   }
 }

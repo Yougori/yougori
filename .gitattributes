@@ -3,6 +3,10 @@
 /src-tauri/resources/runtime/** -text
 /src-tauri/boot-helper/*.efi binary
 
+# Compiled native-installer artwork is checked by its exact bytes.
+/src-tauri/installer/*.bmp binary
+/src-tauri/installer/*.png binary
+
 # This Markdown template is imported verbatim by the frontend and native app.
 /src/lib/connection-skill-template.md text eol=lf
 
