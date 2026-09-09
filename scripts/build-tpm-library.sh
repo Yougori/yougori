@@ -11,6 +11,7 @@ includes=(Platform/include Platform/include/prototypes tpm/include
   tpm/cryptolibs tpm/cryptolibs/common/include tpm/cryptolibs/Ossl/include
   tpm/cryptolibs/TpmBigNum/include TpmConfiguration)
 flags=(-O2 -ffunction-sections -fdata-sections -DNDEBUG -DHASH_LIB=Ossl -DSYM_LIB=Ossl -DMATH_LIB=TpmBigNum
+  "-ffile-prefix-map=$repo=/yougori" "-ffile-prefix-map=$(cygpath -m "$repo")=/yougori"
   -DBN_MATH_LIB=Ossl -Wno-deprecated-declarations -I"$(cygpath -m "$repo/runtime/security")")
 for include in "${includes[@]}"; do flags+=(-I"$(cygpath -m "$source_dir/$include")"); done
 export repo source_dir output
@@ -33,5 +34,5 @@ for object in "$output/objects/"*.o; do
   printf '"%s"\n' "$(cygpath -m "$object")"
 done > "$output/link.rsp"
 gcc -shared -s -Wl,--gc-sections -o "$output/opendock-tpm.dll" @"$output/link.rsp" -lcrypto -lbcrypt -lwinpthread
-gcc -O2 -s -I"$repo/runtime/security" "$repo/runtime/security/tpm-init.c" -o "$output/opendock-tpm-init.exe"
+gcc -O2 -s "-ffile-prefix-map=$repo=/yougori" "-ffile-prefix-map=$(cygpath -m "$repo")=/yougori" -I"$repo/runtime/security" "$repo/runtime/security/tpm-init.c" -o "$output/opendock-tpm-init.exe"
 echo "Built private TPM library: $output/opendock-tpm.dll"

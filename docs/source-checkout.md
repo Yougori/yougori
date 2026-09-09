@@ -1,52 +1,62 @@
 # Source checkout setup
 
-Git contains the application source, lockfiles, build scripts, product AI guides,
-and applicable license notices. It excludes local development-agent setup,
-personal documents, caches, generated runtime payloads, and compiled EFI files.
+Git contains application source, lockfiles, build scripts, product AI guides,
+license notices, verified runtime payloads, and compiled EFI helpers. It excludes
+local development-agent setup, personal documents, credentials, and build caches.
 Cloning this repository does not clone any other repository automatically.
 Explicit dependency/build commands can download their documented upstream
 dependencies; source links in third-party notices are attribution, not commands.
 
 ## Windows desktop prerequisites
 
-The desktop needs locally prepared payloads in `src-tauri/resources/runtime/`
-and `src-tauri/boot-helper/bootx64.efi`. A fresh clone is not a ready-to-run
-installer. Preserve existing local runtime files if already prepared.
+Install Node.js 24.19.0 with npm 11.17.0, the stable Rust MSVC toolchain, Visual
+Studio C++/Windows SDK, and WebView2 as described in the main README. Then run:
 
-1. Install the Node, Rust, Visual Studio C++/Windows SDK, and WebView2 prerequisites
-   listed in the main README, then run `npm ci`.
-2. Prepare 7-Zip and Ubuntu 22.04 in WSL, then follow the runtime-build section
-   of the README and run `npm run runtime:build` to prepare standard QEMU and
-   the Linux appliance. This step alone does not prepare every release payload.
-3. Build the secure runtime using [the secure-runtime build instructions](../runtime/security/README.md).
-   They describe the separate MSYS2/WSL dependencies and staging/install steps.
-4. Build the CUDA guest payload with `scripts/build-cuda.sh` in the Linux build
-   environment with Go, GCC, and musl-gcc. It writes the separate `runtime/cuda`
-   files and checksum manifest used by the native build.
-5. From PowerShell, run `./scripts/build-boot-helper.ps1`. Native fixture tests
-   also need the `-TestFixture` and `-RestartFixture` builds.
-6. Run `npm run cli:bundle`, then `npm run release:check` before packaging.
+```powershell
+npm ci
+npm run cli:bundle
+npm run release:check
+npm run desktop:dev
+```
 
-Do not run runtime replacement steps while Yougori or its guests are using
-those files. Never replace required runtime images with user VM disks or backups.
-Linux and macOS prerequisites and limitations remain in their platform guides;
-they also require the generated appliance payload and applicable embedded build
-inputs. Merely installing a host QEMU package does not generate those inputs.
+The bundled runtime lives in `src-tauri/resources/runtime/`; EFI helpers are in
+`src-tauri/boot-helper/`. You do not need WSL or the runtime build toolchains for
+an ordinary Windows source checkout. Linux and macOS prerequisites and
+limitations remain in their platform guides.
 
-Existing full desktop CI workflows require prepared runtime inputs. A checkout
-without them cannot pass their release/native packaging stages. No runtime
-download URL or release asset is configured or invented by this source cleanup.
+## Maintainer runtime rebuilds
+
+1. Prepare 7-Zip and Ubuntu 22.04 in WSL, then follow the runtime-build section
+   of the README to rebuild standard QEMU and the Linux appliance. Use the
+   `-RuntimeDirectory` option of `scripts/build-bundled-runtime.ps1` to stage
+   outside the installed runtime; secure-runtime inputs must also be prepared.
+2. Build and stage the secure runtime using
+   [the secure-runtime instructions](../runtime/security/README.md). The QEMU
+   build supports `YOUGORI_QEMU_BUILD_DIRECTORY`; the staging script accepts
+   `-QemuBuildDirectory` and `-OutputDirectory`.
+3. Build the CUDA payload with `scripts/build-cuda.sh` in the Linux build
+   environment with Go, GCC, and musl-gcc. Its optional first argument selects
+   a staged output directory.
+4. Build the EFI helper with `scripts/build-boot-helper.ps1`, also using
+   `-TestFixture` and `-RestartFixture` for the native test fixtures. If the
+   production helper changes, regenerate the default Secure Boot enrollment
+   with `scripts/build-secure-vars.sh <bootx64.efi> <firmware-output-directory>`
+   before staging the secure runtime. Existing VM variable stores stay intact.
+5. Scan staged payloads for personal paths and credentials, retain third-party
+   notices, and verify checksums before replacing the bundled copies. Run
+   `npm run release:check` and the bounded native runtime tests before committing.
+
+Do not replace runtime files while Yougori or its guests are using them. Back up
+the previous payloads outside the tracked runtime directory. Never package user
+VM disks, backups, private keys, build caches, or generated development logs.
+Distributing third-party binaries also requires satisfying their licenses;
+checksum verification alone is not a license-compliance check.
 
 ## Source and release privacy
 
-Generated runtime files stay local and are excluded from normal Git additions.
-They are still included when building an installer. Excluding a binary from Git
-does not sanitize an installer that later packages that local binary.
-
-The secure QEMU build script maps workspace prefixes to `/yougori` so future
-builds do not embed the builder's home directory through compiler file macros.
-Previously compiled local payloads must be rebuilt and rescanned before release;
-the cleanup did not edit or replace binaries in use.
+The secure QEMU build uses a neutral installation prefix and maps workspace
+prefixes to `/yougori`; TPM builds also map compiler file paths. Go guest tools
+use `-trimpath`. Rebuilt payloads still need a privacy scan before publication.
 
 Yougori's built-in AI access guides under `skills/yougori/` are product source,
 not developer-agent setup. The CLI compiles them into its agent-access feature.

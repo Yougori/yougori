@@ -30,9 +30,9 @@ mandatory rights under applicable law take precedence where applicable.
   by that build. Do not replace it with an unrelated version.
 - Windows packages include the security source/patches, GPU helper source, and
   build scripts under `third-party-sources/`, with their existing notices intact.
-- Runtime files covered by SHA256SUMS have not been edited to change notices.
-  The top-level notice corrects the older EDK2 source-record omission; the next
-  runtime rebuild can regenerate its bundled copy and checksum manifest.
+- The rebuilt secure runtime includes the corrected EDK2 source/patch record
+  from the top-level notices, and its checksum manifest has been regenerated.
+  Third-party copyright and license notices are retained.
 
 ## Corresponding source is a separate release deliverable
 

@@ -12,8 +12,8 @@ the ISO or partitions a disk. It does not automate installation, accept
 licenses, bypass hardware checks, or change Secure Boot policy.
 
 `bootx64.efi` is embedded into Yougori so end users do not need another compiler,
-downloader, or paid component. Generated EFI files are not tracked by Git;
-a fresh source checkout must build them before compiling the desktop. The
+downloader, or paid component. Verified EFI files are tracked by Git, so
+a fresh source checkout can compile the desktop without rebuilding them. The
 source is `main.c` with minimal UEFI ABI declarations in `uefi.h`. Build with
 Visual Studio C++ tools and the Windows SDK:
 

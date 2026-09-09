@@ -21,10 +21,8 @@ runtime/cuda/host/target/
 cli/target/
 src-tauri/resources/cli/
 
-# Generated runtime images/binaries can embed machine-specific build paths.
-# Keep them locally; build them from the source scripts for a fresh checkout.
-/src-tauri/resources/runtime/
-/src-tauri/boot-helper/*.efi
+# Verified runtime payloads and EFI helpers are versioned for fresh checkouts.
+# Rebuild and privacy-check them before replacing the bundled copies.
 
 # Development-agent configuration is local, not part of the product source.
 /.agents/

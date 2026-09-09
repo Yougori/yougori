@@ -12,7 +12,7 @@ $vcvars = Join-Path $vs 'VC\Auxiliary\Build\vcvars64.bat'
 $egl = Join-Path $qemu 'libEGL.dll'
 $original = Join-Path $qemu 'libEGL_angle.dll'
 $source = Join-Path $repo 'runtime\gpu\egl-bridge.c'
-$exports = & cmd /d /c "call `"$vcvars`" >nul && dumpbin /nologo /exports `"$(if (Test-Path -LiteralPath $original) { $original } else { $egl })`""
+$exports = & $env:ComSpec /d /c "call `"$vcvars`" >nul && dumpbin /nologo /exports `"$(if (Test-Path -LiteralPath $original) { $original } else { $egl })`""
 if ($LASTEXITCODE) { throw 'Could not inspect the bundled EGL exports' }
 $intercept = @('eglGetDisplay', 'eglGetProcAddress', 'eglInitialize', 'eglGetPlatformDisplay', 'eglGetPlatformDisplayEXT')
 $names = @($exports | ForEach-Object { if ($_ -match '^\s+\d+\s+[0-9A-F]+\s+[0-9A-F]+\s+(egl\w+)\s*$') { $Matches[1] } })
@@ -23,9 +23,9 @@ $lines = @($names | ForEach-Object { if ($intercept -contains $_) { "/EXPORT:$_"
 [IO.File]::WriteAllLines((Join-Path $build 'angle-imports.def'), (@('LIBRARY libEGL_angle', 'EXPORTS') + $names), [Text.UTF8Encoding]::new($false))
 Push-Location $build
 try {
-  & cmd /d /c "call `"$vcvars`" >nul && lib /nologo /def:angle-imports.def /machine:x64 /out:angle-imports.lib && cl /nologo /O1 /MT /c /W3 `"$source`" && link /nologo /DLL /NOIMPLIB /NOEXP @egl-exports.rsp egl-bridge.obj angle-imports.lib /OUT:libEGL.dll dxgi.lib dxguid.lib"
+  & $env:ComSpec /d /c "call `"$vcvars`" >nul && lib /nologo /def:angle-imports.def /machine:x64 /out:angle-imports.lib && cl /nologo /O1 /MT /c /W3 `"$source`" && link /nologo /DLL /NOIMPLIB /NOEXP @egl-exports.rsp egl-bridge.obj angle-imports.lib /OUT:libEGL.dll dxgi.lib dxguid.lib"
   if ($LASTEXITCODE) { throw 'EGL bridge compilation failed' }
-  & cmd /d /c "call `"$vcvars`" >nul && cl /nologo /O1 /MT /W3 /DOPENDOCK_GPU_PROBE `"$source`" /Fe:opendock-gpu-probe.exe /link dxgi.lib dxguid.lib"
+  & $env:ComSpec /d /c "call `"$vcvars`" >nul && cl /nologo /O1 /MT /W3 /DOPENDOCK_GPU_PROBE `"$source`" /Fe:opendock-gpu-probe.exe /link dxgi.lib dxguid.lib"
   if ($LASTEXITCODE) { throw 'GPU probe compilation failed' }
 } finally { Pop-Location }
 # Preserve the complete upstream library; never replace it with a previous proxy.

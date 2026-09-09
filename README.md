@@ -49,7 +49,7 @@ Independent container, image, network, and snapshot operations use resource-scop
 
 Local snapshot count is bounded by the configured retention value, backup history is bounded, incompatible appliance recovery overlays are capped at one, and runtime logs/tails have explicit size limits. Persistent state uses atomic generations with a durable previous-generation backup and corruption recovery. A process-wide Windows mutex prevents two Yougori instances from mutating the same disks or state at once.
 
-The bundled runtime occupies approximately 261.46 MiB: 121.86 MiB for the appliance and 139.60 MiB for the minimized QEMU payload. The workspace update adds about 2.4 MiB to the boot image without replacing the base disk or existing environment data. Terminal history, concurrent sessions, connections, and shared-folder requests are bounded; idle/background polling backs off. The optional Cloudflare helper downloads only when requested and is not included in this size.
+The bundled runtime occupies approximately 363 MB (346 MiB), including the appliance, minimized standard QEMU, TPM/Secure Boot runtime, and CUDA guest tools. Runtime updates do not replace existing environment disks. Terminal history, concurrent sessions, connections, and shared-folder requests are bounded; idle/background polling backs off. The optional Cloudflare helper downloads only when requested and is not included in this size.
 
 Computer Branch remains visible as a future environment type, but creation and launch are intentionally disabled in this release.
 
@@ -76,12 +76,12 @@ Pulling a new OCI image, using cloud backups, and Cloudflare publishing require 
 
 ## Run from source
 
-Install Node.js 22.12+ (22.x) or 24+, the stable Rust MSVC toolchain, Microsoft
-C++ Build Tools, and WebView2. This repository contains source, not prebuilt
-runtime images, executables, or firmware. A fresh clone needs the runtime and
-boot-helper build steps in [source checkout setup](docs/source-checkout.md)
-before the desktop can run or be packaged. Existing local runtime files are
-preserved and ignored by Git.
+Install Node.js 24.19.0 (npm 11.17.0, matching CI), the stable Rust MSVC toolchain,
+Microsoft C++ Build Tools, and WebView2. This repository includes the verified
+runtime payloads and EFI boot helpers needed by a fresh checkout. See
+[source checkout setup](docs/source-checkout.md) for platform prerequisites and
+maintainer rebuild instructions. Personal documents and development-agent
+configuration are not included.
 
 Open PowerShell in this directory, then run:
 
@@ -323,8 +323,8 @@ Set `OPENDOCK_PERF_TRACE=1` when running the native integration tests to print r
 
 ## Regenerate bundled runtime files
 
-This is required for a fresh source checkout and when changing the embedded
-runtime. It requires 7-Zip and an Ubuntu 22.04 WSL distribution; the script
+Rebuild only when changing the embedded runtime; a fresh checkout already
+includes verified payloads. Rebuilding requires 7-Zip and an Ubuntu 22.04 WSL distribution; the script
 downloads upstream archives over HTTPS, checks their published or pinned hashes,
 rebuilds the appliance, applies explicit QEMU DLL/firmware allowlists,
 smoke-tests the remaining launch devices, and writes runtime SHA-256 manifests.

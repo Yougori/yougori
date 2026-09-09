@@ -1,5 +1,8 @@
 [CmdletBinding()]
-param([string]$OutputDirectory = "$PSScriptRoot/../build/secure-runtime/staged")
+param(
+  [string]$OutputDirectory = "$PSScriptRoot/../build/secure-runtime/staged",
+  [string]$QemuBuildDirectory = "$PSScriptRoot/../build/secure-runtime/qemu-build"
+)
 $ErrorActionPreference = 'Stop'
 $repo = (Resolve-Path "$PSScriptRoot/..").Path
 $output = [IO.Path]::GetFullPath($OutputDirectory)
@@ -9,7 +12,7 @@ $ucrt = "$repo/build/secure-runtime/toolchain/msys64/ucrt64/bin"
 $dump = "$ucrt/objdump.exe"
 $queue = [Collections.Generic.Queue[string]]::new()
 foreach ($file in @(
-  "$repo/build/secure-runtime/qemu-build/qemu-system-x86_64.exe",
+  "$QemuBuildDirectory/qemu-system-x86_64.exe",
   "$repo/build/secure-runtime/tpm/opendock-tpm.dll",
   "$repo/build/secure-runtime/tpm/opendock-tpm-init.exe",
   "$ucrt/libEGL.dll", "$ucrt/libGLESv2.dll"

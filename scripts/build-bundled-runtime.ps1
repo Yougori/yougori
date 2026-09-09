@@ -2,12 +2,19 @@
 param(
   [switch]$SkipQemu,
   [switch]$SkipAppliance,
-  [switch]$BuildSecureRuntime
+  [switch]$BuildSecureRuntime,
+  [string]$RuntimeDirectory = "$PSScriptRoot/../src-tauri/resources/runtime"
 )
 
 $ErrorActionPreference = "Stop"
 $repositoryRoot = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot "..")).Path
-$runtimeRoot = Join-Path $repositoryRoot "src-tauri\resources\runtime"
+$runtimeRoot = [IO.Path]::GetFullPath($RuntimeDirectory)
+if (-not $runtimeRoot.StartsWith($repositoryRoot + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase)) {
+  throw 'Runtime build output must be inside this checkout.'
+}
+if ($BuildSecureRuntime -and $runtimeRoot -ne (Join-Path $repositoryRoot 'src-tauri\resources\runtime')) {
+  throw 'For a custom RuntimeDirectory, stage the secure runtime separately. BuildSecureRuntime installs into the default bundled directory.'
+}
 $cacheRoot = Join-Path $repositoryRoot "build\runtime-cache"
 $qemuRoot = Join-Path $runtimeRoot "qemu"
 $applianceRoot = Join-Path $runtimeRoot "appliance"
@@ -291,7 +298,7 @@ if (-not $SkipQemu) {
 }
 
 Remove-QemuBuildExtras $qemuRoot
-& (Join-Path $PSScriptRoot 'build-gpu-bridge.ps1')
+& (Join-Path $PSScriptRoot 'build-gpu-bridge.ps1') -QemuDirectory $qemuRoot
 Assert-QemuBuildStarts $qemuRoot
 Write-RuntimeChecksums $qemuRoot
 

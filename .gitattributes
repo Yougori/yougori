@@ -1,0 +1,4 @@
+# Runtime manifests cover the exact bytes, including license and metadata files.
+# Do not let checkout line-ending conversion invalidate those checksums.
+/src-tauri/resources/runtime/** -text
+/src-tauri/boot-helper/*.efi binary
