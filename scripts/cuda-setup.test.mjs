@@ -1,7 +1,7 @@
 import assert from "node:assert/strict"
 import { createHash } from "node:crypto"
 import { spawnSync } from "node:child_process"
-import { cp, mkdtemp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises"
+import { cp, mkdtemp, mkdir, readFile, readdir, realpath, rm, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join, resolve } from "node:path"
 import test from "node:test"
@@ -54,14 +54,21 @@ $normalized = Get-CudaWindowsPath $Candidate
 $sibling = Join-Path ([IO.Path]::GetDirectoryName($normalized)) 'opendock-mount-helper'
 @{ path = $normalized; sibling = $sibling } | ConvertTo-Json -Compress
 `)
-    for (const candidate of [join(root, "CUDA [files] & spaces", "opendock-agent"), "\\\\server\\share\\CUDA files\\opendock-agent"]) {
+    // GitHub's Windows TEMP can contain an 8.3 alias such as RUNNER~1.
+    // Keep that spelling as input; .NET Framework expands it to the long path.
+    const canonicalRoot = await realpath(root)
+    const unc = "\\\\server\\share\\CUDA files\\opendock-agent"
+    for (const [candidate, expected] of [
+      [join(root, "CUDA [files] & spaces", "opendock-agent"), join(canonicalRoot, "CUDA [files] & spaces", "opendock-agent")],
+      [unc, unc],
+    ]) {
       const prefixed = candidate.startsWith("\\\\") ? `\\\\?\\UNC\\${candidate.slice(2)}` : extended(candidate)
       for (const value of [candidate, prefixed]) {
         const result = spawnSync("powershell.exe", ["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", harness, join(runtime, "paths.ps1"), value], { encoding: "utf8", windowsHide: true, timeout: 15000 })
         assert.equal(result.status, 0, result.stderr)
         const output = JSON.parse(result.stdout.trim())
-        assert.equal(output.path, candidate)
-        assert.equal(output.sibling, candidate.replace(/opendock-agent$/, "opendock-mount-helper"))
+        assert.equal(output.path, expected)
+        assert.equal(output.sibling, expected.replace(/opendock-agent$/, "opendock-mount-helper"))
       }
     }
     for (const candidate of ["relative\\agent", "C:agent", "\\agent"]) {
@@ -85,10 +92,11 @@ test("packaged CUDA update stages every helper from canonical paths and reports 
     for (const name of ["opendock-agent", "opendock-mount-helper", "opendock-cuda-probe", "SHA256SUMS"]) await writeFile(join(payload, name), name)
     await writeFile(join(data, "installed.json"), "existing manifest must survive")
     await writeFile(join(data, "saved-container-marker"), "saved container data")
-    const digest = createHash("sha256").update(data.toLowerCase()).digest("hex")
+    // The installer derives ownership after expanding short path components.
+    const digest = createHash("sha256").update((await realpath(data)).toLowerCase()).digest("hex")
     const distro = `OpenDock-CUDA-${digest.slice(0, 12)}`
     const harness = join(root, "stage.ps1")
-    // Stub only the external WSL/registry boundary. The real install script
+    // Stub external WSL, registry and download calls. The real install script
     // stages real files and must stop before launching a distribution.
     await writeFile(harness, String.raw`param([string]$Script, [string]$DataPath, [string]$Agent, [string]$Assets, [string]$Distro)
 $ErrorActionPreference = 'Stop'
@@ -99,6 +107,7 @@ function global:wsl.exe {
     if (($args -join ' ') -notin @('--status', '--list --running --quiet')) { throw ('Unexpected WSL mutation: ' + ($args -join ' ')) }
     $global:LASTEXITCODE = 0
 }
+function global:curl.exe { throw 'Unexpected CUDA runtime download' }
 function global:Get-ChildItem {
     if ($args[0] -ne 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Lxss') { throw 'Unexpected registry query' }
     [pscustomobject]@{ DistributionName = $global:FixtureDistro; BasePath = (Join-Path $global:FixtureData 'distribution'); Version = 2 }
