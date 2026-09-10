@@ -1,5 +1,3 @@
-[![Yougori](yougorilogo.png)](https://yougori.com/)
-
 # Yougori
 
 <p>
@@ -7,7 +5,7 @@
   &nbsp;·&nbsp;
   <a href="https://discord.gg/Eqhf4Hq3AG"><img src="discord.webp" width="32" height="32" align="absmiddle" alt=""> Discord</a>
   &nbsp;·&nbsp;
-  <a href="https://x.com/withYougori"><img src="xcom.webp" width="32" height="32" align="absmiddle" alt=""> X</a>
+  <a href="https://x.com/withYougori"><img src="https://raw.githubusercontent.com/Yougori/yougori/faad3dc3973dd6d90a7ca304850ddfb76d22cf34/xcom.webp" width="32" height="32" align="absmiddle" alt=""> X</a>
 </p>
 
 Create and manage containers, microVMs and virtual machines from one desktop workspace.
