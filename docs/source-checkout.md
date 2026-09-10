@@ -44,7 +44,7 @@ release certification described in the platform guides.
 ## When GitHub checks run
 
 Pushes that only change or delete files under `docs/`, the root `README.md`,
-its images `yougorilogo.png` and `yougori1.png`, `CHANGELOG.md`,
+its images `yougorilogo.png`, `yougori1.png`, `discord.webp` and `xcom.webp`, `CHANGELOG.md`,
 `CONTRIBUTING.md`, or diagnostic logs `githuberror.txt` and `linux-x64.txt`
 do not start Windows verification. The verification configuration itself,
 `.github/workflows/verify.yml`, is also excluded from push triggers so changing

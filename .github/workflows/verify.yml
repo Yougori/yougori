@@ -2,13 +2,15 @@ name: Verify (no publishing)
 
 on:
   push:
-    # Skip documentation/log-only pushes, including the README's two images.
+    # Skip documentation/log-only pushes, including README-only artwork.
     # Do not ignore all Markdown/text: product guides and notices are packaged.
     paths-ignore:
       - 'docs/**'
       - 'README.md'
       - 'yougorilogo.png'
       - 'yougori1.png'
+      - 'discord.webp'
+      - 'xcom.webp'
       - 'CHANGELOG.md'
       - 'CONTRIBUTING.md'
       - 'githuberror.txt'
