@@ -76,6 +76,21 @@ impl RuntimeManager {
         let path = if cuda { self.cuda.storage_path() } else { self.data_root.join("appliance/system.qcow2") };
         if !path.exists() { return Ok(StorageCleanupResult::default()); }
         let before = if cuda { self.cuda.storage_sizes()?.1 } else { (self.inspect_storage(&path, true).await?.physical_gb * 1_073_741_824.0) as u64 };
+        if cuda && self.cuda.current_endpoint().await.is_err() {
+            let status = self.cuda_status().await;
+            if status.update_available || !status.supported {
+                // Host-side VHDX compaction does not depend on the guest agent
+                // version or GPU prerequisites. Never boot or terminate a WSL
+                // distribution just to work around a failed CUDA update.
+                self.cuda.compact_stopped_storage().await?;
+                let after = self.cuda.storage_sizes()?.1;
+                return Ok(StorageCleanupResult {
+                    reclaimed_disk_bytes: before.saturating_sub(after),
+                    notes: vec!["Compacted the stopped GPU disk without starting CUDA. Update CUDA before running GPU containers or trimming additional free blocks.".into()],
+                    ..Default::default()
+                });
+            }
+        }
         let endpoint = self.provider_endpoint(provider).await?;
         let response = self.client.post(format!("{}/v1/storage/reclaim", endpoint.base_url))
             .bearer_auth(&endpoint.token).timeout(Duration::from_secs(100)).send().await
@@ -98,7 +113,7 @@ impl RuntimeManager {
             Ok(after) => cleanup.reclaimed_disk_bytes = before.saturating_sub(after),
             Err(error) => cleanup.warnings.push(format!("Cleanup ran, but reclaimed space could not be measured: {error}")),
         }
-        cleanup.notes.push("Container runtimes, cached base images and saved snapshots still use space. They are kept for other containers and offline reset/restore; exported backups and original installers are never removed.".into());
+        cleanup.notes.push("Container images, snapshots, recovery disks, original installers and exported backups were kept.".into());
         Ok(cleanup)
     }
 

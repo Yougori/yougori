@@ -1,6 +1,8 @@
 import { expect, test, type Page } from "@playwright/test"
 import seed from "../src/data/seed.json" with { type: "json" }
 import { overviewSteps } from "../src/lib/instructions-tour"
+import { defaultOciImage } from "../src/data/oci-images"
+import { tourWebsitePage } from "../src/lib/tour-website-page"
 import type { PlatformState } from "../src/types/platform"
 
 test.use({ actionTimeout: 15000 })
@@ -9,12 +11,19 @@ test.beforeEach(({ page }) => { page.on("pageerror", error => console.error("Bro
 test.describe("first-launch instructions", () => {
   test.use({ storageState: { cookies: [], origins: [] } })
 
-  test("automatically welcomes a new user once, with Skip and manual replay", async ({ page }) => {
+  test("automatically welcomes a new user once, with two-stage Skip and manual replay", async ({ page }) => {
     test.setTimeout(120_000)
     await page.goto("/")
     await expect(page.locator("[data-environment-canvas]")).toBeVisible({ timeout: 60000 })
     await step(page, "welcome")
+    await expect(page.locator('[data-tour-preview]')).toBeVisible()
     await next(page, "stats")
+    await guide(page).getByRole("button", { name: "Skip to hands-on", exact: true }).click()
+    await step(page, "create-open")
+    await expect(guide(page).locator(".tour-meta")).toContainText("Hands-on")
+    await expect(guide(page).getByRole("button", { name: "Skip to hands-on", exact: true })).toHaveCount(0)
+    await expect(page.locator('[data-tour-preview]')).toHaveCount(0)
+    await expect(page.locator('[data-environment-id]')).toHaveCount(0)
     await guide(page).getByRole("button", { name: "Skip", exact: true }).click()
     await expect(guide(page)).toHaveCount(0)
     await page.reload()
@@ -92,17 +101,24 @@ test("Instructions is left of backup; overview highlights controls without creat
   const backup = (await page.locator('[data-tour="load-backup"]').boundingBox())!
   expect(instructions.x + instructions.width).toBeLessThan(backup.x)
   const initial = await page.evaluate(() => localStorage.getItem("opendock.platform.v1"))
+  await expect(page.locator('[data-tour-preview]')).toHaveCount(1)
+  await expect(page.locator('.workspace-empty')).toHaveCount(0)
   for (const expected of overviewSteps.slice(1)) {
     await next(page, expected); await checkPlacement(page)
     if (expected === "service-ports") {
       await expect(guide(page).getByRole("heading", { name: "Add a service port", exact: true })).toBeVisible()
       await expect(guide(page)).toContainText("Guest TCP port")
       await expect(guide(page)).toContainText("Adding a port does not start your app or publish it")
-      await expect(guide(page).getByRole("status")).toContainText("PORT appears after you create")
+      await expect(page.locator('[data-tour-preview] [data-tour="node-port"]')).toBeVisible()
+      await expect(guide(page)).not.toContainText("PORT appears after you create")
     }
   }
   await guide(page).getByRole("button", { name: "Back", exact: true }).click()
   await step(page, "environment-types")
+  expect(await page.evaluate(() => localStorage.getItem("opendock.platform.v1"))).toBe(initial)
+  await guide(page).getByRole("button", { name: "Skip to hands-on", exact: true }).click()
+  await step(page, "create-open")
+  await expect(page.locator('[data-tour-preview]')).toHaveCount(0)
   expect(await page.evaluate(() => localStorage.getItem("opendock.platform.v1"))).toBe(initial)
   await guide(page).getByRole("button", { name: "Skip", exact: true }).click()
   await expect(guide(page)).toHaveCount(0)
@@ -120,11 +136,16 @@ test("guide remains readable in both themes, follows resize, supports keyboard a
     await checkPlacement(page)
   }
   await page.keyboard.press("Tab")
-  await expect(guide(page).getByRole("button", { name: "Skip", exact: true })).toBeFocused()
+  await expect(guide(page).getByRole("button", { name: "Skip to hands-on", exact: true })).toBeFocused()
   await page.keyboard.press("Tab")
   await expect(guide(page).getByRole("button", { name: "Next", exact: true })).toBeFocused()
   await page.keyboard.press("Enter")
   await step(page, "stats")
+  await page.keyboard.down("Escape")
+  await step(page, "create-open")
+  await page.keyboard.down("Escape") // Holding the same key must not skip hands-on.
+  await step(page, "create-open")
+  await page.keyboard.up("Escape")
   await page.keyboard.press("Escape")
   await expect(guide(page)).toHaveCount(0)
 })
@@ -136,20 +157,23 @@ test("interactive walkthrough creates, connects, opens, installs, runs Hello Wor
   page.on("pageerror", e => errors.push(e.message))
   await openGuide(page)
   await practice(page)
+  await expect(page.locator('[data-tour-preview]')).toHaveCount(0)
   await expect(guide(page).getByRole("button", { name: "Next", exact: true })).toBeDisabled()
   await page.locator('[data-tour="new-environment"]').click()
   await step(page, "create-type")
+  await expect(page.getByRole("radio", { name: "Container", exact: true })).toBeChecked()
+  for (const name of ["GPU", "MicroVM", "VM"]) await expect(page.getByRole("radio", { name, exact: true })).toBeDisabled()
   await next(page, "create-name")
   await expect(guide(page).getByRole("button", { name: "Next", exact: true })).toBeDisabled()
   await page.locator('[data-tour="create-name"] input').fill("First container")
   await next(page, "create-image")
-  await page.locator('[data-tour="create-image"] button').first().click()
-  await page.getByRole("combobox", { name: "Search OCI images" }).fill("Ubuntu")
-  await page.getByRole("option").filter({ hasText: "docker.io/library/ubuntu:latest" }).click()
+  await expect(page.locator('[data-tour="create-image"] button').first()).toBeDisabled()
+  await expect(page.locator('[data-tour="create-image"]')).toContainText(defaultOciImage.value)
+  await expect(page.getByRole("textbox", { name: "Startup command (optional)" })).toBeDisabled()
   await next(page, "create-resources")
   await checkPlacement(page)
   await next(page, "create-submit")
-  // A real error must stay in the form; no fake successful node or auto-retry.
+  // An early rejection is reported after closing; retry is explicit.
   await page.evaluate(async () => {
     const path = "/src/api/platform-api.ts", { platformApi } = await import(path)
     const original = platformApi.createEnvironment
@@ -159,19 +183,44 @@ test("interactive walkthrough creates, connects, opens, installs, runs Hello Wor
     }
   })
   await page.locator('[data-tour="create-submit"]').click()
-  await expect(page.locator('[data-create-environment] [role="alert"]').filter({ hasText: "Fixture image download failed" })).toBeVisible()
+  await expect(page.locator('[data-create-environment]')).toHaveCount(0)
+  await expect(page.locator('[data-slot="toast-description"]').filter({ hasText: "Fixture image download failed" })).toBeVisible()
   // Let the transient error toast expire before retrying the button beneath it.
   // Hovering that position would pause the toast's dismissal timer.
   await page.mouse.move(0, 0)
   await expect(page.locator('[data-slot="toast-description"]').filter({ hasText: "Fixture image download failed" })).toBeHidden({ timeout: 15000 })
   await step(page, "create-submit")
-  await guide(page).getByRole("button", { name: "Back", exact: true }).click()
-  await step(page, "create-resources")
+  await guide(page).getByRole("button", { name: "Reopen form", exact: true }).click()
+  await step(page, "create-type")
+  await next(page, "create-name")
+  await page.locator('[data-tour="create-name"] input').fill("First container")
+  await next(page, "create-image")
+  await next(page, "create-resources")
   await next(page, "create-submit")
+  await page.evaluate(async () => {
+    const path = "/src/api/platform-api.ts", { platformApi } = await import(path)
+    const original = platformApi.createEnvironment
+    platformApi.createEnvironment = async (request: Parameters<typeof original>[0]) => {
+      const pending = await original(request)
+      pending.environments[0].status = "provisioning"
+      localStorage.setItem("opendock.platform.v1", JSON.stringify(pending))
+      await new Promise(resolve => window.addEventListener("finish-tutorial-creation", resolve, { once: true }))
+      platformApi.createEnvironment = original
+      pending.environments[0].status = "stopped"
+      localStorage.setItem("opendock.platform.v1", JSON.stringify(pending))
+      return pending
+    }
+  })
   await page.locator('[data-tour="create-submit"]').click()
+  await expect(page.locator('[data-create-environment]')).toHaveCount(0)
+  await expect(guide(page).getByRole("heading", { name: "Creating your container", exact: true })).toBeVisible()
+  await expect(guide(page).getByRole("button", { name: "Reopen form", exact: true })).toHaveCount(0)
+  await expect(page.locator('[data-environment-id]')).toHaveAttribute("aria-busy", "true")
+  await page.evaluate(() => window.dispatchEvent(new Event("finish-tutorial-creation")))
   await step(page, "created")
   const environment = await page.evaluate(() => JSON.parse(localStorage.getItem("opendock.platform.v1")!).environments[0])
   expect(environment.name).toBe("First container")
+  expect(environment.runtime).toBe(defaultOciImage.value)
   expect(environment.networkAccess).toBe(false)
   await next(page, "internet-connect")
   await expect(guide(page).getByRole("button", { name: "Next", exact: true })).toBeDisabled()
@@ -214,22 +263,32 @@ test("interactive walkthrough creates, connects, opens, installs, runs Hello Wor
   await step(second, "window-switcher")
   await expect(first.locator(".tour-card")).toHaveCount(0)
   await next(second, "environment-switcher")
+  await second.evaluate(async () => {
+    const path = "/src/api/platform-api.ts", { platformApi } = await import(path)
+    const commands: { id: string; command: string }[] = []
+    Object.assign(window, { websiteCommands: commands })
+    platformApi.executeEnvironmentCommand = async (id: string, command: string) => {
+      commands.push({ id, command })
+      return { exitCode: 1, stdout: "", stderr: "Fixture package download failed" }
+    }
+  })
   await next(second, "demo-start")
   await expect(guide(second)).toContainText("no folders or PC files")
-  await guide(second).getByRole("button", { name: "Check website", exact: true }).click()
-  await expect(guide(second).getByRole("alert")).toContainText("Hello World is not ready")
+  await expect(guide(second).getByRole("alert")).toContainText("Fixture package download failed")
+  await expect(guide(second).getByRole("button", { name: "Copy command", exact: true })).toHaveCount(0)
+  expect(await second.evaluate(() => (window as unknown as { websiteCommands: { id: string }[] }).websiteCommands.map(item => item.id))).toEqual([environment.id])
   await step(second, "demo-start")
   await second.evaluate(async () => {
     const path = "/src/api/platform-api.ts", { platformApi } = await import(path)
     const run = JSON.parse(localStorage.getItem("opendock.instructions.v1")!).run
-    platformApi.executeEnvironmentCommand = async () => ({ exitCode: 0, stdout: `opendock-hello-${run}\n`, stderr: "" })
-    Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText: async (text: string) => Object.assign(window, { tutorialCommand: text }) } })
+    platformApi.executeEnvironmentCommand = async (id: string, command: string) => {
+      (window as unknown as { websiteCommands: { id: string; command: string }[] }).websiteCommands.push({ id, command })
+      return { exitCode: 0, stdout: `opendock-hello-${run}\n`, stderr: "" }
+    }
   })
-  await guide(second).getByRole("button", { name: "Copy command", exact: true }).click()
-  await expect(guide(second).getByRole("button", { name: "Copied", exact: true })).toBeVisible()
-  expect(await second.evaluate(() => (window as unknown as { tutorialCommand: string }).tutorialCommand)).toContain("python3")
-  await guide(second).getByRole("button", { name: "Check website", exact: true }).click()
+  await guide(second).getByRole("button", { name: "Retry website setup", exact: true }).click()
   await step(second, "demo-return")
+  expect(await second.evaluate(() => (window as unknown as { websiteCommands: { id: string }[] }).websiteCommands.map(item => item.id))).toEqual([environment.id, environment.id])
   await guide(second).getByRole("button", { name: "Continue on main window", exact: true }).click()
   await step(page, "demo-port-open")
   await expect(second.locator(".tour-card")).toHaveCount(0)
@@ -285,6 +344,7 @@ test("interactive walkthrough creates, connects, opens, installs, runs Hello Wor
   await next(page, "done")
   await guide(page).getByRole("button", { name: "Finish", exact: true }).click()
   await expect(guide(page)).toHaveCount(0)
+  await expect(page.locator('[data-tour-preview]')).toHaveCount(0)
   await expect(page.locator(".tour-away")).toHaveCount(0)
   expect(await second.evaluate(() => JSON.parse(localStorage.getItem("opendock.platform.v1")!).environments[0])).toMatchObject({ name: "First container", status: "running", networkAccess: true })
   expect(await page.evaluate(id => JSON.parse(localStorage.getItem("opendock.workspace.v1")!)[id].publications, environment.id)).toEqual([])
@@ -301,6 +361,8 @@ test("Skip inside the creation dialog keeps its draft and restores normal modal 
   await guide(page).getByRole("button", { name: "Skip", exact: true }).click()
   await expect(guide(page)).toHaveCount(0)
   await expect(page.locator('[data-tour="create-name"] input')).toHaveValue("Keep my draft")
+  await expect(page.getByRole("radio", { name: "GPU", exact: true })).toBeEnabled()
+  await expect(page.locator('[data-tour="create-image"] button').first()).toBeEnabled()
   await page.locator('[data-create-environment]').getByRole("button", { name: "Cancel", exact: true }).click()
   await expect(page.locator('[data-create-environment]')).toHaveCount(0)
 })
@@ -314,6 +376,49 @@ async function openWebsitePortGuide(page: Page) {
   await page.locator('[data-tour="node-port"]').click()
   await step(page, "demo-port-add")
 }
+
+test("automatic website setup touches only the tutorial container and cannot resume a skipped guide", async ({ page }) => {
+  await openWebsitePortGuide(page)
+  await page.evaluate(async () => {
+    const tourPath = "/src/lib/instructions-tour.ts", { changeTour } = await import(tourPath)
+    const apiPath = "/src/api/platform-api.ts", { platformApi } = await import(apiPath)
+    const original = JSON.parse(localStorage.getItem("opendock.platform.v1")!)
+    original.environments.push({ ...original.environments[0], id: "env-unrelated", name: "Existing project" })
+    localStorage.setItem("opendock.platform.v1", JSON.stringify(original))
+    const calls: string[] = []
+    Object.assign(window, { automaticWebsiteCalls: calls })
+    const run = JSON.parse(localStorage.getItem("opendock.instructions.v1")!).run
+    platformApi.executeEnvironmentCommand = id => {
+      calls.push(id)
+      return new Promise(resolve => Object.assign(window, { finishWebsiteBuild: () => resolve({ exitCode: 0, stdout: `opendock-hello-${run}`, stderr: "" }) }))
+    }
+    changeTour({ step: "demo-start" })
+  })
+  await step(page, "demo-start")
+  await expect.poll(() => page.evaluate(() => (window as unknown as { automaticWebsiteCalls: string[] }).automaticWebsiteCalls)).toEqual(["env-demo"])
+  await expect(guide(page).getByRole("button", { name: "Building website…", exact: true })).toBeDisabled()
+  await guide(page).getByRole("button", { name: "Skip", exact: true }).click()
+  await page.evaluate(() => (window as unknown as { finishWebsiteBuild: () => void }).finishWebsiteBuild())
+  await expect(guide(page)).toHaveCount(0)
+  await expect(page.locator('[data-tour-preview]')).toHaveCount(0)
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem("opendock.instructions.v1")!))).toMatchObject({ active: false, step: "demo-start" })
+  expect(await page.evaluate(() => (window as unknown as { automaticWebsiteCalls: string[] }).automaticWebsiteCalls)).toEqual(["env-demo"])
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem("opendock.platform.v1")!).environments.map((env: { id: string }) => env.id))).toEqual(["env-demo", "env-unrelated"])
+})
+
+test("Hello World website fits desktop and mobile and its links work without external assets", async ({ page }) => {
+  const requests: string[] = []
+  page.on("request", request => requests.push(request.url()))
+  await page.setContent(tourWebsitePage("opendock-hello-design-review"))
+  for (const width of [1440, 768, 390, 320]) {
+    await page.setViewportSize({ width, height: 900 })
+    await expect(page.getByRole("heading", { name: "Hello World!", exact: true })).toBeVisible()
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
+  }
+  await page.getByRole("link", { name: "See how it works" }).click()
+  await expect(page.locator("#how-it-works")).toBeInViewport()
+  expect(requests).toEqual([])
+})
 
 test("website tutorial port draft survives Skip and closing the form returns to PORT", async ({ page }) => {
   await openWebsitePortGuide(page)

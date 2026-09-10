@@ -107,8 +107,24 @@ declarations were inspected; installation and the non-root app/CLI smoke test
 passed with isolated XDG folders, followed by removal of the test installation.
 Ubuntu supplies the installation dialog's controls and theme.
 
-Current installer: `artifacts/linux/Yougori_1.0.0_amd64.deb` (136,290,218 bytes).
-SHA-256: `656b38050f3e94db8ca8ad7fdf44075355218da2aea99580287a5ac3a5d50ae3`.
+The earlier branding package was 136,290,218 bytes with SHA-256
+`656b38050f3e94db8ca8ad7fdf44075355218da2aea99580287a5ac3a5d50ae3`.
+
+Onboarding update on 2026-09-10: rebuilt the native Linux frontend, CLI and DEB
+with the temporary tutorial preview node, default-container-only guide and
+automatic Hello World website. Package/icon checks and the isolated non-root
+installed app/CLI smoke test passed, followed by removal of the test installation.
+The real website setup was also exercised in an isolated Linux network namespace;
+simultaneous requests and a retry produced one server and preserved an unrelated
+website. See [onboarding.md](onboarding.md) for the frontend checks and behavior.
+
+Storage update on 2026-09-10: rebuilt with clearer cleanup results, including an
+explicit message when zero bytes were reclaimed. The onboarding changes remain
+included. Package metadata/icons and the isolated non-root installed app/CLI
+smoke test passed again. Windows-only CUDA changes do not add a Linux GPU backend.
+
+Current installer: `artifacts/linux/Yougori_1.0.0_amd64.deb` (136,299,084 bytes).
+SHA-256: `7a02a814d4aee281870230a1775bcaac68b3eaed90bdd62df820cfeba21aac6d`.
 
 This is a preview. Interactive desktop QA, clean Debian hardware, Wayland,
 Secure Boot guests, Linux GPU support and authenticated external cloud providers

@@ -4,6 +4,16 @@ param(
     [Parameter(Mandatory=$true)][string]$AssetsDirectory
 )
 $ErrorActionPreference = 'Stop'
+try {
+. ([IO.Path]::Combine($PSScriptRoot, 'paths.ps1'))
+$DataDirectory = Get-CudaWindowsPath $DataDirectory
+$AgentPath = Get-CudaWindowsPath $AgentPath
+$AssetsDirectory = Get-CudaWindowsPath $AssetsDirectory
+$payloadDirectory = [IO.Path]::GetDirectoryName($AgentPath)
+# Validate the complete payload before importing or starting a distribution.
+foreach ($file in @($AgentPath, (Join-Path $payloadDirectory 'opendock-mount-helper'), (Join-Path $payloadDirectory 'opendock-cuda-probe'), (Join-Path $payloadDirectory 'SHA256SUMS'), (Join-Path $AssetsDirectory 'wsl.conf'), (Join-Path $AssetsDirectory 'setup.sh'), (Join-Path $AssetsDirectory 'start.sh'))) {
+    if (!(Test-Path -LiteralPath $file -PathType Leaf)) { throw "CUDA setup file is missing: $file. Reinstall Yougori and retry." }
+}
 if (!(Get-Command wsl.exe -ErrorAction SilentlyContinue)) { throw 'WSL 2 is not installed. Install WSL and restart Windows, then retry CUDA setup.' }
 & wsl.exe --status | Out-Null
 if ($LASTEXITCODE -ne 0) { throw 'WSL is not ready. Install/update WSL 2 and enable hardware virtualization before CUDA setup.' }
@@ -30,11 +40,34 @@ function Invoke-Wsl([string[]]$WslArguments) {
     if ($LASTEXITCODE -ne 0) { throw "WSL operation failed (exit $LASTEXITCODE). No existing distribution was removed." }
 }
 
+function Send-CudaPayload([Diagnostics.ProcessStartInfo]$StartInfo, [string]$Archive) {
+    # .NET Framework creates the child's stdin writer with Console.InputEncoding.
+    # UTF-8 with a BOM prepends three bytes even when using BaseStream, corrupting
+    # tar's first header. Change it only while this binary transfer is running.
+    $previousEncoding = [Console]::InputEncoding
+    $process = [Diagnostics.Process]::new()
+    try {
+        [Console]::InputEncoding = [Text.UTF8Encoding]::new($false)
+        $process.StartInfo = $StartInfo
+        $process.StartInfo.UseShellExecute = $false
+        $process.StartInfo.CreateNoWindow = $true
+        $process.StartInfo.RedirectStandardInput = $true
+        [void]$process.Start()
+        $inputFile = [IO.File]::OpenRead($Archive)
+        try { $inputFile.CopyTo($process.StandardInput.BaseStream) } finally { $inputFile.Dispose(); $process.StandardInput.Close() }
+        $process.WaitForExit()
+        if ($process.ExitCode -ne 0) { throw "Installing the CUDA runtime payload failed (exit $($process.ExitCode))." }
+    } finally {
+        $process.Dispose()
+        [Console]::InputEncoding = $previousEncoding
+    }
+}
+
 # Never adopt a similarly named distribution or touch any other WSL instance.
 $registered = @(Get-ChildItem 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Lxss' -ErrorAction SilentlyContinue | Get-ItemProperty | Where-Object { $_.DistributionName -eq $distro })
 if ($registered.Count -gt 1) { throw 'Multiple CUDA distributions have the same name. No distribution was changed.' }
 if ($registered.Count -gt 0) {
-    $registeredPath = ([IO.Path]::GetFullPath($registered[0].BasePath.Replace('\\?\', ''))).TrimEnd('\')
+    $registeredPath = (Get-CudaWindowsPath $registered[0].BasePath).TrimEnd('\')
     if ($registeredPath -ine $distributionPath) { throw 'CUDA distribution name is already owned by another directory.' }
     if ($registered[0].Version -ne 2) { throw 'The CUDA distribution must use WSL 2.' }
     $running = ((& wsl.exe --list --running --quiet) -join "`n").Replace([string][char]0, '')
@@ -63,8 +96,8 @@ try {
     Copy-Item -LiteralPath (Join-Path $AssetsDirectory 'wsl.conf') -Destination (Join-Path $staging 'etc/wsl.conf')
     [IO.File]::WriteAllText((Join-Path $staging 'etc/opendock-cuda-runtime'), $digest, [Text.Encoding]::ASCII)
     Copy-Item -LiteralPath $AgentPath -Destination (Join-Path $staging 'usr/local/sbin/opendock-agent')
-    Copy-Item -LiteralPath (Join-Path ([IO.Path]::GetDirectoryName($AgentPath)) 'opendock-mount-helper') -Destination (Join-Path $staging 'usr/local/sbin/opendock-mount-helper')
-    Copy-Item -LiteralPath (Join-Path ([IO.Path]::GetDirectoryName($AgentPath)) 'opendock-cuda-probe') -Destination (Join-Path $staging 'usr/local/sbin/opendock-cuda-probe')
+    Copy-Item -LiteralPath (Join-Path $payloadDirectory 'opendock-mount-helper') -Destination (Join-Path $staging 'usr/local/sbin/opendock-mount-helper')
+    Copy-Item -LiteralPath (Join-Path $payloadDirectory 'opendock-cuda-probe') -Destination (Join-Path $staging 'usr/local/sbin/opendock-cuda-probe')
     foreach ($script in @('setup', 'start')) {
         $contents = [IO.File]::ReadAllText((Join-Path $AssetsDirectory "$script.sh")).Replace("`r`n", "`n")
         [IO.File]::WriteAllText((Join-Path $staging "usr/local/sbin/opendock-cuda-$script"), $contents, [Text.UTF8Encoding]::new($false))
@@ -73,22 +106,13 @@ try {
     & tar.exe -cf $bundle -C $staging etc usr
     if ($LASTEXITCODE -ne 0) { throw 'Could not prepare CUDA runtime payload.' }
     # Binary stdin avoids mounting the Windows drive or interpreting its paths in a shell.
-    $process = [Diagnostics.Process]::new()
-    $process.StartInfo = [Diagnostics.ProcessStartInfo]::new('wsl.exe', "--distribution $distro --user root --exec tar -xf - -C /")
-    $process.StartInfo.UseShellExecute = $false
-    $process.StartInfo.CreateNoWindow = $true
-    $process.StartInfo.RedirectStandardInput = $true
-    [void]$process.Start()
-    $inputFile = [IO.File]::OpenRead($bundle)
-    try { $inputFile.CopyTo($process.StandardInput.BaseStream) } finally { $inputFile.Dispose(); $process.StandardInput.Close() }
-    $process.WaitForExit()
-    if ($process.ExitCode -ne 0) { throw 'Installing the CUDA runtime payload failed.' }
+    Send-CudaPayload ([Diagnostics.ProcessStartInfo]::new('wsl.exe', "--distribution $distro --user root --exec tar -xf - -C /")) $bundle
     Invoke-Wsl @('-d', $distro, '-u', 'root', '--exec', 'chmod', '0755', '/usr/local/sbin/opendock-agent', '/usr/local/sbin/opendock-mount-helper', '/usr/local/sbin/opendock-cuda-probe', '/usr/local/sbin/opendock-cuda-start', '/usr/local/sbin/opendock-cuda-setup')
     # Apply only this owned distribution's no-automount/no-interop configuration.
     Invoke-Wsl @('--terminate', $distro)
     Invoke-Wsl @('-d', $distro, '-u', 'root', '--exec', '/bin/bash', '/usr/local/sbin/opendock-cuda-setup')
     Invoke-Wsl @('--terminate', $distro)
-    $payloadChecksum = Get-CudaSha256 (Join-Path ([IO.Path]::GetDirectoryName($AgentPath)) 'SHA256SUMS')
+    $payloadChecksum = Get-CudaSha256 (Join-Path $payloadDirectory 'SHA256SUMS')
     [IO.File]::WriteAllText((Join-Path $dataPath 'installed.json'), (ConvertTo-Json @{ version = 1; distribution = $distro; identity = $digest; payloadChecksum = $payloadChecksum }), [Text.UTF8Encoding]::new($false))
     Write-Output "CUDA backend ready: $distro"
 } finally {
@@ -97,4 +121,10 @@ try {
         Remove-Item -LiteralPath $resolvedStaging -Recurse -Force
     }
     $installLock.Dispose()
+}
+} catch {
+    # A stable, plain-text marker lets the app show the actual setup failure.
+    Write-Output ('YOUGORI_CUDA_SETUP_ERROR: ' + ($_.Exception.Message -replace '[\r\n]+', ' '))
+    Write-Error $_ -ErrorAction Continue
+    exit 1
 }

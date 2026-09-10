@@ -96,6 +96,7 @@ export function GuestWorkspace({ initialEnvironmentId, initialAppSessionId, onCl
     tourTerminalOpened(environmentId)
   }
   const switchEnvironment = (id: string) => {
+    if (guided && id !== tour?.environmentId) return
     const existing = tabs.find(tab => tab.environmentId === id)
     if (existing) setActiveId(existing.id); else addTab(id)
   }
@@ -153,7 +154,7 @@ export function GuestWorkspace({ initialEnvironmentId, initialAppSessionId, onCl
           {options.map(item => {
             const env = state?.environments.find(environment => environment.id === item.value)
             const Icon = env?.provider === "openDockCuda" ? GpuIcon : env?.kind === "fullVm" ? MonitorIcon : env?.kind === "microVm" ? TerminalIcon : BoxIcon
-            return <SelectItem key={item.value} value={item} aria-label={item.label} className="py-2">
+            return <SelectItem key={item.value} value={item} disabled={guided && item.value !== tour?.environmentId} aria-label={item.label} className="py-2">
               <span className="flex min-w-0 items-center gap-2.5"><span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-muted"><Icon aria-hidden="true" className="size-3.5 text-muted-foreground" /></span><span className="flex min-w-0 flex-col gap-0.5"><span className="truncate text-xs font-medium">{item.label}</span>{env ? <span className="truncate text-[11px] text-muted-foreground">{environmentLabel(env)} · {env.kind === "cloud" ? env.status === "running" ? "Connected" : "Disconnected" : statusLabel[env.status]}</span> : null}</span></span>
             </SelectItem>
           })}

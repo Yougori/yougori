@@ -80,6 +80,12 @@ export function changeTour(changes: Partial<Pick<InstructionsTour, "step" | "act
   write({ ...current, ...changes, updated: Date.now(), revision: current.revision + 1 })
 }
 export function stopInstructions() { changeTour({ active: false }) }
+export function skipInstructions() {
+  const tour = getTour()
+  if (!tour?.active) return
+  if ((overviewSteps as readonly string[]).includes(tour.step)) changeTour({ step: practiceSteps[0] })
+  else stopInstructions()
+}
 export function trackTourCreation(name: string) {
   const tour = getTour()
   if (ownsTour(tour) && tour?.step.startsWith("create-")) changeTour({ pendingName: name })
@@ -87,6 +93,10 @@ export function trackTourCreation(name: string) {
 export function tourEnvironmentCreated(id: string, name: string) {
   const tour = getTour()
   if (ownsTour(tour) && tour?.step.startsWith("create-") && tour.pendingName === name) changeTour({ step: "created", environmentId: id, pendingName: undefined })
+}
+export function tourEnvironmentCreationFailed(name: string) {
+  const tour = getTour()
+  if (ownsTour(tour) && tour?.step.startsWith("create-") && tour.pendingName === name) changeTour({ pendingName: undefined })
 }
 export function prepareTourWindow(id: string) {
   const tour = getTour()

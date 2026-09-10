@@ -1,4 +1,4 @@
-import { tourEnvironmentCreated } from "@/lib/instructions-tour"
+import { tourEnvironmentCreated, tourEnvironmentCreationFailed } from "@/lib/instructions-tour"
 import { storageCleanupDescription } from "@/lib/storage-cleanup"
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react"
 import type { EnvironmentAction } from "@/lib/environment-actions"
@@ -72,7 +72,7 @@ export function PlatformProvider({ children, pollHostMetrics = true }: { childre
   }, [])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [creatingVms, setCreatingVms] = useState(0)
+  const [creatingEnvironments, setCreatingEnvironments] = useState(0)
   const [environmentActions, setEnvironmentActions] = useState<Record<string, EnvironmentAction | undefined>>({})
   const actionLocks = useRef(new Set<string>())
   const [recoveryConfirmation, setRecoveryConfirmation] = useState<((confirmed: boolean) => void) | null>(null)
@@ -99,7 +99,7 @@ export function PlatformProvider({ children, pollHostMetrics = true }: { childre
   }, [])
   const stateLoaded = state !== null
   const runningEnvironmentCount = state?.environments.filter((environment) => environment.status === "running").length ?? 0
-  const provisioning = Boolean(creatingVms || state?.environments.some(environment => environment.status === "provisioning"))
+  const provisioning = Boolean(creatingEnvironments || state?.environments.some(environment => environment.status === "provisioning"))
 
   useEffect(() => {
     if (!provisioning) return
@@ -236,8 +236,7 @@ export function PlatformProvider({ children, pollHostMetrics = true }: { childre
       })
     },
     createEnvironment: async (request) => {
-      const background = request.kind === "fullVm"
-      if (background) setCreatingVms(count => count + 1)
+      setCreatingEnvironments(count => count + 1)
       try {
         await perform(async () => {
           const next = await platformApi.createEnvironment(request)
@@ -248,11 +247,10 @@ export function PlatformProvider({ children, pollHostMetrics = true }: { childre
           return next
         }, "Environment created", `${request.name} is ready to start.`)
       } catch (reason) {
-        if (background) {
-          try { setState(await platformApi.getState()) } catch { /* Keep the existing error. */ }
-        }
+        tourEnvironmentCreationFailed(request.name)
+        try { setState(await platformApi.getState()) } catch { /* Keep the existing error. */ }
         throw reason
-      } finally { if (background) setCreatingVms(count => count - 1) }
+      } finally { setCreatingEnvironments(count => count - 1) }
     },
     setEnvironmentStatus: (environmentId, status) => runEnvironmentAction(environmentId, state?.environments.find(e => e.id === environmentId)?.kind === "cloud" ? status === "running" ? "connecting" : "disconnecting" : status === "running" ? "starting" : status === "paused" ? "pausing" : "stopping", () => perform(
       async () => {

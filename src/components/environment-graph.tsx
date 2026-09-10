@@ -34,10 +34,13 @@ import { environmentLabel } from "@/lib/environment-category"
 import { environmentActionLabel } from "@/lib/environment-actions"
 import { graphColors } from "@/lib/graph-colors"
 import { supportsConnections } from "@/lib/environment-connections"
+import { useInstructionsTour } from "@/lib/instructions-tour"
+import { tourPreviewEnvironment } from "@/lib/tour-preview"
 import type { Environment } from "@/types/platform"
 import "@/components/dashboard-actions.css"
 
 interface EnvironmentNodeData extends Record<string, unknown> {
+  preview?: boolean
   accent: string
   active: CapabilityEndpoint | null
   hovered: CapabilityEndpoint | null
@@ -88,6 +91,9 @@ function EnvironmentGraphNode({ data, selected }: NodeProps<EnvironmentNode>) {
   return (
     <article
       data-environment-id={environment.id}
+      data-tour-preview={data.preview || undefined}
+      onClickCapture={data.preview ? event => { event.preventDefault(); event.stopPropagation() } : undefined}
+      onPointerDownCapture={data.preview ? event => { event.preventDefault(); event.stopPropagation() } : undefined}
       data-environment-color={data.accent}
       style={{ "--node-accent": data.accent } as React.CSSProperties}
       data-selected={selected || highlighted || undefined}
@@ -96,7 +102,7 @@ function EnvironmentGraphNode({ data, selected }: NodeProps<EnvironmentNode>) {
       title={issue ?? undefined}
       className={`workspace-node relative w-72 rounded-lg border bg-background shadow-sm/5 transition-colors ${highlighted ? "border-primary ring-2 ring-primary/30" : eligible || selected ? "border-primary/70 ring-2 ring-primary/10" : "border-border"}`}
     >
-      {canConnect ? <Handle aria-label={`Connect another environment to ${environment.name}`} className={networkHandleClass} id={environmentTargetHandle} position={Position.Left} type="target" isConnectable={!data.active} /> : null}
+      {canConnect ? <Handle aria-label={`Connect another environment to ${environment.name}`} className={networkHandleClass} id={environmentTargetHandle} position={Position.Left} type="target" isConnectable={!data.preview && !data.active} /> : null}
       {!cloud && environment.workspace?.services.length ? <div aria-label={`Services in ${environment.name}`} className="nodrag flex flex-wrap gap-x-3 gap-y-4 border-b px-3 pb-2 pt-3">
         {environment.workspace.services.map(service => {
           const endpoint: CapabilityEndpoint = { kind: "service", id: serviceId(environment.id, service.port) }
@@ -121,7 +127,7 @@ function EnvironmentGraphNode({ data, selected }: NodeProps<EnvironmentNode>) {
               <span className="truncate text-sm font-medium">{environment.name}</span>
               {action ? <span className="shrink-0 text-[10px] text-muted-foreground" role="status">{environmentActionLabel[action]}</span> : cloud ? <span className="text-[10px] text-muted-foreground">{environment.status === "running" ? "Connected" : environment.status === "error" ? "Unable to connect" : "Disconnected"}</span> : <Status compact status={environment.status} />}
             </span>
-            <span className="mt-1 block truncate text-[11px] text-muted-foreground">{environmentLabel(environment)}</span>
+            <span className="mt-1 block truncate text-[11px] text-muted-foreground">{data.preview ? "Preview only · no resources used" : environmentLabel(environment)}</span>
           </button>
         </div>
         {enabledCapabilities.length ? (
@@ -147,6 +153,7 @@ function EnvironmentGraphNode({ data, selected }: NodeProps<EnvironmentNode>) {
           <div><dt>Memory</dt><dd className="mt-1 text-xs text-foreground">{environment.memoryUsageGb.toFixed(1)} GB</dd></div>
           <div><dt>Storage</dt><dd className="mt-1 text-xs text-foreground">+{formatBytesFromGb(environment.storageDeltaGb)}</dd></div>
         </dl>}
+        {environment.status === "error" && environment.lastError ? <p className="mt-2 line-clamp-2 text-[11px] text-destructive-foreground" title={environment.lastError}>{environment.lastError}</p> : null}
       </div>
       <div className="nodrag flex items-center gap-1 border-t px-3 py-2 [&_button]:z-40">
         <NodeAction label={canConnect ? `Connect ${environment.name}` : "Connections support containers, MicroVMs and VMs"}>
@@ -167,11 +174,11 @@ function EnvironmentGraphNode({ data, selected }: NodeProps<EnvironmentNode>) {
             <Button aria-label={`Shut down ${environment.name}`} disabled={busy} loading={action === "stopping"} onClick={() => void setEnvironmentStatus(environment.id, "stopped").catch(() => undefined)} size="icon-xs" type="button" variant="ghost"><SquareIcon aria-hidden="true" /></Button>
           </NodeAction>
         ) : null}
-        <Button data-tour="node-launch" className="node-launch ml-auto" data-running={environment.status === "running" ? "true" : undefined} aria-busy={creating || opening || undefined} disabled={isNativeApplication || busy} loading={opening} title={creating ? "Preparing the VM disk. You can keep using Yougori." : opening ? environmentActionLabel[action] : undefined} onClick={() => data.onOpen(environment.id)} size="xs" type="button" variant={environment.status === "running" ? "outline" : "default"}>
+        <Button data-tour="node-launch" className="node-launch ml-auto" data-running={environment.status === "running" ? "true" : undefined} aria-busy={creating || opening || undefined} disabled={isNativeApplication || busy} loading={opening} title={creating ? "Creating this environment. You can keep using Yougori." : opening ? environmentActionLabel[action] : undefined} onClick={() => data.onOpen(environment.id)} size="xs" type="button" variant={environment.status === "running" ? "outline" : "default"}>
           {creating ? <><Spinner aria-hidden="true" />Creating…</> : isNativeApplication ? "Unavailable" : environment.status === "running" ? "Open" : cloud ? "Connect" : "Start"}
         </Button>
       </div>
-      {canConnect ? <Handle aria-label={`Connect ${environment.name} to another environment`} className={networkHandleClass} id={environmentSourceHandle} position={Position.Right} type="source" isConnectable={!data.active} /> : null}
+      {canConnect ? <Handle aria-label={`Connect ${environment.name} to another environment`} className={networkHandleClass} id={environmentSourceHandle} position={Position.Right} type="source" isConnectable={!data.preview && !data.active} /> : null}
       {!cloud ? <Button
         aria-label={`Connect capabilities to ${environment.name}`}
         aria-pressed={sameEndpoint(data.active, endpoint)}
@@ -202,6 +209,8 @@ export function EnvironmentGraph({ environments, connections, errorContainer, on
   onSelect(environmentId: string): void
 }) {
   const { updateContainerNetwork } = usePlatform()
+  const tour = useInstructionsTour()
+  const preview = useMemo(() => tourPreviewEnvironment(tour), [tour])
   const graphContainerRef = useRef<HTMLDivElement>(null)
   const flowRef = useRef<ReactFlowInstance<EnvironmentNode, BuiltInEdge> | null>(null)
   const workspace = useWorkspaceFeatures(environments)
@@ -218,12 +227,15 @@ export function EnvironmentGraph({ environments, connections, errorContainer, on
   const wiring = useCapabilityConnections(graphContainerRef, decorated, setCapability, connectPublication)
   const { active, hovered, pending, change, clickEndpoint, pointerDown, scheduleGeometry } = wiring
 
-  const initialNodes = useMemo<EnvironmentNode[]>(() => decorated.map((environment, index): EnvironmentNode => ({
+  const initialNodes = useMemo<EnvironmentNode[]>(() => [...(preview ? [preview] : []), ...decorated].map((environment, index): EnvironmentNode => ({
       id: environment.id,
       type: "environment",
+      draggable: environment === preview ? false : undefined,
+      selectable: environment === preview ? false : undefined,
+      connectable: environment === preview ? false : undefined,
       position: { x: 70 + (index % 3) * 360, y: 65 + Math.floor(index / 3) * 310 },
-      data: { accent: colors[environment.id]!, active, hovered, pending: pending.has(environment.id), environment, onCapabilityChange: change, onEndpointClick: clickEndpoint, onEndpointPointerDown: pointerDown, onConnect, onOpen, onSelect, onService: openService, onShares: openShares },
-    })), [colors, active, hovered, pending, change, clickEndpoint, pointerDown, decorated, onConnect, onOpen, onSelect, openService, openShares])
+      data: { preview: environment === preview, accent: colors[environment.id] ?? "#7194c2", active, hovered, pending: pending.has(environment.id), environment, onCapabilityChange: change, onEndpointClick: clickEndpoint, onEndpointPointerDown: pointerDown, onConnect, onOpen, onSelect, onService: openService, onShares: openShares },
+    })), [preview, colors, active, hovered, pending, change, clickEndpoint, pointerDown, decorated, onConnect, onOpen, onSelect, openService, openShares])
   const initialEdges = useMemo<BuiltInEdge[]>(() => connections.map((connection, index): BuiltInEdge => ({
       id: connection.id,
       type: "smoothstep",
@@ -266,10 +278,10 @@ export function EnvironmentGraph({ environments, connections, errorContainer, on
   useEffect(() => {
     if (fitNewNodesRef.current && flowRef.current && nodes.length && nodes.every(node => node.measured?.width && node.measured?.height)) {
       fitNewNodesRef.current = false
-      void flowRef.current.fitView({ padding: 0.25, maxZoom: 1 })
+      void flowRef.current.fitView({ padding: 0.25, maxZoom: 1, nodes: preview ? [{ id: preview.id }] : undefined })
     }
     scheduleGeometry()
-  }, [nodes, scheduleGeometry])
+  }, [nodes, preview, scheduleGeometry])
 
   const validConnection = useCallback((connection: FlowConnection | Edge) => {
     const environment = environments.find((item) => item.id === connection.target)
@@ -371,7 +383,7 @@ export function EnvironmentGraph({ environments, connections, errorContainer, on
             <Button aria-label="Fit environments" onClick={() => void flowRef.current?.fitView({ padding: 0.25, maxZoom: 1 })} size="icon-sm" title="Fit environments" variant="ghost"><MaximizeIcon aria-hidden="true" /></Button>
           </div>
           <span className="sr-only" aria-live="polite">{active ? active.kind === "capability" ? "Choose an environment. Press Escape to cancel." : "Choose a capability below. Press Escape to cancel." : ""}</span>
-          {!environments.length ? <div className="workspace-empty pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-2 px-6 text-center"><p className="text-base font-medium">Your workspace starts here</p><p className="max-w-sm text-sm leading-6 text-muted-foreground">Choose New environment above to create a container, VM or MicroVM.</p><p className="mt-2 text-xs text-muted-foreground">Then connect its files, network and service ports here.</p></div> : null}
+          {!environments.length && !preview ? <div className="workspace-empty pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-2 px-6 text-center"><p className="text-base font-medium">Your workspace starts here</p><p className="max-w-sm text-sm leading-6 text-muted-foreground">Choose New environment above to create a container, VM or MicroVM.</p><p className="mt-2 text-xs text-muted-foreground">Then connect its files, network and service ports here.</p></div> : null}
         </div>
         <section aria-label="Environment capabilities" className="relative z-10 border-t px-3 pb-3 pt-7">
           <div className="mx-auto grid w-full max-w-lg grid-cols-2 gap-3 sm:gap-5">

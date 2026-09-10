@@ -6,6 +6,7 @@ import { hostTerminalApi } from "@/api/host-terminal-api"
 import { workspaceApi } from "@/api/workspace-api"
 import { terminalClipboard, terminalClipboardAction } from "@/lib/terminal-clipboard"
 import { normalizeTerminalLink } from "@/lib/terminal-links"
+import { terminalTheme } from "@/lib/terminal-theme"
 import "@xterm/xterm/css/xterm.css"
 
 export type HostShellState = "starting" | "ready" | "exited" | "error"
@@ -47,7 +48,7 @@ export function HostTerminalCanvas({ tab, active, onState, onControls }: {
     if (!target.current) return
     let disposed = false, ready = false, created = false, offset = 0, timer = 0
     let inputQueue = Promise.resolve()
-    const terminal = new Terminal({ fontSize: 13, fontFamily: '"Cascadia Code", "Cascadia Mono", Consolas, monospace', cursorBlink: true, cursorStyle: "bar", lineHeight: 1.2, scrollback: 2000, allowProposedApi: false, theme: { background: "#0d1117", foreground: "#dce4ee", cursor: "#8db5ff", selectionBackground: "#334968", black: "#151b24", brightBlack: "#738197", blue: "#7daaff", cyan: "#78c9db", green: "#79c99b", red: "#ee8b91", yellow: "#e2c08d", magenta: "#c09ade" } })
+    const terminal = new Terminal({ fontSize: 13, fontFamily: '"Cascadia Code", "Cascadia Mono", Consolas, monospace', cursorBlink: true, cursorStyle: "bar", lineHeight: 1.2, scrollback: 2000, allowProposedApi: false, theme: terminalTheme })
     const fit = new FitAddon(); terminal.loadAddon(fit); terminal.open(target.current)
     if (target.current.clientWidth) fit.fit()
     terminalRef.current = terminal; fitRef.current = fit

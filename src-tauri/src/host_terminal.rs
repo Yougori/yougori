@@ -390,6 +390,19 @@ struct ShellConfig {
     cli: PathBuf,
     app: PathBuf,
     cwd: PathBuf,
+    load_profile: bool,
+}
+fn configure_terminal_environment(command: &mut CommandBuilder) {
+    // A desktop launched by a build tool can inherit its non-terminal settings.
+    // These overrides apply only to the new interactive shell, not the app or OS.
+    command.env_remove("NO_COLOR");
+    if command.get_env("FORCE_COLOR") == Some(std::ffi::OsStr::new("0")) {
+        command.env_remove("FORCE_COLOR");
+    }
+    command.env("TERM", "xterm-256color");
+    command.env("COLORTERM", "truecolor");
+    command.env("CLICOLOR", "1");
+    command.env("TERM_PROGRAM", "Yougori");
 }
 fn shell_path() -> Result<PathBuf, String> {
     #[cfg(windows)]
@@ -437,8 +450,7 @@ fn spawn_shell(owner: &str, config: ShellConfig, size: PtySize) -> Result<Arc<Se
     command.env("OPENDOCK_APP", &config.app);
     command.env("YOUGORI_CLI", &config.cli);
     command.env("YOUGORI_APP", &config.app);
-    command.env("TERM", "xterm-256color");
-    command.env("COLORTERM", "truecolor");
+    configure_terminal_environment(&mut command);
     command.cwd(&config.cwd);
     #[cfg(windows)]
     {
@@ -459,11 +471,14 @@ fn spawn_shell(owner: &str, config: ShellConfig, size: PtySize) -> Result<Arc<Se
         bootstrap.push_str(
             "Import-Module PSReadLine -ErrorAction SilentlyContinue; if (Get-Module PSReadLine) { Set-PSReadLineOption -HistorySaveStyle SaveNothing }; ",
         );
-        command.args(["-NoLogo", "-NoProfile", "-NoExit", "-Command", &bootstrap]);
+        command.arg("-NoLogo");
+        if !config.load_profile { command.arg("-NoProfile"); }
+        command.args(["-NoExit", "-Command", &bootstrap]);
     }
     #[cfg(unix)]
     {
         match config.shell.file_name().and_then(|s| s.to_str()) {
+            Some("bash" | "zsh") if config.load_profile => command.args(["-l", "-i"]),
             Some("bash") => command.args(["--noprofile", "--norc", "-i"]),
             Some("zsh") => command.args(["-f", "-i"]),
             _ => command.arg("-i"),
@@ -619,6 +634,7 @@ pub(crate) async fn action_for_owner(
             cli: cli_executable(app)?,
             app: std::env::current_exe().map_err(|e| e.to_string())?,
             cwd: prepare_working_directory(&home_directory()?, request.cwd.as_deref())?,
+            load_profile: true,
         })
     } else {
         None

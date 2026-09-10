@@ -8,9 +8,30 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 )
+
+func TestInteractiveTerminalRestoresColourWithoutChangingOtherEnvironment(t *testing.T) {
+	bin := t.TempDir()
+	// An executable shell stand-in inspects the environment and login arguments
+	// passed by the real bootstrap, without loading a personal shell profile.
+	probe := "#!/bin/sh\nprintf '%s\\n' \"$TERM\" \"$COLORTERM\" \"$CLICOLOR\" \"${NO_COLOR-unset}\" \"${FORCE_COLOR-unset}\" \"$KEEP_THIS\" \"$*\"\n"
+	if err := os.WriteFile(filepath.Join(bin, "bash"), []byte(probe), 0755); err != nil {
+		t.Fatal(err)
+	}
+	command := exec.Command("/bin/sh", "-c", terminalBootstrap)
+	command.Env = []string{"PATH=" + bin, "NO_COLOR=1", "FORCE_COLOR=0", "TERM=dumb", "COLORTERM=", "CLICOLOR=0", "KEEP_THIS=retained"}
+	output, err := command.CombinedOutput()
+	if err != nil {
+		t.Fatalf("%s: %v", output, err)
+	}
+	if string(output) != "xterm-256color\ntruecolor\n1\nunset\nunset\nretained\n-il\n" {
+		t.Fatalf("Unexpected interactive environment: %q", output)
+	}
+}
 
 func TestWorkspaceRoutesRequireAuthentication(t *testing.T) {
 	s := &server{token: "secret", microVM: true}

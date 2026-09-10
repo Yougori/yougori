@@ -1104,17 +1104,6 @@ pub async fn create_environment(
     if request.provider.is_container() {
         validate_container_policy_capacity(&policy, &host)?;
     }
-    if request.provider == RuntimeProviderKind::OpenDockCuda {
-        let status = runtime.cuda_status().await;
-        if !status.supported { return Err(format!("NVIDIA CUDA is unavailable on this computer: {}", status.detail)); }
-        if !status.installed || status.update_available { return Err("Set up or update NVIDIA CUDA in New environment → GPU, or run yougori-cli gpu setup --yes, before creating a GPU container.".into()); }
-    }
-    if request.kind == EnvironmentKind::FullVm {
-        return vm_creation::create_on_graph(&request, policy, &id, &store, async {
-            let prepared = runtime.provision_vm_with_storage(&id, runtime_source, request.storage_gb).await?;
-            Ok((prepared.disk_path.to_string_lossy().into_owned(), prepared.source_path.to_string_lossy().into_owned()))
-        }, |state| { let _ = app.emit("opendock-platform-state", state); }).await;
-    }
     let container_command = request
         .container_command
         .as_deref()
@@ -1123,144 +1112,99 @@ pub async fn create_environment(
         // requests that omit this field retain the old keep-alive default.
         .unwrap_or("sleep 2147483647")
         .to_owned();
-    let (runtime_path, managed_runtime_source, managed_sandbox_policy) = match request.provider {
-        RuntimeProviderKind::CloudSsh => return Err("Use Add cloud environment to connect an existing server".into()),
-        RuntimeProviderKind::OpenDockOci | RuntimeProviderKind::OpenDockCuda => {
-            runtime.register_container_provider(&id, &request.provider)?;
-            if let Some(gb) = request.storage_gb.filter(|_| request.provider == RuntimeProviderKind::OpenDockOci) {
-                let storage = runtime.container_storage().await?;
-                if gb > storage.capacity_gb { runtime.grow_container_storage(gb).await?; }
-            }
-            runtime
-                .provision_container(
-                    &id,
-                    runtime_source,
-                    &container_command,
-                    &policy,
-                    request.network_access,
-                    request.gpu_access,
-                )
-                .await?;
-            (None, runtime_source.to_owned(), None)
+    if request.provider == RuntimeProviderKind::OpenDockCuda {
+        let status = runtime.cuda_status().await;
+        if !status.supported { return Err(format!("NVIDIA CUDA is unavailable on this computer: {}", status.detail)); }
+        if !status.installed || status.update_available { return Err("Set up or update NVIDIA CUDA in New environment → GPU, or run yougori-cli gpu setup --yes, before creating a GPU container.".into()); }
+    }
+    // Every supported environment gets its final node ID before slow runtime work.
+    // Closing the form leaves this command and its persisted progress intact.
+    vm_creation::create_on_graph(&request, policy.clone(), &id, &store, async {
+        if request.kind == EnvironmentKind::FullVm {
+            let prepared = runtime.provision_vm_with_storage(&id, runtime_source, request.storage_gb).await?;
+            return Ok((Some(prepared.disk_path.to_string_lossy().into_owned()), prepared.source_path.to_string_lossy().into_owned()));
         }
-        RuntimeProviderKind::Qemu => {
-            let provisioned = if request.kind == EnvironmentKind::MicroVm {
-                runtime.provision_micro_vm(&id, runtime_source).await?
-            } else if request.kind == EnvironmentKind::ComputerBranch
-                && request.branch_type != Some(BranchType::CleanOs)
-            {
-                runtime
-                    .provision_computer_branch(
-                        &id,
-                        request
-                            .branch_type
-                            .as_ref()
-                            .ok_or("Select a current-computer branch type")?,
-                    )
-                    .await?
-            } else {
-                runtime.provision_vm(&id, runtime_source).await?
-            };
-            if let Some(gb) = request.storage_gb {
-                let grow = async {
-                    let storage = runtime.vm_storage_allocation(&id, &provisioned.disk_path).await?;
-                    if gb > storage.capacity_gb { runtime.grow_vm_storage(&id, &provisioned.disk_path, gb).await?; }
-                    Ok::<(), String>(())
-                }.await;
-                if let Err(error) = grow {
-                    let _ = runtime.delete_vm(&id).await;
-                    return Err(error);
-                }
-            }
-            let persisted_source = if request.kind == EnvironmentKind::MicroVm
-                && runtime_source == BUILTIN_MICRO_VM_SOURCE
-            {
-                BUILTIN_MICRO_VM_SOURCE.to_owned()
-            } else {
-                provisioned.source_path.to_string_lossy().into_owned()
-            };
-            (
-                Some(provisioned.disk_path.to_string_lossy().into_owned()),
-                persisted_source,
-                None,
-            )
-        }
-        RuntimeProviderKind::NativeSandbox => {
-            let provisioned = runtime
-                .provision_native_sandbox(
-                    &id,
-                    request
-                        .sandbox_policy
-                        .as_ref()
-                        .ok_or("Choose a native branch application")?,
-                )
-                .await?;
-            (
-                Some(provisioned.workspace_path.to_string_lossy().into_owned()),
-                provisioned.policy.executable.clone(),
-                Some(provisioned.policy),
-            )
-        }
-    };
-    let environment = Environment {
-        id: id.clone(),
-        name: name.into(),
-        kind: request.kind.clone(),
-        status: EnvironmentStatus::Stopped,
-        runtime: managed_runtime_source,
-        provider: Some(request.provider.clone()),
-        runtime_id: Some(id.clone()),
-        runtime_path,
-        control_endpoint: None,
-        console_endpoint: None,
-        container_command: (request.provider.is_container())
-            .then_some(container_command),
-        network_access: request.provider.is_container()
-            && request.network_access,
-        gpu_access: (request.provider.is_container()
-            || (request.provider == RuntimeProviderKind::Qemu
-                && request.kind == EnvironmentKind::FullVm))
-            && request.gpu_access,
-        sandbox_policy: managed_sandbox_policy,
-        last_error: None,
-        description: request.description.trim().into(),
-        branch_type: request.branch_type.clone(),
-        created_at: now(),
-        last_opened_at: None,
-        cpu_usage: 0.0,
-        memory_usage_gb: 0.0,
-        storage_delta_gb: 0.0,
-        network_rx_mbps: 0.0,
-        resource_policy: policy,
-    };
-    let persisted = store.mutate(|state| {
-        if state
-            .environments
-            .iter()
-            .any(|item| item.name.eq_ignore_ascii_case(name))
-        {
-            return Err("An environment with this name already exists".into());
-        }
-        state.environments.insert(0, environment);
-        Ok(())
-    });
-    if persisted.is_err() {
-        match request.provider {
-            RuntimeProviderKind::CloudSsh => {},
+        let (runtime_path, managed_runtime_source, _managed_sandbox_policy) = match request.provider {
+            RuntimeProviderKind::CloudSsh => return Err("Use Add cloud environment to connect an existing server".into()),
             RuntimeProviderKind::OpenDockOci | RuntimeProviderKind::OpenDockCuda => {
-                let _ = runtime.delete_container(&id).await;
+                runtime.register_container_provider(&id, &request.provider)?;
+                if let Some(gb) = request.storage_gb.filter(|_| request.provider == RuntimeProviderKind::OpenDockOci) {
+                    let storage = runtime.container_storage().await?;
+                    if gb > storage.capacity_gb { runtime.grow_container_storage(gb).await?; }
+                }
+                runtime
+                    .provision_container(
+                        &id,
+                        runtime_source,
+                        &container_command,
+                        &policy,
+                        request.network_access,
+                        request.gpu_access,
+                    )
+                    .await?;
+                (None, runtime_source.to_owned(), None)
             }
             RuntimeProviderKind::Qemu => {
-                let _ = runtime.delete_vm(&id).await;
+                let provisioned = if request.kind == EnvironmentKind::MicroVm {
+                    runtime.provision_micro_vm(&id, runtime_source).await?
+                } else if request.kind == EnvironmentKind::ComputerBranch
+                    && request.branch_type != Some(BranchType::CleanOs)
+                {
+                    runtime
+                        .provision_computer_branch(
+                            &id,
+                            request
+                                .branch_type
+                                .as_ref()
+                                .ok_or("Select a current-computer branch type")?,
+                        )
+                        .await?
+                } else {
+                    runtime.provision_vm(&id, runtime_source).await?
+                };
+                if let Some(gb) = request.storage_gb {
+                    let grow = async {
+                        let storage = runtime.vm_storage_allocation(&id, &provisioned.disk_path).await?;
+                        if gb > storage.capacity_gb { runtime.grow_vm_storage(&id, &provisioned.disk_path, gb).await?; }
+                        Ok::<(), String>(())
+                    }.await;
+                    if let Err(error) = grow {
+                        let _ = runtime.delete_vm(&id).await;
+                        return Err(error);
+                    }
+                }
+                let persisted_source = if request.kind == EnvironmentKind::MicroVm
+                    && runtime_source == BUILTIN_MICRO_VM_SOURCE
+                {
+                    BUILTIN_MICRO_VM_SOURCE.to_owned()
+                } else {
+                    provisioned.source_path.to_string_lossy().into_owned()
+                };
+                (
+                    Some(provisioned.disk_path.to_string_lossy().into_owned()),
+                    persisted_source,
+                    None,
+                )
             }
             RuntimeProviderKind::NativeSandbox => {
-                let _ = runtime
-                    .delete_native_sandbox(&id, request.sandbox_policy.as_ref())
-                    .await;
+                let provisioned = runtime
+                    .provision_native_sandbox(
+                        &id,
+                        request
+                            .sandbox_policy
+                            .as_ref()
+                            .ok_or("Choose a native branch application")?,
+                    )
+                    .await?;
+                (
+                    Some(provisioned.workspace_path.to_string_lossy().into_owned()),
+                    provisioned.policy.executable.clone(),
+                    Some(provisioned.policy),
+                )
             }
-        }
-    }
-    persisted
+        };
+        Ok((runtime_path, managed_runtime_source))
+    }, |state| { let _ = app.emit("opendock-platform-state", state); }).await
 }
 
 #[tauri::command]

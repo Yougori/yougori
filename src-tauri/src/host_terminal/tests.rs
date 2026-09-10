@@ -1,4 +1,21 @@
 use super::*;
+
+#[test]
+fn host_terminal_does_not_inherit_an_automation_launchers_plain_text_mode() {
+    let mut command = CommandBuilder::new("shell");
+    command.env("NO_COLOR", "1");
+    command.env("FORCE_COLOR", "0");
+    command.env("TERM", "dumb");
+    command.env("COLORTERM", "");
+    configure_terminal_environment(&mut command);
+    assert!(command.get_env("NO_COLOR").is_none());
+    assert!(command.get_env("FORCE_COLOR").is_none());
+    assert_eq!(command.get_env("TERM"), Some(std::ffi::OsStr::new("xterm-256color")));
+    assert_eq!(command.get_env("COLORTERM"), Some(std::ffi::OsStr::new("truecolor")));
+    command.env("FORCE_COLOR", "3");
+    configure_terminal_environment(&mut command);
+    assert_eq!(command.get_env("FORCE_COLOR"), Some(std::ffi::OsStr::new("3")));
+}
 #[test]
 fn host_terminal_is_dashboard_only_and_inputs_are_bounded() {
     assert!(require_dashboard("main").is_ok());
@@ -138,6 +155,7 @@ fn host_terminal_real_powershell_cli_input_resize_and_owned_cleanup() {
         cli: cli.clone(),
         app: std::env::current_exe().unwrap(),
         cwd: workspace.clone(),
+        load_profile: false, // Keep this disposable test independent of personal profiles.
     };
     let send = |id: &str, command: &str| {
         let mut req = request(id, "write");
@@ -203,6 +221,25 @@ fn host_terminal_real_powershell_cli_input_resize_and_owned_cleanup() {
         std::fs::read_to_string(workspace.join("history-setting.txt")).unwrap(),
         "SaveNothing"
     );
+
+    send("host-real-one", "@{ noColor=$env:NO_COLOR; term=$env:TERM; colorTerm=$env:COLORTERM; readLine=[bool](Get-Module PSReadLine); commandColor=[string](Get-PSReadLineOption).CommandColor; style=[string]$PSStyle.OutputRendering } | ConvertTo-Json | Set-Content -Encoding utf8 colors.json; yougori-cli schema get_platform_state; yougori-cli schema get_platform_state | Out-File -Encoding utf8 schema.json\r");
+    wait_file("colors.json");
+    wait_file("schema.json");
+    let read_json = |name: &str| -> serde_json::Value {
+        let text = std::fs::read_to_string(workspace.join(name)).unwrap();
+        assert!(!text.contains('\x1b'), "Redirected output must remain plain JSON");
+        serde_json::from_str(text.trim_start_matches('\u{feff}')).unwrap()
+    };
+    let colors = read_json("colors.json");
+    assert!(colors["noColor"].is_null());
+    assert_eq!(colors["term"], "xterm-256color");
+    assert_eq!(colors["colorTerm"], "truecolor");
+    assert_eq!(colors["readLine"], true);
+    assert!(!colors["commandColor"].as_str().unwrap().is_empty());
+    assert_eq!(read_json("schema.json")["name"], "get_platform_state");
+    let colored = manager.action(request("host-real-one", "read"), "main", None).unwrap();
+    let colored = String::from_utf8(STANDARD.decode(colored.data).unwrap()).unwrap();
+    assert!(colored.contains("\x1b[96m\"name\""), "The interactive CLI did not send coloured JSON: {colored}");
 
     // Ctrl+C must interrupt the command without closing either terminal.
     send("host-real-one", "[IO.File]::WriteAllText((Join-Path (Get-Location) 'sleeping.txt'), 'started'); Start-Sleep -Seconds 60\r");

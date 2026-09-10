@@ -124,11 +124,11 @@ func (s *server) terminalCreate(w http.ResponseWriter, r *http.Request) {
 		writeError(w, 500, err.Error())
 		return
 	}
-	command := exec.Command("/bin/sh", "-l")
+	command := exec.Command("/bin/sh", "-lc", terminalBootstrap)
 	if !s.microVM {
-		command = exec.Command("nerdctl", "--namespace", namespace, "exec", "-it", request.ID, "/bin/sh", "-lc", "export TERM=xterm-256color; if command -v bash >/dev/null 2>&1; then exec bash -il; else exec /bin/sh -il; fi")
+		command = exec.Command("nerdctl", "--namespace", namespace, "exec", "-it", request.ID, "/bin/sh", "-lc", terminalBootstrap)
 	}
-	command.Env = append(os.Environ(), "TERM=xterm-256color")
+	command.Env = append(os.Environ(), "TERM=xterm-256color", "COLORTERM=truecolor")
 	command.Stdin, command.Stdout, command.Stderr = slave, slave, slave
 	command.SysProcAttr = &syscall.SysProcAttr{Setsid: true, Setctty: true, Ctty: 0}
 	if err = command.Start(); err != nil {
@@ -175,6 +175,14 @@ func (s *server) terminalCreate(w http.ResponseWriter, r *http.Request) {
 	}()
 	writeJSON(w, 201, map[string]string{"sessionId": request.SessionID})
 }
+
+// Only the interactive shell gets these settings. Workload services and commands
+// executed through the non-interactive API keep their original environment.
+const terminalBootstrap = `unset NO_COLOR
+if [ "${FORCE_COLOR-}" = 0 ]; then unset FORCE_COLOR; fi
+export TERM=xterm-256color COLORTERM=truecolor CLICOLOR=1 TERM_PROGRAM=Yougori
+if command -v bash >/dev/null 2>&1; then exec bash -il; else exec /bin/sh -il; fi`
+
 func (s *server) terminal(w http.ResponseWriter, r *http.Request) (*terminalSession, terminalRequest) {
 	var request terminalRequest
 	if !decodeRequest(w, r, &request) || !requireID(w, request.ID) || !requireID(w, request.SessionID) {

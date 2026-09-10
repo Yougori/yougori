@@ -83,6 +83,28 @@ fn hidden(program: &str) -> Command {
     command
 }
 
+fn setup_failure(log_path: &Path) -> String {
+    use std::io::{Read, Seek, SeekFrom};
+    // Setup output can be large. Read only its tail and the explicit error
+    // marker; prerequisite failures have already been reported before setup.
+    let detail = (|| {
+        let mut file = std::fs::File::open(log_path).ok()?;
+        let start = file.metadata().ok()?.len().saturating_sub(16 * 1024);
+        file.seek(SeekFrom::Start(start)).ok()?;
+        let mut bytes = Vec::new();
+        file.take(16 * 1024).read_to_end(&mut bytes).ok()?;
+        // WSL status output may leave UTF-16 NULs next to PowerShell's text.
+        let output = String::from_utf8_lossy(&bytes).replace('\0', "");
+        output.lines().rev().find_map(|line| {
+            line.strip_prefix("YOUGORI_CUDA_SETUP_ERROR: ")
+                .filter(|message| !message.trim().is_empty())
+                .map(|message| message.chars().take(1000).collect::<String>())
+        })
+    })();
+    format!("CUDA setup failed{}. Existing container disks were kept. Setup log: {}",
+        detail.map(|message| format!(": {message}")).unwrap_or_default(), log_path.display())
+}
+
 impl CudaRuntime {
     fn ownership(&self) -> Result<std::fs::File, String> {
         std::fs::create_dir_all(&self.directory).map_err(|e| e.to_string())?;
@@ -100,7 +122,7 @@ impl CudaRuntime {
         })
     }
 
-    async fn verify_owned(&self, installation: &Installed, terminate: bool) -> Result<(), String> {
+    async fn verify_owned(&self, installation: &Installed, terminate: bool, require_stopped: bool) -> Result<(), String> {
         let assets = self.directory.join("bootstrap");
         tokio::fs::create_dir_all(&assets)
             .await
@@ -109,6 +131,8 @@ impl CudaRuntime {
         tokio::fs::write(&script, include_str!("../../verify-owned.ps1"))
             .await
             .map_err(|e| e.to_string())?;
+        tokio::fs::write(assets.join("paths.ps1"), include_str!("../../paths.ps1"))
+            .await.map_err(|e| e.to_string())?;
         let mut command = hidden("powershell.exe");
         command
             .args([
@@ -126,12 +150,19 @@ impl CudaRuntime {
         if terminate {
             command.arg("-Terminate");
         }
+        if require_stopped {
+            command.arg("-RequireStopped");
+        }
         let status = tokio::time::timeout(Duration::from_secs(45), command.status())
             .await
             .map_err(|_| "CUDA ownership check timed out; no other runtime was targeted")?
             .map_err(|e| e.to_string())?;
         if !status.success() {
-            return Err("The CUDA distribution could not be verified against its owned storage. No other WSL distribution was touched.".into());
+            return Err(if require_stopped {
+                "The CUDA disk could not be verified as owned and stopped. Close its containers and WSL sessions normally, then retry Reclaim space. No distribution was stopped or changed."
+            } else {
+                "The CUDA distribution could not be verified against its owned storage. No other WSL distribution was touched."
+            }.into());
         }
         Ok(())
     }
@@ -155,7 +186,7 @@ impl CudaRuntime {
         *guard = None;
         let _ownership = self.ownership()?;
         let installation = self.installation()?;
-        self.verify_owned(&installation, true).await
+        self.verify_owned(&installation, true, false).await
     }
     pub fn new(directory: PathBuf) -> Result<Self, String> {
         identity(&directory)?;
@@ -264,6 +295,7 @@ impl CudaRuntime {
             .map_err(|e| e.to_string())?;
         for (name, contents) in [
             ("install.ps1", include_str!("../../install.ps1")),
+            ("paths.ps1", include_str!("../../paths.ps1")),
             ("setup.sh", include_str!("../../setup.sh")),
             ("start.sh", include_str!("../../start.sh")),
             ("wsl.conf", include_str!("../../wsl.conf")),
@@ -299,10 +331,7 @@ impl CudaRuntime {
             .await
             .map_err(|e| format!("Start CUDA setup: {e}"))?;
         if !status.success() {
-            return Err(format!(
-                "CUDA setup failed. This backend needs WSL 2 and a current Windows NVIDIA driver. See {} for the exact setup error; existing disks were preserved.",
-                self.directory.join("setup.log").display()
-            ));
+            return Err(setup_failure(&self.directory.join("setup.log")));
         }
         self.installation()?;
         *guard = None;
@@ -348,7 +377,7 @@ impl CudaRuntime {
         *guard = None;
         let installation = self.installation()?;
         let ownership = self.ownership()?;
-        self.verify_owned(&installation, false).await?;
+        self.verify_owned(&installation, false, false).await?;
         let listener = std::net::TcpListener::bind((std::net::Ipv4Addr::LOCALHOST, 0))
             .map_err(|e| e.to_string())?;
         let port = listener.local_addr().map_err(|e| e.to_string())?.port();
@@ -469,7 +498,7 @@ impl CudaRuntime {
                 .map_err(|e| e.to_string())?;
         }
         let installation = self.installation()?;
-        self.verify_owned(&installation, true).await?;
+        self.verify_owned(&installation, true, false).await?;
         *guard = None;
         Ok(())
     }
@@ -482,16 +511,37 @@ impl CudaRuntime {
             if guard.is_none() { return Err("CUDA runtime ownership is missing; storage was not changed.".into()); }
             self.shutdown_locked(&mut guard).await?;
             let ownership = self.ownership()?;
-            self.verify_owned(&self.installation()?, false).await?;
-            let path = self.storage_path();
-            // Keep the ownership handle IN the blocking task, even if its
-            // caller is cancelled. A second app cannot reopen during compact.
-            tokio::task::spawn_blocking(move || {
-                let _ownership = ownership;
-                storage::compact(&path)
-            }).await.map_err(|e| format!("CUDA compaction task: {e}"))?
+            self.compact_verified_storage(ownership).await
         }
         #[cfg(not(windows))] { Err("CUDA compaction requires Windows".into()) }
+    }
+
+    /// Compact an already stopped disk without booting an obsolete guest,
+    /// downloading an update, or requiring a working GPU driver.
+    pub async fn compact_stopped_storage(&self) -> Result<(), String> {
+        #[cfg(windows)] {
+            let mut guard = self.process.lock().await;
+            if let Some(process) = guard.as_mut() {
+                if process.child.try_wait().map_err(|e| e.to_string())?.is_none() {
+                    return Err("CUDA is still running; offline disk compaction was skipped.".into());
+                }
+            }
+            *guard = None;
+            let ownership = self.ownership()?;
+            self.compact_verified_storage(ownership).await
+        }
+        #[cfg(not(windows))] { Err("CUDA compaction requires Windows".into()) }
+    }
+
+    #[cfg(windows)]
+    async fn compact_verified_storage(&self, ownership: std::fs::File) -> Result<(), String> {
+        self.verify_owned(&self.installation()?, false, true).await?;
+        let path = self.storage_path();
+        // Keep ownership in the blocking task even if its caller is cancelled.
+        tokio::task::spawn_blocking(move || {
+            let _ownership = ownership;
+            storage::compact(&path)
+        }).await.map_err(|e| format!("CUDA compaction task: {e}"))?
     }
 }
 
@@ -507,11 +557,23 @@ mod tests {
         if path.canonicalize().map_err(|e| e.to_string())? != expected { return Err("Refusing user CUDA disk".into()); }
         let runtime = CudaRuntime::new(path)?;
         let _owner = runtime.ownership()?;
-        runtime.verify_owned(&runtime.installation()?, false).await?;
+        runtime.verify_owned(&runtime.installation()?, false, true).await?;
         let before = runtime.storage_sizes()?.1;
         storage::compact(&runtime.storage_path())?;
         eprintln!("Native VHDX compaction: {before} -> {}", runtime.storage_sizes()?.1);
         Ok(())
+    }
+    #[test]
+    fn setup_errors_report_the_actual_failure_without_blaming_prerequisites() {
+        let directory = tempfile::tempdir().unwrap();
+        let log = directory.path().join("setup.log");
+        std::fs::write(&log, format!("{}\n\0YOUGORI_CUDA_SETUP_ERROR: CUDA setup file is missing: C:\\Example\\opendock-mount-helper\nPowerShell diagnostic details\n", "download progress\n".repeat(2000))).unwrap();
+        let message = setup_failure(&log);
+        assert!(message.contains("CUDA setup file is missing: C:\\Example\\opendock-mount-helper"));
+        assert!(message.contains("Existing container disks were kept"));
+        assert!(!message.contains("driver"));
+        assert!(!message.contains("download progress"));
+        assert!(setup_failure(&directory.path().join("missing.log")).contains("Setup log:"));
     }
     #[test]
     fn names_are_stable_scoped_and_never_shell_arguments() {

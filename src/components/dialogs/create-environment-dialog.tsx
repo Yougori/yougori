@@ -50,6 +50,7 @@ const runtimeDefaults: Record<EnvironmentKind, string> = {
 export function CreateEnvironmentDialog({ open, onOpenChange, initialKind }: { open: boolean; onOpenChange(open: boolean): void; initialKind?: EnvironmentKind }) {
   const tour = useInstructionsTour()
   const guided = ownsTour(tour) && Boolean(tour?.step.startsWith("create-"))
+  const guidedRun = guided ? tour?.run : undefined
   const { createEnvironment, state } = usePlatform()
   const [category, setCategory] = useState<EnvironmentCategory>("container")
   const kind: EnvironmentKind = category === "gpu" ? "container" : category
@@ -153,9 +154,23 @@ export function CreateEnvironmentDialog({ open, onOpenChange, initialKind }: { o
     }
   }
 
-  const submit = async (event: FormEvent<HTMLFormElement>) => {
+  useEffect(() => {
+    if (!open || !guidedRun) return
+    setCategory("container")
+    setRuntime(defaultOciImage.value)
+    setSelectedOciImage(defaultOciImage)
+    setUseCustomImage(false)
+    setSelectedPurpose(null)
+    setContainerCommand(ociStartupCommand(defaultOciImage))
+  }, [open, guidedRun])
+
+  const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (submitLock.current) return
+    if (guided && (category !== "container" || runtime !== defaultOciImage.value || containerCommand !== ociStartupCommand(defaultOciImage))) {
+      setFormError("The guide uses one default container. Skip the guide to choose another type or image.")
+      return
+    }
     if (kind === "computerBranch") {
       setFormError("Computer Branch is temporarily unavailable.")
       return
@@ -202,18 +217,12 @@ export function CreateEnvironmentDialog({ open, onOpenChange, initialKind }: { o
           dynamic: true,
         },
       })
-      if (kind === "fullVm") {
-        // The provider owns this promise; closing/reopening the form does not
-        // cancel preparation or let its eventual result modify a new draft.
-        void creation.catch(() => undefined)
-        onOpenChange(false)
-        return
-      }
-      await creation
+      // Progress and errors belong to the persisted node and provider. A later
+      // result must never close or overwrite a newly opened creation form.
+      void creation.catch(() => undefined)
       onOpenChange(false)
     } catch (reason) {
       setFormError(reason instanceof Error ? reason.message : String(reason))
-    } finally {
       submitLock.current = false
       setSubmitting(false)
     }
@@ -250,13 +259,13 @@ export function CreateEnvironmentDialog({ open, onOpenChange, initialKind }: { o
                 {kinds.map(item => {
                   const Icon = item === "gpu" ? GpuIcon : isolationPresentation[item].icon
                   return <Label key={item} className={cn("creation-type", category === item && "is-selected", item === "computerBranch" && "is-unavailable")}>
-                    <Radio className="sr-only" disabled={submitting || item === "computerBranch"} value={item} />
+                    <Radio className="sr-only" disabled={submitting || item === "computerBranch" || (guided && item !== "container")} value={item} />
                     <Icon aria-hidden="true" /><span>{item === "gpu" ? "GPU" : environmentKindLabel[item]}</span>{category === item ? <CheckIcon aria-hidden="true" className="creation-type-check" /> : null}
                     {item === "computerBranch" ? <span className="creation-unavailable-label">Unavailable</span> : null}
                   </Label>
                 })}
               </RadioGroup>
-              <p className="creation-isolation-description">{cudaContainer ? "GPU containers for AI and computing. NVIDIA CUDA access is included." : isolationPresentation[kind].description}</p>
+              <p className="creation-isolation-description">{guided ? "The guide uses one default container for your first website. Other types and images are available after the guide." : cudaContainer ? "GPU containers for AI and computing. NVIDIA CUDA access is included." : isolationPresentation[kind].description}</p>
             </section>
             <div className="creation-columns">
               <section aria-label="Environment configuration" className="creation-configuration">
@@ -270,7 +279,7 @@ export function CreateEnvironmentDialog({ open, onOpenChange, initialKind }: { o
                 <FieldLabel>{kind === "container" ? "OCI image" : kind === "microVm" ? "Direct-kernel microVM source" : "Installer ISO or virtual disk"}</FieldLabel>
                 {kind === "container" ? (
                   <div className="flex w-full min-w-0 flex-col gap-2">
-                    <OciImagePicker disabled={submitting} onChange={chooseOciImage} value={selectedOciImage} groups={cudaContainer ? gpuImageGroups : undefined} />
+                    <OciImagePicker disabled={submitting || guided} onChange={chooseOciImage} value={selectedOciImage} groups={cudaContainer ? gpuImageGroups : undefined} />
                   </div>
                 ) : (
                   <div className="flex gap-2">
@@ -285,7 +294,7 @@ export function CreateEnvironmentDialog({ open, onOpenChange, initialKind }: { o
                   <Input disabled={submitting} className="creation-input font-mono" autoFocus onChange={event => setRuntime(event.target.value)} placeholder="registry.example.com/organization/image:tag" required type="text" value={runtime} />
                 </Field> : null}
                 {cudaContainer && gpuImageIssue(runtime) ? <p role="alert" className="creation-error">{gpuImageIssue(runtime)}</p> : null}
-                {kind === "container" && !cudaContainer ? <div className="creation-purpose-picker">
+                {kind === "container" && !cudaContainer && !guided ? <div className="creation-purpose-picker">
                   <span id="creation-purpose-label">What are you building?</span>
                   <div aria-labelledby="creation-purpose-label" role="group" className="creation-purpose-options">
                     {containerPurposes.map(purpose => <button
@@ -303,7 +312,7 @@ export function CreateEnvironmentDialog({ open, onOpenChange, initialKind }: { o
                 <div className="creation-startup">
                   {kind === "container" ? <Field name="container-command">
                     <FieldLabel>Startup command (optional)</FieldLabel>
-                    <div className="creation-command"><span aria-hidden="true">$</span><Input disabled={submitting} className="creation-input font-mono" onChange={event => setContainerCommand(event.target.value)} placeholder="Use the image’s default startup" type="text" value={containerCommand} /></div>
+                    <div className="creation-command"><span aria-hidden="true">$</span><Input disabled={submitting || guided} className="creation-input font-mono" onChange={event => setContainerCommand(event.target.value)} placeholder="Use the image’s default startup" type="text" value={containerCommand} /></div>
                     <FieldDescription className="creation-help">Leave blank to run the image’s default service.</FieldDescription>
                   </Field> : null}
                   <Field name="description">

@@ -11,7 +11,7 @@ async fn cuda_storage_reclamation_preserves_peer() -> Result<(), String> {
     if root.canonicalize().map_err(|e| e.to_string())? != expected { return Err("Refusing user CUDA storage".into()); }
     let data = tempfile::tempdir().map_err(|e| e.to_string())?;
     let mut runtime = RuntimeManager::new(Path::new(env!("CARGO_MANIFEST_DIR")), data.path())?;
-    runtime.cuda = opendock_cuda_runtime::CudaRuntime::new(root)?;
+    runtime.cuda = opendock_cuda_runtime::CudaRuntime::new(root.clone())?;
     runtime.cuda.recover_abandoned().await?;
     runtime.install_cuda().await?;
     let id = format!("reclaim-delete-{}", uuid::Uuid::new_v4().simple());
@@ -32,9 +32,20 @@ async fn cuda_storage_reclamation_preserves_peer() -> Result<(), String> {
         if !busy.warnings.iter().any(|w| w.contains("running or paused")) { return Err(format!("Missing live-workload warning: {:?}", busy)); }
         if runtime.execute_container_command(&peer, "cat /root/reclaim-marker").await?.stdout.trim() != "peer-safe" { return Err("Peer data changed".into()); }
         runtime.container_action(&peer, "stop", false).await?;
-        let compacted = runtime.reclaim_container_storage(&RuntimeProviderKind::OpenDockCuda).await?;
+        runtime.cuda.shutdown().await?;
+        // Simulate an installed application update only in the dedicated test
+        // distribution. Cleanup must not require booting its obsolete agent.
+        let manifest_path = root.join("installed.json");
+        let original_manifest = std::fs::read(&manifest_path).map_err(|e| e.to_string())?;
+        let mut obsolete: serde_json::Value = serde_json::from_slice(&original_manifest).map_err(|e| e.to_string())?;
+        obsolete["payloadChecksum"] = json!("test-obsolete-payload");
+        std::fs::write(&manifest_path, serde_json::to_vec(&obsolete).map_err(|e| e.to_string())?).map_err(|e| e.to_string())?;
+        let result = runtime.reclaim_container_storage(&RuntimeProviderKind::OpenDockCuda).await;
+        std::fs::write(&manifest_path, original_manifest).map_err(|e| e.to_string())?;
+        let compacted = result?;
         eprintln!("CUDA reclaim: {:?}", compacted);
         if !compacted.warnings.is_empty() { return Err(compacted.warnings.join("; ")); }
+        if !compacted.notes.iter().any(|note| note.contains("without starting CUDA")) || runtime.cuda.current_endpoint().await.is_ok() { return Err("Outdated CUDA was started for compaction".into()); }
         if busy.reclaimed_disk_bytes + compacted.reclaimed_disk_bytes < 128 * 1024 * 1024 { return Err("CUDA host disk did not shrink".into()); }
         runtime.container_action(&peer, "start", false).await?;
         if runtime.execute_container_command(&peer, "cat /root/reclaim-marker").await?.stdout.trim() != "peer-safe" { return Err("Peer data did not survive compaction".into()); }

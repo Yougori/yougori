@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from "vitest"
 import { changeTour, claimWindowTour, getTour, ownsTour, overviewSteps, parseTour, practiceSteps, prepareTourWindow, startInstructions, stopInstructions, tourEnvironmentCreated, tourInstallerStarted, tourTerminalOpened, tourWindowFailed, trackTourCreation } from "./instructions-tour"
-import { returnTourHome, tourPortAdded, tourWebsiteOpened, tourWebsitePublished } from "./instructions-tour"
+import { returnTourHome, tourPortAdded, tourWebsiteOpened, tourWebsitePublished, tourEnvironmentCreationFailed } from "./instructions-tour"
 
 beforeEach(() => { localStorage.clear(); startInstructions() })
 describe("instructions tour state", () => {
@@ -31,6 +31,14 @@ describe("instructions tour state", () => {
     changeTour({ step: "create-submit" }); trackTourCreation("First container"); stopInstructions()
     tourEnvironmentCreated("env-first", "First container"); tourInstallerStarted("env-first", "codex")
     expect(getTour()).toMatchObject({ active: false, step: "create-submit" })
+    expect(getTour()?.environmentId).toBeUndefined()
+  })
+  it("clears a failed pending creation without advancing or affecting another request", () => {
+    changeTour({ step: "create-submit" }); trackTourCreation("First container")
+    tourEnvironmentCreationFailed("Unrelated")
+    expect(getTour()?.pendingName).toBe("First container")
+    tourEnvironmentCreationFailed("First container")
+    expect(getTour()).toMatchObject({ step: "create-submit", pendingName: undefined })
     expect(getTour()?.environmentId).toBeUndefined()
   })
   it("hands off only the selected environment and restores the action on failure", () => {

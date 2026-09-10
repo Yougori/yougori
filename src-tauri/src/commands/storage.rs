@@ -12,7 +12,7 @@ pub async fn reclaim_storage(store: State<'_, PlatformStore>, runtime: State<'_,
                 cleanup.warnings.extend(result.warnings);
                 cleanup.notes.extend(result.notes);
             }
-            Err(error) => cleanup.warnings.push(error),
+            Err(error) => cleanup.warnings.push(format!("{} storage: {error}", if provider == RuntimeProviderKind::OpenDockCuda { "GPU" } else { "Standard container" })),
         }
     }
     let current = store.snapshot()?;

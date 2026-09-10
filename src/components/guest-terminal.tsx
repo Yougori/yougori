@@ -8,6 +8,7 @@ import { terminalClipboard, terminalClipboardAction } from "@/lib/terminal-clipb
 import { extractTerminalLinks, mergeTerminalLinks, normalizeTerminalLink } from "@/lib/terminal-links"
 import { terminalInstallerInput, type TerminalReadyHandler, type TerminalInstallerId } from "@/lib/terminal-installers"
 import { tourInstallerStarted } from "@/lib/instructions-tour"
+import { terminalTheme } from "@/lib/terminal-theme"
 
 export function GuestTerminal({ environmentId, sessionId, active, onReady, installer }: { environmentId: string; sessionId: string; active: boolean; onReady?: TerminalReadyHandler; installer?: TerminalInstallerId }) {
   const targetRef = useRef<HTMLDivElement>(null)
@@ -33,7 +34,7 @@ export function GuestTerminal({ environmentId, sessionId, active, onReady, insta
       const nativeSessionId = `term-${crypto.randomUUID()}`
       let disposed = false, timer = 0, linkTimer = 0, offset = 0, ready = false, created = false
       let inputQueue = Promise.resolve()
-      const terminal = new Terminal({ fontSize: 13, fontFamily: "ui-monospace, Consolas, monospace", cursorBlink: true, scrollback: 3000, theme: { background: "#0c0d0f", foreground: "#e9e9e9" } })
+      const terminal = new Terminal({ fontSize: 13, fontFamily: '"Cascadia Code", "Cascadia Mono", Consolas, monospace', cursorBlink: true, scrollback: 3000, theme: terminalTheme })
       terminal.options.disableStdin = Boolean(installer)
       const fit = new FitAddon(); terminal.loadAddon(fit); terminal.open(target); fit.fit()
       terminalRef.current = terminal; fitRef.current = fit
@@ -133,5 +134,5 @@ export function GuestTerminal({ environmentId, sessionId, active, onReady, insta
     return () => { cancelAnimationFrame(frame); release?.() }
   }, [environmentId, sessionId, onReady, installer])
 
-  return <div data-tour="guest-terminal" className="flex size-full min-h-0 min-w-0 flex-col bg-[#0c0d0f]"><div className="relative min-h-0 flex-1 p-3"><div aria-label="Terminal" className="size-full" ref={targetRef} />{error ? <p className="absolute inset-x-3 bottom-3 rounded border border-destructive/30 bg-background p-3 text-sm text-destructive-foreground" role="alert">{error}</p> : null}</div><TerminalLinkCards links={links} /></div>
+  return <div data-tour="guest-terminal" className="flex size-full min-h-0 min-w-0 flex-col bg-[#0c0c0c]"><div className="relative min-h-0 flex-1 p-3"><div aria-label="Terminal" className="size-full" ref={targetRef} />{error ? <p className="absolute inset-x-3 bottom-3 rounded border border-destructive/30 bg-background p-3 text-sm text-destructive-foreground" role="alert">{error}</p> : null}</div><TerminalLinkCards links={links} /></div>
 }

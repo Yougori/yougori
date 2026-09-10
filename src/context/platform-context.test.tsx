@@ -82,7 +82,7 @@ describe("environment action feedback", () => {
     expect(result.current.state?.environments.map(e => e.id)).toEqual(["Beta"])
     expect(result.current.state?.host.usedStorageGb).toBe(80)
     expect(result.current.error).toBeNull()
-    expect(toastManager.add).toHaveBeenCalledWith(expect.objectContaining({ title: "Environment removed — cleanup incomplete", type: "warning", timeout: 0, description: after.storageCleanup.warnings[0] }))
+    expect(toastManager.add).toHaveBeenCalledWith(expect.objectContaining({ title: "Environment removed — cleanup incomplete", type: "warning", timeout: 0, description: expect.stringContaining("A base image is locked; cached files were kept.") }))
     expect(result.current.environmentActions).toEqual({})
   })
 
@@ -107,7 +107,7 @@ describe("environment action feedback", () => {
     await act(async () => { resetting.resolve(state); await task })
     expect(result.current.environmentActions).toEqual({})
   })
-  it("does not let a delayed creation progress read erase a completed VM", async () => {
+  it.each(["container", "microVm", "fullVm"] as const)("does not let a delayed creation progress read erase a completed %s", async kind => {
     const creation = deferred<PlatformState>(), progress = deferred<PlatformState>()
     vi.mocked(platformApi.createEnvironment).mockReturnValue(creation.promise)
     const { result } = renderHook(usePlatform, { wrapper })
@@ -115,14 +115,14 @@ describe("environment action feedback", () => {
     vi.mocked(platformApi.getState).mockReturnValue(progress.promise)
     let task!: Promise<void>
     act(() => {
-      task = result.current.createEnvironment({ kind: "fullVm", name: "New VM" } as CreateEnvironmentRequest)
+      task = result.current.createEnvironment({ kind, name: "New environment" } as CreateEnvironmentRequest)
     })
     await waitFor(() => expect(platformApi.getState).toHaveBeenCalledTimes(2))
     const completed = structuredClone(state)
-    completed.environments.push({ id: "New VM", kind: "fullVm", status: "stopped" } as Environment)
+    completed.environments.push({ id: "New environment", kind, status: "stopped" } as Environment)
     await act(async () => { creation.resolve(completed); await task })
     await act(async () => { progress.resolve(state); await progress.promise })
-    expect(result.current.state?.environments.at(-1)?.id).toBe("New VM")
+    expect(result.current.state?.environments.at(-1)?.id).toBe("New environment")
     expect(result.current.state?.environments.at(-1)?.status).toBe("stopped")
   })
 

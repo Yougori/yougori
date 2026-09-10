@@ -2129,7 +2129,7 @@ for (const theme of ["light", "dark"]) {
   })
 }
 
-test("creation locks controls while pending and retains the draft after a failed start", async ({ page }) => {
+test("an early creation failure leaves the popup closed and preserves the next draft", async ({ page }) => {
   await openGraph(page, [])
   await page.evaluate(async () => {
     const url = "/src/api/platform-api.ts"
@@ -2146,44 +2146,38 @@ test("creation locks controls while pending and retains the draft after a failed
   await dialog.getByRole("textbox", { name: "Name", exact: true }).fill("Retry workspace")
   await dialog.getByRole("button", { name: "SaaS", exact: true }).click()
   await dialog.getByRole("button", { name: "Create environment", exact: true }).click()
-  await expect(dialog.getByRole("button", { name: "Cancel", exact: true })).toBeDisabled()
-  await expect(dialog.getByRole("slider", { name: "Memory preferred", exact: true })).toBeDisabled()
-  await expect(dialog.getByRole("radio", { name: "MicroVM", exact: true })).toBeDisabled()
-  await expect(dialog.getByRole("combobox", { name: "OCI image", exact: true })).toBeDisabled()
-  for (const purpose of await dialog.getByRole("group", { name: "What are you building?", exact: true }).getByRole("button").all()) {
-    await expect(purpose).toBeDisabled()
-  }
-  await page.keyboard.press("Escape")
+  await expect(dialog).toHaveCount(0)
+  await page.getByRole("button", { name: "New environment", exact: true }).click()
   await expect(dialog).toBeVisible()
+  await dialog.getByRole("textbox", { name: "Name", exact: true }).fill("Keep my next draft")
   await page.evaluate(() => window.dispatchEvent(new Event("fail-create")))
-  await expect(dialog.getByRole("alert")).toHaveText("Unable to prepare this image")
-  await expect(dialog.getByRole("textbox", { name: "Name", exact: true })).toHaveValue("Retry workspace")
-  await expect(dialog.getByRole("combobox", { name: "OCI image", exact: true })).toContainText("node:slim")
-  await expect(dialog.getByRole("button", { name: "SaaS", exact: true })).toHaveAttribute("aria-pressed", "true")
+  await expect(page.locator('[data-slot="toast-description"]').filter({ hasText: "Unable to prepare this image" })).toBeVisible()
+  await expect(dialog.getByRole("alert")).toHaveCount(0)
+  await expect(dialog.getByRole("textbox", { name: "Name", exact: true })).toHaveValue("Keep my next draft")
   await expect(dialog.getByRole("slider", { name: "Memory preferred", exact: true })).toBeEnabled()
   await dialog.getByRole("button", { name: "Create environment", exact: true }).click()
   await expect(dialog).not.toBeVisible()
-  await expect(page.getByRole("button", { name: "Connect capabilities to Retry workspace", exact: true })).toBeVisible()
+  await expect(page.getByRole("button", { name: "Connect capabilities to Keep my next draft", exact: true })).toBeVisible()
 })
 
-for (const fails of [false, true]) {
-  test(`VM creation leaves the popup and keeps its node through ${fails ? "failure" : "completion"}`, async ({ page }) => {
+for (const category of ["Container", "GPU", "MicroVM", "VM"]) for (const fails of [false, true]) {
+  test(`${category} creation leaves the popup and keeps its node through ${fails ? "failure" : "completion"}`, async ({ page }) => {
     await openGraph(page, [])
     await page.evaluate(async fails => {
+      localStorage.setItem("opendock.cuda.fixture", JSON.stringify({ supported: true, installed: true, running: false, detail: "Browser creation fixture" }))
       const url = "/src/api/platform-api.ts", { platformApi } = await import(url)
       const original = platformApi.createEnvironment
       platformApi.createEnvironment = async (request: Parameters<typeof original>[0]) => {
-        if (request.kind !== "fullVm") return original(request)
         const pending = await original(request)
         const environment = pending.environments.find((item: Environment) => item.name === request.name)!
         environment.status = "provisioning"
         localStorage.setItem("opendock.platform.v1", JSON.stringify(pending))
-        await new Promise(resolve => window.addEventListener("finish-vm-creation", resolve, { once: true }))
+        await new Promise(resolve => window.addEventListener("finish-environment-creation", resolve, { once: true }))
         platformApi.createEnvironment = original
         const finished = JSON.parse(localStorage.getItem("opendock.platform.v1")!) as PlatformState
         const node = finished.environments.find(item => item.id === environment.id)!
         node.status = fails ? "error" : "stopped"
-        if (fails) node.lastError = "VM preparation failed: Disk is full. Delete this node and create the VM again."
+        if (fails) node.lastError = "Environment creation failed: Disk is full. Delete this node and create the environment again."
         localStorage.setItem("opendock.platform.v1", JSON.stringify(finished))
         if (fails) throw new Error(node.lastError)
         return finished
@@ -2191,10 +2185,10 @@ for (const fails of [false, true]) {
     }, fails)
     await page.getByRole("button", { name: "New environment", exact: true }).click()
     const dialog = page.getByRole("dialog", { name: "New environment", exact: true })
-    await dialog.getByText("VM", { exact: true }).click()
+    await dialog.getByText(category, { exact: true }).click()
     await expect(dialog.getByText("Full OS", { exact: true })).toHaveCount(0)
     await dialog.getByRole("textbox", { name: "Name", exact: true }).fill("Background VM")
-    await dialog.getByRole("textbox", { name: "Installer ISO or virtual disk", exact: true }).fill("C:\\test\\installer.iso")
+    if (category === "VM") await dialog.getByRole("textbox", { name: "Installer ISO or virtual disk", exact: true }).fill("C:\\test\\installer.iso")
     await dialog.getByRole("button", { name: "Create environment", exact: true }).click()
     await expect(dialog).toHaveCount(0)
     const node = page.locator("[data-environment-id]").filter({ hasText: "Background VM" })
@@ -2212,7 +2206,7 @@ for (const fails of [false, true]) {
     // Completing the old request must not close or clear a newly opened form.
     await page.getByRole("button", { name: "New environment", exact: true }).click()
     await dialog.getByRole("textbox", { name: "Name", exact: true }).fill("Keep my next draft")
-    await page.evaluate(() => window.dispatchEvent(new Event("finish-vm-creation")))
+    await page.evaluate(() => window.dispatchEvent(new Event("finish-environment-creation")))
     await expect(node).toHaveAttribute("aria-busy", "false")
     await expect(node).toHaveAttribute("data-environment-id", id!)
     await expect(dialog.getByRole("textbox", { name: "Name", exact: true })).toHaveValue("Keep my next draft")
@@ -2220,6 +2214,7 @@ for (const fails of [false, true]) {
     await dialog.getByRole("button", { name: "Cancel", exact: true }).click()
     await expect(node.getByRole("button", { name: "Start", exact: true })).toBeEnabled()
     if (fails) {
+      await expect(node).toContainText("Disk is full")
       await node.getByRole("button", { name: "Configure Background VM", exact: true }).click()
       await expect(sheet.getByLabel("Environment needs attention")).toContainText("Disk is full")
       await expect(sheet.getByRole("button", { name: "Retry Start", exact: true })).toBeEnabled()

@@ -13,4 +13,10 @@ describe("storage cleanup reporting", () => {
   it("does not claim reclamation when none was measured", () => {
     expect(storageCleanupDescription({ reclaimedCacheBytes: 0, warnings: [] })).toContain("No additional disk space")
   })
+  it("reports zero reclaimed bytes even when a deferred cleanup has notes", () => {
+    const text = storageCleanupDescription({ reclaimedCacheBytes: 0, reclaimedDiskBytes: 0, warnings: ["Standard containers are still running."], notes: ["GPU disk compacted without starting CUDA."] })
+    expect(text).toMatch(/^No additional disk space was reclaimed\./)
+    expect(text).toContain("Standard containers are still running.")
+    expect(text).toContain("GPU disk compacted without starting CUDA.")
+  })
 })

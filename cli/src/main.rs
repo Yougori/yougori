@@ -1,6 +1,7 @@
 use yougori_cli::{catalog, client, parse, wire, GUIDE, SKILL};
 use serde_json::{json, Value};
 use std::{io::Read, path::PathBuf};
+mod output;
 
 fn input(path: &str) -> Result<Value, String> {
     let mut bytes = Vec::new();
@@ -47,7 +48,7 @@ async fn run(args: Vec<String>) -> Result<i32, String> {
                 .last()
                 .is_some_and(|s| matches!(s.as_str(), "--help" | "-h")))
     {
-        print!("{}", parse::HELP);
+        print!("{}", output::help(parse::HELP, output::stdout_color()));
         return Ok(0);
     }
     if args[0] == "--version" {
@@ -67,7 +68,7 @@ async fn run(args: Vec<String>) -> Result<i32, String> {
         } else {
             json!({"protocolVersion":wire::VERSION,"methods":catalog::methods()})
         };
-        println!("{}", serde_json::to_string_pretty(&result).unwrap());
+        println!("{}", output::json(&result, output::stdout_color()));
         return Ok(0);
     }
     if args[0] == "skills" {
@@ -115,7 +116,7 @@ async fn run(args: Vec<String>) -> Result<i32, String> {
         .unwrap_or(0))
 }
 fn wire_json(value: Value) -> String {
-    serde_json::to_string_pretty(&wire::Response::success(value)).unwrap()
+    output::json(&serde_json::to_value(wire::Response::success(value)).unwrap(), output::stdout_color())
 }
 fn main() {
     let result = tokio::runtime::Builder::new_current_thread()
@@ -128,7 +129,7 @@ fn main() {
         Err(error) => {
             println!(
                 "{}",
-                serde_json::to_string_pretty(&wire::Response::failure(error)).unwrap()
+                output::json(&serde_json::to_value(wire::Response::failure(error)).unwrap(), output::stdout_color())
             );
             1
         }

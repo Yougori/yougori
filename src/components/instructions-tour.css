@@ -11,8 +11,7 @@
 .tour-card p { margin: 0; line-height: 1.65; }
 .tour-card .tour-hint { margin-top: 10px; color: var(--muted-foreground); font-size: 12px; }
 .tour-card .tour-status { margin-top: 12px; padding: 8px 10px; border-left: 2px solid #547bb8; background: var(--muted); font-size: 12px; line-height: 1.5; }
-.tour-command { margin-top: 12px; }
-.tour-command textarea { display: block; width: 100%; height: 92px; margin-bottom: 8px; padding: 8px; resize: vertical; border: 1px solid var(--border); border-radius: 6px; background: var(--muted); font: 11px/1.5 ui-monospace, monospace; overflow-wrap: anywhere; }
+.tour-website { margin-top: 12px; overflow-wrap: anywhere; }
 .tour-actions { display: flex; justify-content: space-between; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 14px; border-top: 1px solid var(--border); }
 .tour-actions button { min-height: 36px; border-radius: 7px; padding: 0 12px; font-size: 12px; }
 .tour-actions .tour-next { background: #234b94; border-color: #234b94; color: white; }

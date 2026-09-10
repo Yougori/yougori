@@ -1,20 +1,36 @@
 import { spawn, spawnSync } from "node:child_process"
 import { existsSync } from "node:fs"
 import { describe, expect, it, vi } from "vitest"
-import { helloWebsiteCheck, helloWebsiteCommand, helloWebsitePython, verifyHelloWebsite } from "./tour-website"
+import { buildHelloWebsite, helloWebsiteCheck, helloWebsiteCommand, helloWebsitePython, helloWebsiteSetupPython, verifyHelloWebsite } from "./tour-website"
 
 describe("Hello World tutorial", () => {
-  it("generates a single pasteable shell command with native Python setup and no file sharing", () => {
+  it("generates a bounded API command with native Python setup and no file sharing", () => {
     const command = helloWebsiteCommand("test-run")
     expect(command).not.toMatch(/[\r\n]/)
-    expect(command.length).toBeLessThan(4096)
+    expect(Buffer.byteLength(helloWebsiteCommand("x".repeat(80)))).toBeLessThanOrEqual(32768)
     for (const manager of ["apk", "apt-get", "dnf", "microdnf", "yum", "zypper"]) expect(command).toContain(manager)
     expect(command).not.toContain("http.server --directory")
     expect(helloWebsitePython("test-run")).not.toContain("SimpleHTTPRequestHandler")
     expect(helloWebsiteCheck("test-run")).toContain("127.0.0.1:3000")
     expect(helloWebsiteCheck("test-run")).toContain("timeout=3")
-    expect(helloWebsiteCheck("test-run")).toContain("read(4096)")
+    expect(helloWebsiteCheck("test-run")).toContain("read(32768)")
     for (const invalid of ["", "bad'; run-this", "x".repeat(81)]) expect(() => helloWebsiteCommand(invalid)).toThrow("Invalid tutorial")
+  })
+  it("dispatches once to the chosen container, reports errors and permits an explicit retry", async () => {
+    let finish!: (value: { exitCode: number; stdout: string; stderr: string }) => void
+    const execute = vi.fn(() => new Promise<{ exitCode: number; stdout: string; stderr: string }>(resolve => { finish = resolve }))
+    const first = buildHelloWebsite(execute, "env-first", "test-run")
+    const repeated = buildHelloWebsite(execute, "env-first", "test-run")
+    expect(repeated).toBe(first)
+    await Promise.resolve()
+    expect(execute).toHaveBeenCalledExactlyOnceWith("env-first", helloWebsiteCommand("test-run"))
+    finish({ exitCode: 1, stdout: "", stderr: "Package download failed" })
+    await expect(first).rejects.toThrow("Package download failed")
+    const retry = buildHelloWebsite(execute, "env-first", "test-run")
+    await Promise.resolve()
+    finish({ exitCode: 0, stdout: "Installed Python\nopendock-hello-test-run\n", stderr: "" })
+    await expect(retry).resolves.toBeUndefined()
+    expect(execute).toHaveBeenCalledTimes(2)
   })
   it("checks the exact current tutorial's response, not merely an open port", async () => {
     const execute = vi.fn().mockResolvedValue({ exitCode: 0, stdout: "opendock-hello-test-run\n", stderr: "" })
@@ -47,7 +63,9 @@ it.skipIf(!hasPython)("serves Hello World over real loopback HTTP without disclo
       expect(response.status).toBe(200)
       expect(response.headers.get("cache-control")).toBe("no-store")
       const body = await response.text()
-      expect(body).toContain("<h1>Hello World!</h1>")
+      expect(body).toContain('<h1 id="hello">Hello<br><span>World!</span></h1>')
+      expect(response.headers.get("content-security-policy")).toContain("style-src 'unsafe-inline'")
+      expect(response.headers.get("x-yougori-tutorial")).toBe("opendock-hello-test-run")
       expect(body).toContain("opendock-hello-test-run")
       expect(body).not.toContain("DO_NOT_REFLECT")
       expect(body).not.toContain("root:")
@@ -58,14 +76,21 @@ it.skipIf(!hasPython)("serves Hello World over real loopback HTTP without disclo
 }, 15000)
 
 const bash = process.platform === "win32" ? "C:/Program Files/Git/bin/bash.exe" : "/bin/bash"
+it.skipIf(!hasPython)("the staged website and setup are valid Python", () => {
+  for (const code of [helloWebsitePython("test-run"), helloWebsitePython("test-run", "0.0.0.0", 3000, true), helloWebsiteSetupPython("test-run")]) {
+    const result = spawnSync(python, [...pythonArgs, "-c", "import sys; compile(sys.stdin.read(), '<website>', 'exec')"], { input: code, encoding: "utf8", windowsHide: true, timeout: 5000 })
+    expect(result.stderr).toBe("")
+    expect(result.status).toBe(0)
+  }
+})
 it.skipIf(!existsSync(bash))("both generated commands pass real shell syntax checking", () => {
   for (const command of [helloWebsiteCommand("test-run"), helloWebsiteCheck("test-run")]) {
-    const result = spawnSync(bash, ["-n", "-c", command], { encoding: "utf8", windowsHide: true, timeout: 5000 })
+    const result = spawnSync(bash, ["-n"], { input: command, encoding: "utf8", windowsHide: true, timeout: 5000 })
     expect(result.stderr).toBe("")
     expect(result.status).toBe(0)
   }
   // Inspect the nested sh -c payload too, without executing its package setup.
-  const nested = spawnSync(bash, ["-c", `sh() { bash -n -c "$2"; }; ${helloWebsiteCommand("test-run")}`], { encoding: "utf8", windowsHide: true, timeout: 5000 })
+  const nested = spawnSync(bash, ["-s"], { input: `sh() { printf '%s' "$2" | bash -n; }; ${helloWebsiteCommand("test-run")}`, encoding: "utf8", windowsHide: true, timeout: 5000 })
   expect(nested.stderr).toBe("")
   expect(nested.status).toBe(0)
 })

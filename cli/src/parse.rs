@@ -41,7 +41,8 @@ Resource edits: env resources ENV_ID --memory 4 --memory-max 8 --yes
 
 Options: --yes (explicit confirmation), --dry-run (syntax only), --no-wait,
          --timeout SECONDS (default 3600), --json OBJECT / --file PATH.
-JSON output; errors exit nonzero. env skills and skills print output Markdown.
+JSON output; coloured in terminals, plain when piped or NO_COLOR is set.
+Errors exit nonzero. env skills and skills print output Markdown.
 Closing this client does not cancel an accepted job. Inspect jobs before retrying.
 Run schema METHOD for exact parameters; skills print includes the full guide.
 "#;
