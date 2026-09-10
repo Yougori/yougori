@@ -14,6 +14,27 @@ fn options(token: &str) -> AccountOptions {
 }
 
 #[test]
+fn accepts_variable_length_tunnel_secrets_and_rejects_malformed_values() {
+    // Synthetic credentials only: dashboard tokens can contain a UUID-sized secret.
+    for secret in [STANDARD.encode([7u8; 32]), STANDARD.encode([9u8; 36])] {
+        let token = STANDARD.encode(serde_json::to_vec(&json!({
+            "a": "0123456789abcdef0123456789abcdef",
+            "t": "01234567-89ab-4def-8123-456789abcdef",
+            "s": secret
+        })).unwrap());
+        assert_eq!(token_id(&token).unwrap(), "01234567-89ab-4def-8123-456789abcdef");
+    }
+    for secret in ["", "not base64!"] {
+        let token = STANDARD.encode(serde_json::to_vec(&json!({
+            "a": "0123456789abcdef0123456789abcdef",
+            "t": "01234567-89ab-4def-8123-456789abcdef",
+            "s": secret
+        })).unwrap());
+        assert!(token_id(&token).is_err());
+    }
+}
+
+#[test]
 fn validates_hosts_and_tokens_without_echoing_secrets() {
     assert_eq!(hostname(" App.Example.com ").unwrap(), "app.example.com");
     for name in [
@@ -403,14 +424,22 @@ fn windows_vault_round_trip_uses_only_a_unique_test_credential() {
     }
     assert!(load(&id, 4200).unwrap().is_none());
     let cleanup = Cleanup(vault);
-    let mut options = options(&test_token());
-    options.remember = true;
-    let account = Account::resolve(&id, 4200, Some(45000), options).unwrap();
+    let mut saved_options = options(&test_token());
+    saved_options.remember = true;
+    let account = Account::resolve(&id, 4200, Some(45000), saved_options).unwrap();
     account.remember(&id, 4200).unwrap();
     let saved = load(&id, 4200).unwrap().unwrap();
     assert_eq!(saved.hostname, "app.example.com");
     assert_eq!(saved.host_port, 45000);
     assert!(saved.token == test_token());
+    // Reconnecting reads the token natively from this node/port's vault entry.
+    let mut reconnect = options("");
+    reconnect.token = None;
+    let account = Account::resolve(&id, 4200, Some(45000), reconnect).unwrap();
+    assert!(account.credentials.token == test_token());
+    assert_eq!(account.public_url(), "https://app.example.com");
+    assert!(load(&id, 4201).unwrap().is_none());
+    assert!(load(&format!("{id}-other"), 4200).unwrap().is_none());
     drop(cleanup);
     assert!(load(&id, 4200).unwrap().is_none());
 }

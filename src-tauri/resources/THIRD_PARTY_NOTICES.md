@@ -11,6 +11,31 @@ The links below identify upstream projects and source locations. They are not,
 by themselves, a complete corresponding-source distribution or a written source
 offer. They must not be represented as proof of GPL/LGPL release compliance.
 
+## FAT filesystem support
+
+The desktop uses fatfs 0.3.6 to create independent imported-files drives for VMs.
+Upstream: https://github.com/rafalh/rust-fatfs
+
+Copyright 2017 Rafał Harabień
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+of the Software, and to permit persons to whom the Software is furnished to do
+so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
 ## QEMU and firmware
 
 - QEMU Windows distribution: GPL version 2 at the project level; individual files and libraries carry their own GPL, LGPL, or other compatible licenses. The bundled distribution includes `runtime/qemu/COPYING`, `runtime/qemu/COPYING.LIB`, and its upstream `README.rst`. Use the bundled manifests and source records to identify the exact shipped build.
@@ -73,6 +98,7 @@ offer. They must not be represented as proof of GPL/LGPL release compliance.
 - xterm.js 5.5.0 and addon-fit 0.10.0: MIT. Source: https://github.com/xtermjs/xterm.js/tree/5.5.0
 - Go-FUSE 2.5.1: BSD-3-Clause. Source: https://github.com/hanwen/go-fuse/tree/v2.5.1
 - Go `golang.org/x/sys`: BSD-3-Clause. Source: https://go.googlesource.com/sys/
+- Container startup configuration uses the containerd Go API, containerd/log, containerd/ttrpc, gRPC-Go, and Google RPC generated types (Apache-2.0), Go protobuf and `golang.org/x/net` / `golang.org/x/text` (BSD-3-Clause), and Logrus (MIT). Exact versions and upstream license texts are included in `WORKSPACE_LICENSES.txt`; the agent's `go.mod` and `go.sum` pin the source dependencies.
 - License texts for these additions are included in `WORKSPACE_LICENSES.txt` beside this notice.
 - Optional cloudflared 2026.8.3 is downloaded directly from Cloudflare's release when the user enables a tunnel. It is not bundled in Yougori. Source and Apache-2.0 license: https://github.com/cloudflare/cloudflared/tree/2026.8.3
 

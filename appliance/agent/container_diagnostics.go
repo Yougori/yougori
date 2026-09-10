@@ -11,10 +11,21 @@ import (
 )
 
 type containerState struct {
+	Status    string `json:"Status"`
 	Running   bool   `json:"Running"`
+	Paused    bool   `json:"Paused"`
+	StartedAt string `json:"StartedAt"`
 	ExitCode  int    `json:"ExitCode"`
 	OOMKilled bool   `json:"OOMKilled"`
 	Error     string `json:"Error"`
+}
+
+func (state containerState) live() bool {
+	switch strings.ToLower(strings.TrimSpace(state.Status)) {
+	case "running", "paused", "pausing", "restarting":
+		return true
+	}
+	return state.Running || state.Paused
 }
 
 // Keep only the tail even if one log line is huge.
@@ -36,7 +47,7 @@ func (b *logTail) Write(p []byte) (int, error) {
 }
 
 func failureDescription(state containerState, logs string) string {
-	if state.Running {
+	if state.live() {
 		return ""
 	}
 	message := fmt.Sprintf("Container exited with code %d.", state.ExitCode)
@@ -76,11 +87,15 @@ func (s *server) containerDiagnostics(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var tail logTail
-	if !state.Running {
-		command := exec.CommandContext(ctx, "nerdctl", "--namespace", namespace, "logs", "--tail", "40", id)
+	if !state.live() {
+		args := []string{"--namespace", namespace, "logs", "--tail", "40"}
+		if started, err := time.Parse(time.RFC3339Nano, state.StartedAt); err == nil && !started.IsZero() {
+			args = append(args, "--since", state.StartedAt)
+		}
+		command := exec.CommandContext(ctx, "nerdctl", append(args, id)...)
 		command.Stdout = &tail
 		command.Stderr = &tail
 		_ = command.Run()
 	}
-	writeJSON(w, 200, map[string]any{"running": state.Running, "message": failureDescription(state, string(tail.data))})
+	writeJSON(w, 200, map[string]any{"running": state.live(), "paused": state.Paused || state.Status == "pausing", "message": failureDescription(state, string(tail.data))})
 }

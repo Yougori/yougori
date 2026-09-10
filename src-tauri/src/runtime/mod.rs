@@ -35,6 +35,10 @@ mod internet_tests;
 #[cfg(test)]
 mod windows_setup_tests;
 mod workspace;
+mod file_import;
+mod snapshot_export;
+mod import_drive;
+pub use import_drive::ImportedDrive;
 
 use std::{
     collections::HashMap,

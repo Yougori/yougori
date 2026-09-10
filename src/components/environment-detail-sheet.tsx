@@ -42,6 +42,8 @@ import { CudaVerification } from "@/components/cuda-verification"
 import "./environment-detail-sheet.css"
 import { PauseIcon, XIcon } from "lucide-react"
 import { CloudEnvironmentDetails } from "@/components/cloud-environment-details"
+import { ImportedFilesDrives } from "@/components/imported-files-drives"
+import { ContainerStartupCommand } from "@/components/container-startup-command"
 
 export function EnvironmentDetailSheet({ environmentId, onOpenChange, onOpenEnvironment }: {
   environmentId: string | null
@@ -55,6 +57,7 @@ export function EnvironmentDetailSheet({ environmentId, onOpenChange, onOpenEnvi
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [selectedTab, setSelectedTab] = useState("overview")
   const [deleting, setDeleting] = useState(false)
+  const [startupSaving, setStartupSaving] = useState(false)
   const [deleteError, setDeleteError] = useState("")
   const [localAction, setLocalAction] = useState<string | null>(null)
   const [openingFromHere, setOpeningFromHere] = useState(false)
@@ -69,7 +72,7 @@ export function EnvironmentDetailSheet({ environmentId, onOpenChange, onOpenEnvi
   if (!state || !environment) return null
   if (environment.kind === "cloud") return <CloudEnvironmentDetails key={environment.id} environment={environment} onOpenChange={onOpenChange} onOpenEnvironment={onOpenEnvironment} />
   const isComputerBranch = environment.kind === "computerBranch" || environment.provider === "nativeSandbox"
-  const closeBusy = deleting || Boolean(localAction) || Boolean(action)
+  const closeBusy = deleting || startupSaving || Boolean(localAction) || Boolean(action)
   const busy = closeBusy || environment.status === "provisioning"
   const activeConnections = connections.filter(connection => connection.active).length
   const perform = async (operation: () => Promise<unknown>, label = "Updating environment…", snapshotId?: string) => {
@@ -131,7 +134,9 @@ export function EnvironmentDetailSheet({ environmentId, onOpenChange, onOpenEnvi
                 {environment.description ? <p className="inspector-description">{environment.description}</p> : null}
                 <dl className="inspector-properties"><div><dt>Environment</dt><dd>{environmentLabel(environment)}</dd></div><div><dt>Isolation</dt><dd>{environment.provider === "openDockCuda" ? "Container · shared WSL kernel" : environmentLabel(environment)}</dd></div><div><dt>Image / runtime</dt><dd className="inspector-runtime">{environment.runtime}</dd></div></dl>
               </section>
+              {environment.kind === "container" ? <ContainerStartupCommand key={`startup:${environment.id}`} environment={environment} disabled={busy} onBusyChange={setStartupSaving} /> : null}
               {environment.kind === "microVm" && environment.runtime === "builtin:alpine" ? <GuestAppLauncher environment={environment} /> : null}
+              {environment.kind === "fullVm" ? <ImportedFilesDrives key={`imported:${environment.id}`} environment={environment} /> : null}
               {!isComputerBranch ? <CudaVerification key={`${environment.id}:${environment.status}:${environment.gpuAccess}`} environment={environment} disabled={busy} onEnableGpu={() => updateEnvironmentGpu(environment.id, true)} /> : null}
               <section className="inspector-section" aria-label="Local backups">
                 <h3 className="inspector-section-title"><ArchiveIcon aria-hidden="true" />Local backups</h3>

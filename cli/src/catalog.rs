@@ -96,6 +96,7 @@ pub fn methods() -> Vec<Method> {
         true,
         None
     );
+    method!(update_container_startup_command, "Change a stopped local container's startup command while preserving its files and data volumes. Runs on next start; empty command restores the original image default. Includes CUDA containers.", "environmentId:string command:string", json!({"environmentId":"env-ID","command":"cd /project && exec npm start"}), true, None);
     method!(
         update_resource_policy,
         "Set CPU cores and memory GB min/preferred/max. Dynamic allocation remains enabled.",
@@ -156,6 +157,9 @@ pub fn methods() -> Vec<Method> {
         None
     );
     method!(attach_host_folder, "Share one explicitly chosen host folder. Inspect returned readOnly and mountPath/guestUrl for actual access.", "environmentId:string path:string readOnly:bool", json!({"environmentId":"env-ID","path":"C:/Projects/site","readOnly":true}), true, Some("Grants the environment access to this host folder."));
+    method!(copy_files_to_environment, "Copy selected absolute host paths into a running local environment. Originals are only read. Full VMs receive an independent imported-files drive; other guests receive a unique directory. No live host share or automatic execution.", "environmentId:string paths:string[]", json!({"environmentId":"env-ID","paths":["C:/Projects/site"]}), true, Some("Copies only the selected host files into this environment; originals stay unchanged."));
+    method!(list_imported_drives, "List a full VM's connected and saved imported-files drives.", "environmentId:string", env.clone(), false, None);
+    method!(set_imported_drive_attached, "Connect or disconnect an imported-files drive while its VM is shut down. Disconnected images and guest edits remain saved.", "environmentId:string transferId:string attached:bool", json!({"environmentId":"env-ID","transferId":"0123456789abcdef0123456789abcdef","attached":false}), true, None);
     method!(
         detach_host_folder,
         "Revoke one My PC folder share.",
@@ -457,6 +461,7 @@ impl Method {
             };
             let valid = match kind {
                 "string" => value.is_string(),
+                "string[]" => value.as_array().is_some_and(|items| !items.is_empty() && items.len() <= 256 && items.iter().all(|item| item.as_str().is_some_and(|s| !s.is_empty()))),
                 "bool" => value.is_boolean(),
                 "object" => value.is_object(),
                 "number" => value.as_f64().is_some_and(f64::is_finite),
@@ -506,6 +511,10 @@ mod tests {
     }
     #[test]
     fn invalid_or_unknown_parameters_never_silently_widen_access() {
+        let copy = find("copy_files_to_environment").unwrap();
+        for paths in [json!([]), json!("C:/site"), json!(["C:/site", 1]), json!([""]), json!(vec!["C:/site"; 257])] {
+            assert!(copy.validate(&json!({"environmentId":"e","paths":paths})).is_err());
+        }
         let publish = find("publish_environment_service").unwrap();
         for params in [
             json!({"environmentId":"e","port":3000,"kind":"public"}),

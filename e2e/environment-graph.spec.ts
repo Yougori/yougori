@@ -311,6 +311,67 @@ async function openGraph(page: Page, environments = [fixture("Alpha"), fixture("
   await page.getByRole("button", { name: "Fit environments", exact: true }).click()
 }
 
+for (const kind of ["container", "gpu", "microVm", "fullVm"] as const) test(`native folder drop shows an independent copy on the ${kind} node`, async ({ page }) => {
+  await page.route("**/src/api/file-import-api.ts*", async route => {
+    const response = await route.fetch()
+    await route.fulfill({ response, body: await response.text() + `
+      fileImportApi.listen = async callback => {
+        const listener = event => callback(event.detail);
+        window.addEventListener("test-native-drop", listener);
+        return () => window.removeEventListener("test-native-drop", listener);
+      };
+      fileImportApi.copy = async (id, paths, report) => {
+        document.documentElement.dataset.importCall = JSON.stringify({ id, paths });
+        report({ phase: "copying", completedBytes: 50, totalBytes: 100 });
+        return new Promise(resolve => window.addEventListener("test-copy-finish", event => resolve(event.detail), { once: true }));
+      };
+    ` })
+  })
+  const environment = fixture("Drop target", kind === "gpu" ? "container" : kind)
+  environment.status = "running"
+  if (kind === "gpu") { environment.provider = "openDockCuda"; environment.gpuAccess = true }
+  await openGraph(page, [environment, fixture("Other")])
+  const node = page.locator('[data-environment-id="Drop target"]')
+  const point = await center(node)
+  const paths = ["C:\\Projects\\My folder", "C:\\notes.txt"]
+  await page.evaluate(({ point, paths }) => {
+    const position = { x: point.x * devicePixelRatio, y: point.y * devicePixelRatio }
+    window.dispatchEvent(new CustomEvent("test-native-drop", { detail: { type: "drop", position, paths } }))
+  }, { point, paths })
+  await expect(node).toHaveAttribute("aria-busy", "true")
+  await expect(node.getByRole("status")).toContainText("Copying files · 50%")
+  await expect(node).toContainText("Originals stay on your computer")
+  await expect(page.getByRole("dialog")).toHaveCount(0)
+  await expect(page.locator('[data-environment-id="Other"]').getByRole("button", { name: "Start", exact: true })).toBeEnabled()
+  expect(await page.evaluate(() => JSON.parse(document.documentElement.dataset.importCall!))).toEqual({ id: environment.id, paths })
+  const destination = kind === "fullVm" ? "YOUGORI · 12345678" : "/yougori-import-12345678"
+  await page.evaluate(({ destination, drive }) => window.dispatchEvent(new CustomEvent("test-copy-finish", { detail: { destination, files: 2, bytes: 100, skippedLinks: 0, delivery: drive ? "drive" : "directory" } })), { destination, drive: kind === "fullVm" })
+  await expect(node).toHaveAttribute("aria-busy", "false")
+  await expect(node.getByRole("status")).toContainText(destination)
+  if (kind === "fullVm") await expect(node).toContainText("Open the YOUGORI drive inside your VM")
+})
+
+test("VM imported drives can be disconnected and reconnected while stopped", async ({ page }) => {
+  await openGraph(page, [fixture("Import VM", "fullVm")])
+  await page.evaluate(async () => {
+    const url = "/src/api/file-import-api.ts"
+    const { fileImportApi } = await import(url)
+    const drive = { id: "12345678123456781234567812345678", attached: true, bytes: 67108864 }
+    fileImportApi.drives = async () => [drive]
+    fileImportApi.setDriveAttached = async (environmentId: string, transferId: string, attached: boolean) => {
+      if (environmentId !== "Import VM" || transferId !== drive.id) throw Error("Wrong imported drive")
+      return [{ ...drive, attached }]
+    }
+  })
+  await page.getByRole("button", { name: "Configure Import VM", exact: true }).click()
+  const section = page.getByRole("region", { name: "Imported files", exact: true })
+  await expect(section).toContainText("Disconnected copies stay saved")
+  await section.getByRole("button", { name: "Disconnect drive" }).click()
+  await expect(section).toContainText("Saved")
+  await section.getByRole("button", { name: "Connect drive" }).click()
+  await expect(section).toContainText("Connected")
+})
+
 async function seedServices(page: Page, id = "Alpha") {
   await page.addInitScript(id => localStorage.setItem("opendock.workspace.v1", JSON.stringify({ [id]: { services: [{ port: 4200, protocol: "tcp", name: "Dev server", address: "127.0.0.1" }, { port: 8080, protocol: "tcp", name: "Web server", address: "0.0.0.0" }], publications: [], shares: [], notice: "" } })), id)
 }
@@ -613,6 +674,27 @@ test("running environments cannot start a local disk backup", async ({ page }) =
   const dialog = page.getByRole("dialog", { name: "Back up Alpha", exact: true })
   await expect(dialog.getByRole("alert")).toContainText("Stop this environment")
   await expect(dialog.getByRole("button", { name: "Choose destination folder", exact: true })).toBeDisabled()
+})
+
+for (const gpu of [false, true]) test(`container startup command can be saved and cleared in configuration (GPU ${gpu})`, async ({ page }) => {
+  const env = fixture("Alpha")
+  env.containerCommand = "sleep 2147483647"
+  if (gpu) { env.provider = "openDockCuda"; env.gpuAccess = true }
+  await openGraph(page, [env])
+  await page.getByRole("button", { name: "Configure Alpha", exact: true }).click()
+  const sheet = page.getByRole("dialog", { name: "Alpha", exact: true })
+  const input = sheet.getByRole("textbox", { name: "Startup command", exact: true })
+  await expect(input).toHaveValue("sleep 2147483647")
+  await input.fill("cd /project\nexec npm start")
+  await sheet.getByRole("button", { name: "Save startup command", exact: true }).click()
+  await expect(sheet.getByRole("button", { name: "Save startup command", exact: true })).toBeDisabled()
+  await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem("opendock.platform.v1")!).environments[0].containerCommand)).toBe("cd /project\nexec npm start")
+  await sheet.getByRole("tab", { name: "Resources", exact: true }).click()
+  await sheet.getByRole("tab", { name: "Overview", exact: true }).click()
+  await expect(input).toHaveValue("cd /project\nexec npm start")
+  await input.fill("")
+  await sheet.getByRole("button", { name: "Save startup command", exact: true }).click()
+  await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem("opendock.platform.v1")!).environments[0].containerCommand)).toBeUndefined()
 })
 
 test("configuration sidebar keeps compact stats, tabs and actions usable in narrow windows", async ({ page }) => {
@@ -2548,12 +2630,12 @@ test("removed PC Apps entry is not offered in the toolbar", async ({ page }) => 
   await expect(page.getByRole("button", { name: "New environment", exact: true })).toBeVisible()
 })
 
-test("Cloudflare account authentication is optional and quick links never read saved credentials", async ({ page }) => {
+test("Cloudflare quick links can still be chosen when saved credentials are unavailable", async ({ page }) => {
   const env = fixture("Alpha"); env.status = "running"
   await seedServices(page); await openGraph(page, [env])
   await page.evaluate(async () => {
     const url = "/src/api/workspace-api.ts", { workspaceApi } = await import(url)
-    workspaceApi.savedCloudflare = async () => { throw new Error("Vault must not be queried for a Quick Tunnel") }
+    workspaceApi.savedCloudflare = async () => { throw new Error("Vault unavailable") }
     const original = workspaceApi.publish
     workspaceApi.publish = (...args: Parameters<typeof original>) => {
       if (args[4] !== undefined) throw new Error("Quick link received account credentials")
@@ -2581,7 +2663,7 @@ test("Cloudflare account tokens stay masked, authenticate optionally, and can be
   await expect(dialog).toContainText("Account authentication does not make visitors log in")
   const token = dialog.getByLabel("Tunnel token", { exact: true })
   await expect(token).toHaveAttribute("type", "password")
-  await expect(dialog.getByRole("checkbox", { name: "Remember in this PC’s credential vault", exact: true })).not.toBeChecked()
+  await expect(dialog.getByRole("checkbox", { name: "Remember for this node and port", exact: true })).toBeChecked()
   await dialog.getByLabel("Public hostname", { exact: true }).fill("app.example.com")
   await dialog.getByLabel("Local tunnel port", { exact: true }).fill("45000")
   await expect(dialog.getByLabel("Cloudflare service URL", { exact: true })).toHaveText("http://127.0.0.1:45000")
@@ -2590,7 +2672,6 @@ test("Cloudflare account tokens stay masked, authenticate optionally, and can be
   await expect(dialog.getByRole("alert")).toContainText("Review the dedicated tunnel")
   await expect(dialog.getByRole("button", { name: "Disconnect cloudflare from port 4200", exact: true })).toHaveCount(0)
   await dialog.getByRole("checkbox", { name: "I reviewed this dedicated tunnel’s routes", exact: true }).check()
-  await dialog.getByRole("checkbox", { name: "Remember in this PC’s credential vault", exact: true }).check()
   await dialog.getByRole("button", { name: "Publish service", exact: true }).click()
   await expect(dialog.getByRole("button", { name: "https://app.example.com", exact: true })).toBeVisible()
   await expect(token).toHaveValue("")
@@ -2598,18 +2679,44 @@ test("Cloudflare account tokens stay masked, authenticate optionally, and can be
   expect(await page.evaluate(() => JSON.stringify(localStorage))).not.toContain("fake-test-only-token")
   await dialog.getByRole("button", { name: "Disconnect cloudflare from port 4200", exact: true }).click()
   await dialog.getByRole("button", { name: "Done", exact: true }).click()
+  // Reconnecting the same node/port uses the vault without opening setup.
+  await drag(page, page.locator('[data-service-connection-point="Alpha:4200"]'), page.locator('[data-publication-connection-point="public"]'))
+  await expect(page.locator('[data-service-card="Alpha:4200"]')).toContainText("CF")
+  await expect(dialog).toHaveCount(0)
   await page.getByRole("button", { name: "Port 4200 in Alpha", exact: true }).click()
   await dialog.getByRole("radio", { name: "Public access / Cloudflare Tunnel", exact: true }).check()
-  await expect(dialog.getByRole("radio", { name: "Quick link — no account", exact: true })).toBeChecked()
-  await dialog.getByRole("radio", { name: "Use my Cloudflare account (optional)", exact: true }).check()
+  await expect(dialog.getByRole("radio", { name: "Use my Cloudflare account (optional)", exact: true })).toBeChecked()
   await expect(dialog.getByLabel("Public hostname", { exact: true })).toHaveValue("app.example.com")
+  await expect(dialog.getByLabel("Local tunnel port", { exact: true })).toHaveValue("45000")
   await expect(token).toHaveValue("")
-  await dialog.getByRole("checkbox", { name: "I reviewed this dedicated tunnel’s routes", exact: true }).check()
-  await dialog.getByRole("button", { name: "Publish service", exact: true }).click()
+  await expect(dialog.getByRole("checkbox", { name: "I reviewed this dedicated tunnel’s routes", exact: true })).toBeChecked()
   await expect(dialog.getByRole("button", { name: "https://app.example.com", exact: true })).toBeVisible()
   await dialog.getByRole("button", { name: "Forget saved token", exact: true }).click()
   await expect(dialog.getByRole("button", { name: "Forget saved token", exact: true })).toHaveCount(0)
   await expect(dialog.getByRole("button", { name: "Disconnect cloudflare from port 4200", exact: true })).toBeVisible()
+  await dialog.getByRole("button", { name: "Disconnect cloudflare from port 4200", exact: true }).click()
+  await dialog.getByRole("button", { name: "Done", exact: true }).click()
+  await drag(page, page.locator('[data-service-connection-point="Alpha:4200"]'), page.locator('[data-publication-connection-point="public"]'))
+  await expect(dialog.getByRole("radio", { name: "Quick link — no account", exact: true })).toBeChecked()
+  await expect(page.locator('[data-service-card="Alpha:4200"]')).not.toContainText("CF")
+})
+
+test("remembered Cloudflare reconnect errors reopen account settings", async ({ page }) => {
+  const env = fixture("Alpha"); env.status = "running"
+  await seedServices(page); await openGraph(page, [env])
+  await page.evaluate(async () => {
+    const url = "/src/api/workspace-api.ts", { workspaceApi } = await import(url)
+    const publication = await workspaceApi.publish("Alpha", 4200, "cloudflare", 45000, { hostname: "app.example.com", token: "fake-test-only-token", remember: true, routesReviewed: true })
+    await workspaceApi.unpublish(publication.id)
+    workspaceApi.publish = async () => { throw new Error("Saved tunnel token has expired") }
+  })
+  await drag(page, page.locator('[data-service-connection-point="Alpha:4200"]'), page.locator('[data-publication-connection-point="public"]'))
+  const dialog = page.getByRole("dialog")
+  await expect(dialog.getByRole("alert")).toContainText("Saved tunnel token has expired")
+  await expect(dialog.getByRole("radio", { name: "Use my Cloudflare account (optional)", exact: true })).toBeChecked()
+  await expect(dialog.getByLabel("Public hostname", { exact: true })).toHaveValue("app.example.com")
+  await expect(dialog.getByLabel("Tunnel token", { exact: true })).toHaveValue("")
+  await expect(page.locator('[data-service-card="Alpha:4200"]')).not.toContainText("CF")
 })
 
 test("Cloudflare account failure allows retry without an anonymous fallback or exposing the token", async ({ page }) => {

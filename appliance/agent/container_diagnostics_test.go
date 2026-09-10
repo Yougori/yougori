@@ -9,6 +9,14 @@ func TestContainerFailureDetails(t *testing.T) {
 	if failureDescription(containerState{Running: true}, "secret") != "" {
 		t.Fatal("running container must not report a failure")
 	}
+	if failureDescription(containerState{Running: false, Paused: true, ExitCode: 0}, "old failed startup") != "" {
+		t.Fatal("a snapshot pause must not report an exit or stale logs")
+	}
+	for _, status := range []string{"pausing", "paused", "restarting"} {
+		if failureDescription(containerState{Status: status}, "old failed startup") != "" {
+			t.Fatalf("transitional state %q was reported as an exit", status)
+		}
+	}
 	for _, item := range []struct {
 		state containerState
 		text  string

@@ -4,6 +4,7 @@ mod local_backup;
 mod commands;
 mod instance_lock;
 mod host_files;
+mod file_import;
 mod host_terminal;
 mod workspace;
 mod guest_apps;
@@ -217,6 +218,7 @@ pub fn run() {
             commands::recover_vm_runtime,
             commands::update_resource_policy,
             commands::rename_environment,
+            commands::startup::update_container_startup_command,
             commands::storage::get_storage_allocation,
             commands::storage::reclaim_storage,
             commands::storage::expand_environment_storage,
@@ -257,6 +259,9 @@ pub fn run() {
             workspace::cloudflare::forget_cloudflare_account,
             workspace::unpublish_environment_service,
             workspace::attach_host_folder,
+            file_import::copy_files_to_environment,
+            file_import::list_imported_drives,
+            file_import::set_imported_drive_attached,
             workspace::detach_host_folder,
             workspace::list_environment_windows,
             workspace::focus_environment_window,

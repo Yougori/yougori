@@ -35,6 +35,9 @@ use crate::{
 pub(crate) mod vm_creation;
 pub(crate) mod storage;
 pub(crate) mod factory_reset;
+pub mod startup;
+#[cfg(test)]
+mod resource_policy_tests;
 type EnvironmentOperationLocks = HashMap<String, std::sync::Weak<tokio::sync::Mutex<()>>>;
 static NETWORK_POLICY_OPERATIONS: OnceLock<tokio::sync::Mutex<EnvironmentOperationLocks>> = OnceLock::new();
 
@@ -496,10 +499,14 @@ async fn prepare_container_start(
 
     let mut rollback = Vec::new();
     for (previous, next) in allocations {
-        if (previous.cpu - next.cpu).abs() <= f64::EPSILON
+        // Saved preferences are not evidence of applied OCI/cgroup limits.
+        // Always reconcile the target on Start/Save, including stopped edits
+        // and repairs where the cached allocation already equals the request.
+        if next.id != runtime_id(target)
+            && (previous.cpu - next.cpu).abs() <= f64::EPSILON
             && (previous.memory_gb - next.memory_gb).abs() <= f64::EPSILON
+            && !resource_update_needed(&next.id, next.cpu, next.memory_gb)
         {
-            record_applied_resource_limits(&next.id, next.cpu, next.memory_gb);
             continue;
         }
         if let Err(error) = runtime
@@ -3313,6 +3320,9 @@ pub async fn refresh_host_metrics(
         store.mutate_ephemeral(|state| {for e in &mut state.environments {if lost_cloud.contains(&e.id) {e.status=EnvironmentStatus::Error;e.last_error=Some("SSH connection was interrupted. Retry Connect. The cloud server was not stopped.".into());}} Ok(())})?;
         reconcile_connections(&store,&runtime).await?;
     }
+    // Compute and apply one container allocation at a time. Otherwise a
+    // telemetry request holding an older policy can undo a concurrent Save.
+    let container_serial = CONTAINER_POLICY_OPERATIONS.lock().await;
     let cuda_capacity = runtime.cuda_capacity().await.ok();
     let state = store.mutate_ephemeral(|state| {
         let metrics = collect_host_metrics(&state.host, runtime.storage_root());
@@ -3373,10 +3383,20 @@ pub async fn refresh_host_metrics(
                 continue;
             }
         };
+        if telemetry.paused {
+            // Snapshot pauses are temporary. Keep the node healthy and avoid
+            // changing resource limits until its processes resume.
+            continue;
+        }
         if !telemetry.running {
-            refresh.exited = true;
-            refresh.last_error = Some(Some(runtime.container_failure_detail(runtime_id(environment)).await
-                .ok().flatten().unwrap_or_else(|| "The container process exited unexpectedly. Check its startup command and memory allocation.".into())));
+            match runtime.container_failure_detail(runtime_id(environment)).await {
+                Ok(None) => continue, // The sample caught a pause or a restart.
+                Ok(Some(message)) => {
+                    refresh.exited = true;
+                    refresh.last_error = Some(Some(message));
+                }
+                Err(error) => refresh.last_error = Some(Some(error)),
+            }
             container_refreshes.push(refresh);
             continue;
         }
@@ -3441,6 +3461,7 @@ pub async fn refresh_host_metrics(
             Ok(())
         })?;
     }
+    drop(container_serial);
     for environment in state.environments.iter().filter(|environment| {
         environment.status == EnvironmentStatus::Running
             && provider(environment) == RuntimeProviderKind::NativeSandbox

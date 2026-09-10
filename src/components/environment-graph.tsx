@@ -22,6 +22,8 @@ import { createPortal } from "react-dom"
 import { allCapabilities, capabilityDefinitions, pcDefinition, capabilityEnabled, capabilityIssue, sameEndpoint, serviceId, type GraphEnvironment, type CapabilityEndpoint, type CapabilityKind } from "@/components/graph-capabilities"
 import { useCapabilityConnections } from "@/components/use-capability-connections"
 import { useWorkspaceFeatures } from "@/components/use-workspace-features"
+import { useNodeFileDrop, fileDropIssue, type NodeFileCopy } from "@/components/use-node-file-drop"
+import { NodeFileCopyStatus } from "@/components/node-file-copy-status"
 import { GraphWorkspaceDialogs } from "@/components/graph-workspace-dialogs"
 import { FixedWorkspaceControl } from "@/components/graph-workspace-controls"
 import { Status } from "@/components/shared/status"
@@ -40,6 +42,8 @@ import type { Environment } from "@/types/platform"
 import "@/components/dashboard-actions.css"
 
 interface EnvironmentNodeData extends Record<string, unknown> {
+  fileHovered?: boolean
+  fileCopy?: NodeFileCopy
   preview?: boolean
   accent: string
   active: CapabilityEndpoint | null
@@ -92,16 +96,20 @@ function EnvironmentGraphNode({ data, selected }: NodeProps<EnvironmentNode>) {
     <article
       data-environment-id={environment.id}
       data-tour-preview={data.preview || undefined}
+      data-file-drop-target={data.fileHovered || undefined}
       onClickCapture={data.preview ? event => { event.preventDefault(); event.stopPropagation() } : undefined}
       onPointerDownCapture={data.preview ? event => { event.preventDefault(); event.stopPropagation() } : undefined}
       data-environment-color={data.accent}
       style={{ "--node-accent": data.accent } as React.CSSProperties}
       data-selected={selected || highlighted || undefined}
-      aria-busy={data.pending || busy}
+      aria-busy={Boolean(data.pending || busy || data.fileCopy?.busy)}
       data-connection-eligible={data.active?.kind === "capability" ? eligible : undefined}
       title={issue ?? undefined}
       className={`workspace-node relative w-72 rounded-lg border bg-background shadow-sm/5 transition-colors ${highlighted ? "border-primary ring-2 ring-primary/30" : eligible || selected ? "border-primary/70 ring-2 ring-primary/10" : "border-border"}`}
     >
+      {data.fileHovered ? <div className="pointer-events-none absolute inset-0 z-50 flex items-center justify-center rounded-lg border-2 border-dashed border-primary bg-background/95 p-4 text-center text-xs" role="status">
+        <span>{data.fileCopy?.busy ? "A copy is already in progress" : fileDropIssue(environment) ?? "Drop to copy here"}<span className="mt-2 block text-[10px] text-muted-foreground">Original files and folders stay on your computer.</span></span>
+      </div> : null}
       {canConnect ? <Handle aria-label={`Connect another environment to ${environment.name}`} className={networkHandleClass} id={environmentTargetHandle} position={Position.Left} type="target" isConnectable={!data.preview && !data.active} /> : null}
       {!cloud && environment.workspace?.services.length ? <div aria-label={`Services in ${environment.name}`} className="nodrag flex flex-wrap gap-x-3 gap-y-4 border-b px-3 pb-2 pt-3">
         {environment.workspace.services.map(service => {
@@ -154,6 +162,7 @@ function EnvironmentGraphNode({ data, selected }: NodeProps<EnvironmentNode>) {
           <div><dt>Storage</dt><dd className="mt-1 text-xs text-foreground">+{formatBytesFromGb(environment.storageDeltaGb)}</dd></div>
         </dl>}
         {environment.status === "error" && environment.lastError ? <p className="mt-2 line-clamp-2 text-[11px] text-destructive-foreground" title={environment.lastError}>{environment.lastError}</p> : null}
+        <NodeFileCopyStatus copy={data.fileCopy} />
       </div>
       <div className="nodrag flex items-center gap-1 border-t px-3 py-2 [&_button]:z-40">
         <NodeAction label={canConnect ? `Connect ${environment.name}` : "Connections support containers, MicroVMs and VMs"}>
@@ -212,6 +221,7 @@ export function EnvironmentGraph({ environments, connections, errorContainer, on
   const tour = useInstructionsTour()
   const preview = useMemo(() => tourPreviewEnvironment(tour), [tour])
   const graphContainerRef = useRef<HTMLDivElement>(null)
+  const fileDrop = useNodeFileDrop(graphContainerRef, environments)
   const flowRef = useRef<ReactFlowInstance<EnvironmentNode, BuiltInEdge> | null>(null)
   const workspace = useWorkspaceFeatures(environments)
   const { decorated, openShares, openService, connectPublication } = workspace
@@ -234,8 +244,8 @@ export function EnvironmentGraph({ environments, connections, errorContainer, on
       selectable: environment === preview ? false : undefined,
       connectable: environment === preview ? false : undefined,
       position: { x: 70 + (index % 3) * 360, y: 65 + Math.floor(index / 3) * 310 },
-      data: { preview: environment === preview, accent: colors[environment.id] ?? "#7194c2", active, hovered, pending: pending.has(environment.id), environment, onCapabilityChange: change, onEndpointClick: clickEndpoint, onEndpointPointerDown: pointerDown, onConnect, onOpen, onSelect, onService: openService, onShares: openShares },
-    })), [preview, colors, active, hovered, pending, change, clickEndpoint, pointerDown, decorated, onConnect, onOpen, onSelect, openService, openShares])
+      data: { fileHovered: fileDrop.hovered === environment.id, fileCopy: fileDrop.copies[environment.id], preview: environment === preview, accent: colors[environment.id] ?? "#7194c2", active, hovered, pending: pending.has(environment.id), environment, onCapabilityChange: change, onEndpointClick: clickEndpoint, onEndpointPointerDown: pointerDown, onConnect, onOpen, onSelect, onService: openService, onShares: openShares },
+    })), [fileDrop.hovered, fileDrop.copies, preview, colors, active, hovered, pending, change, clickEndpoint, pointerDown, decorated, onConnect, onOpen, onSelect, openService, openShares])
   const initialEdges = useMemo<BuiltInEdge[]>(() => connections.map((connection, index): BuiltInEdge => ({
       id: connection.id,
       type: "smoothstep",

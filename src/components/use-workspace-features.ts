@@ -2,9 +2,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { workspaceApi, type EnvironmentServices, type PublicationKind } from "@/api/workspace-api"
 import type { Environment } from "@/types/platform"
 import type { GraphEnvironment } from "@/components/graph-capabilities"
-import { tourPortAdded } from "@/lib/instructions-tour"
+import { isWebsiteTour, tourPortAdded } from "@/lib/instructions-tour"
+import { accountRequest, savedCloudflareDraft } from "@/lib/cloudflare-account"
 
-export type WorkspaceDialog = { environmentId: string; type: "shares" } | { environmentId: string; type: "service"; port: number; kind?: PublicationKind }
+export type WorkspaceDialog = { environmentId: string; type: "shares" } | { environmentId: string; type: "service"; port: number; kind?: PublicationKind; error?: string; account?: boolean }
 const empty: EnvironmentServices = { services: [], shares: [], publications: [], notice: "" }
 const manualKey = "opendock.manual-ports.v1"
 function loadManual(): Record<string, number[]> {
@@ -83,7 +84,25 @@ export function useWorkspaceFeatures(environments: Environment[]) {
   }), [environments, features, manual])
   const openShares = useCallback((environmentId: string) => setDialog({ type: "shares", environmentId }), [])
   const openService = useCallback((environmentId: string, port: number, kind?: PublicationKind) => setDialog({ type: "service", environmentId, port, kind }), [])
-  const connectPublication = useCallback(async (environmentId: string, port: number, kind: PublicationKind) => { openService(environmentId, port, kind) }, [openService])
+  const publicationLocks = useRef(new Set<string>())
+  const connectPublication = useCallback(async (environmentId: string, port: number, kind: PublicationKind) => {
+    if (kind === "local" || isWebsiteTour(environmentId, "demo-publish")) { openService(environmentId, port, kind); return }
+    const key = `${environmentId}:${port}`
+    if (publicationLocks.current.has(key)) return
+    publicationLocks.current.add(key)
+    try {
+      const saved = savedCloudflareDraft(await workspaceApi.savedCloudflare(environmentId, port))
+      if (!saved) { openService(environmentId, port, "cloudflare"); return }
+      const account = accountRequest(saved)
+      await workspaceApi.publish(environmentId, port, "cloudflare", account.hostPort, account.options)
+    } catch (error) {
+      // Keep account mode on failure. Never silently switch to an anonymous link.
+      setDialog({ type: "service", environmentId, port, kind: "cloudflare", account: true, error: error instanceof Error ? error.message : String(error) })
+    } finally {
+      await refresh(environmentId)
+      publicationLocks.current.delete(key)
+    }
+  }, [openService, refresh])
   const addPort = async (environmentId: string, port: number) => {
     setManual(await workspaceApi.setManualPort(environmentId, port, true))
     openService(environmentId, port)

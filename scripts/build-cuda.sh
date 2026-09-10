@@ -3,7 +3,7 @@
 set -euo pipefail
 repo_root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 output="${1:-$repo_root/src-tauri/resources/runtime/cuda}"
-command -v go >/dev/null
+bash "$repo_root/scripts/check-agent-go.sh"
 command -v musl-gcc >/dev/null
 command -v gcc >/dev/null
 mkdir -p "$output"

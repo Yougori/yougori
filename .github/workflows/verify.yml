@@ -1,25 +1,8 @@
-name: Verify (no publishing)
+name: Verify (manual, no publishing)
 
 on:
-  push:
-    # Skip documentation/log-only pushes, including README-only artwork.
-    # Do not ignore all Markdown/text: product guides and notices are packaged.
-    paths-ignore:
-      - 'docs/**'
-      - 'README.md'
-      - 'yougorilogo.png'
-      - 'yougori1.png'
-      - 'discord.webp'
-      - 'xcom.webp'
-      - 'CHANGELOG.md'
-      - 'CONTRIBUTING.md'
-      - 'githuberror.txt'
-      - 'linux-x64.txt'
-      # Changing these verification rules alone must not start a Windows run.
-      # App code, payloads and other workflow changes still trigger the checks.
-      - '.github/workflows/verify.yml'
-  # Always report PR checks, including checks required by branch protection.
-  pull_request:
+  # Select staging when testing changes before promoting them to main.
+  # Pushes and pull requests must not start the platform checks automatically.
   workflow_dispatch:
 
 permissions:

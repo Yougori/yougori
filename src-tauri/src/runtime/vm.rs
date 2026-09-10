@@ -55,7 +55,7 @@ pub(super) struct VmPortReservations {
 }
 
 impl VmPortReservations {
-    fn new() -> Self {
+    pub(super) fn new() -> Self {
         Self { ports: Vec::new() }
     }
 
@@ -276,18 +276,22 @@ impl RuntimeManager {
     }
 
     pub async fn vm_storage_usage(&self, disk_path: &Path) -> Result<VmStorageUsage, String> {
-        let mut paths = vec![disk_path.to_path_buf()];
+        let mut paths = vec![(disk_path.to_path_buf(), false)];
         if let Some(directory) = disk_path.parent() {
             let branch_boot = directory.join("branch-boot.qcow2");
             if branch_boot.is_file() {
-                paths.push(branch_boot);
+                paths.push((branch_boot, false));
             }
+            paths.extend(super::import_drive::storage_paths(directory)?.into_iter().map(|path| (path, true)));
         }
         let mut usage = VmStorageUsage::default();
-        for path in paths {
+        for (path, raw) in paths {
+            let mut arguments = vec!["info".into(), "--force-share".into(), "--output=json".into()];
+            if raw { arguments.extend(["-f".into(), "raw".into()]); }
+            arguments.push(path_string(&path));
             let output = command_output(
                 &self.layout.qemu_img,
-                &["info".into(), "--output=json".into(), path_string(&path)],
+                &arguments,
                 "inspect virtual machine storage",
             )
             .await?;
@@ -2571,7 +2575,7 @@ impl RuntimeManager {
             graphics[0].into(),
             graphics[1].into(),
             "-device".into(),
-            "qemu-xhci".into(),
+            "qemu-xhci,p2=15,p3=15".into(),
             "-device".into(),
             "usb-tablet".into(),
             "-device".into(),
@@ -2605,6 +2609,7 @@ impl RuntimeManager {
             path_string(&self.layout.qemu_data()),
         ];
         arguments.extend(graphics.into_iter().skip(2).map(String::from));
+        arguments.extend(super::import_drive::drive_arguments(&environment_directory)?);
         if has_branch_boot {
             let boot_file = json!({
                 "driver": "file",

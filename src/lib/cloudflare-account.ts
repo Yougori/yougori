@@ -1,7 +1,16 @@
-import type { CloudflareAccountOptions } from "@/api/workspace-api"
+import type { CloudflareAccountOptions, SavedCloudflareAccount } from "@/api/workspace-api"
 
 export interface CloudflareDraft { mode: "quick" | "account"; hostname: string; localPort: string; token: string; remember: boolean; routesReviewed: boolean }
-export const emptyCloudflareDraft = (): CloudflareDraft => ({ mode: "quick", hostname: "", localPort: "", token: "", remember: false, routesReviewed: false })
+export const emptyCloudflareDraft = (): CloudflareDraft => ({ mode: "quick", hostname: "", localPort: "", token: "", remember: true, routesReviewed: false })
+
+export function savedCloudflareDraft(saved: SavedCloudflareAccount): CloudflareDraft | null {
+  if (!saved.saved) return null
+  const draft: CloudflareDraft = { ...emptyCloudflareDraft(), mode: "account", hostname: saved.hostname, localPort: String(saved.hostPort ?? ""), routesReviewed: true }
+  // Saved credentials were reviewed on successful connection. Validate their
+  // public metadata again, and let the native backend retrieve the secret.
+  accountRequest(draft)
+  return draft
+}
 
 export function accountRequest(draft: CloudflareDraft): { hostPort: number; options: CloudflareAccountOptions } {
   const hostname = draft.hostname.trim().toLowerCase()

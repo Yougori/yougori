@@ -104,7 +104,8 @@ fn token_id(value: &str) -> Result<String, String> {
     if account.len() != 32
         || !account.bytes().all(|b| b.is_ascii_hexdigit())
         || id.is_nil()
-        || STANDARD.decode(secret).map_err(|_| invalid)?.len() != 32
+        // Cloudflared accepts a base64-encoded byte string, not a fixed-size key.
+        || STANDARD.decode(secret).map_err(|_| invalid)?.is_empty()
     {
         return Err(invalid.into());
     }
