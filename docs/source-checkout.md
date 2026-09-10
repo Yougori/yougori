@@ -44,10 +44,13 @@ release certification described in the platform guides.
 ## When GitHub checks run
 
 Pushes that only change or delete files under `docs/`, the root `README.md`,
-`CHANGELOG.md`, `CONTRIBUTING.md`, or diagnostic logs `githuberror.txt` and
-`linux-x64.txt` do not start Windows verification.
+its images `yougorilogo.png` and `yougori1.png`, `CHANGELOG.md`,
+`CONTRIBUTING.md`, or diagnostic logs `githuberror.txt` and `linux-x64.txt`
+do not start Windows verification. The verification configuration itself,
+`.github/workflows/verify.yml`, is also excluded from push triggers so changing
+these rules alongside the README does not start a Windows run.
 Any other changed file still triggers the full Windows checks, including code
-deletions, dependencies, workflows, bundled runtime files, product AI guides,
+deletions, dependencies, other workflows, bundled runtime files, product AI guides,
 and license notices. Mixed documentation/code pushes still run the checks.
 
 Windows is the only job that runs automatically on pushes and pull requests.
