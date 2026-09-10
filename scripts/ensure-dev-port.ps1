@@ -1,10 +1,24 @@
 param(
     [ValidateRange(1, 65535)]
-    [int]$Port = 1420
+    [int]$Port = 1420,
+    [switch]$CheckDesktopOnly
 )
 
 $ErrorActionPreference = 'Stop'
 $workspace = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..')).Path.TrimEnd('\')
+
+if ($CheckDesktopOnly) {
+    # The native singleton is local to this Windows session. Include headless
+    # engines: a missing dashboard or Vite listener does not mean they exited.
+    $sessionId = [System.Diagnostics.Process]::GetCurrentProcess().SessionId
+    $desktops = @(Get-Process -Name yougori -ErrorAction SilentlyContinue | Where-Object { $_.SessionId -eq $sessionId })
+    if ($desktops.Count -gt 0) {
+        $desktopIds = ($desktops | Select-Object -ExpandProperty Id) -join ', '
+        throw "Yougori is already running (PID $desktopIds). Exit the existing app completely before running npm run desktop:dev. For a background engine, use .\src-tauri\resources\cli\yougori-cli.exe app quit --yes (this also stops its workloads). This launch has not started or stopped any app or development server."
+    }
+    return
+}
+
 $listeners = @(Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue)
 
 function Find-WorkspaceTauriAncestor([int]$ProcessId) {
