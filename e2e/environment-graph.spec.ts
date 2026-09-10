@@ -1083,7 +1083,10 @@ test("PORT labels open service ports on containers, MicroVMs and VMs and the gui
   await guide.getByRole("button", { name: "Next", exact: true }).click()
   await expect(page.locator("[data-tour-step]")).toHaveAttribute("data-tour-step", "connections")
   await expect(guide.getByRole("heading", { name: "Connect environments privately", exact: true })).toBeVisible()
+  await guide.getByRole("button", { name: "Skip to hands-on", exact: true }).click()
+  await expect(page.locator("[data-tour-step]")).toHaveAttribute("data-tour-step", "create-open")
   await guide.getByRole("button", { name: "Skip", exact: true }).click()
+  await expect(guide).toBeHidden()
   expect(await page.evaluate(() => [localStorage.getItem("opendock.platform.v1"), localStorage.getItem("opendock.workspace.manual.v2")])).toEqual(before)
 })
 

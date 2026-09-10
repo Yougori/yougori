@@ -45,15 +45,17 @@ release certification described in the platform guides.
 
 Pushes that only change or delete files under `docs/`, the root `README.md`,
 `CHANGELOG.md`, `CONTRIBUTING.md`, or diagnostic logs `githuberror.txt` and
-`linux-x64.txt` do not start the Windows, guest-agent, or Linux preview checks.
-Any other changed file still triggers the full automatic checks, including code
+`linux-x64.txt` do not start Windows verification.
+Any other changed file still triggers the full Windows checks, including code
 deletions, dependencies, workflows, bundled runtime files, product AI guides,
 and license notices. Mixed documentation/code pushes still run the checks.
 
-Pull requests always run the checks so required status checks are not left
-pending by path filters. All workflows keep their **Run workflow** button in
-GitHub Actions for manual verification; macOS remains manual-only. These rules
-apply after the workflow changes are pushed and do not cancel existing runs.
+Windows is the only job that runs automatically on pushes and pull requests.
+Pull requests always run Windows verification so required status checks are not
+left pending by path filters. Guest-agent, Linux desktop preview and macOS
+checks run only when explicitly requested with their **Run workflow** buttons
+in GitHub Actions. Windows verification also remains available manually. These
+rules apply after the workflow changes are pushed and do not cancel existing runs.
 
 ## Maintainer runtime rebuilds
 

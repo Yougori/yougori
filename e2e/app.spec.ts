@@ -18,7 +18,9 @@ test("first launch is empty and does not invent running environments or GPU avai
 test("storage reclamation is reachable and browser preview does not invent freed bytes", async ({ page }) => {
   const action = page.getByRole("button", { name: "Reclaim space", exact: true })
   await action.click()
-  await expect(page.getByText("Storage reclamation requires the desktop runtime.", { exact: true })).toBeVisible()
+  const notification = page.getByRole("dialog", { name: "Storage cleanup complete", exact: true })
+  await expect(notification).toBeVisible()
+  await expect(notification.getByRole("paragraph")).toHaveText("No additional disk space was reclaimed. Storage reclamation requires the desktop runtime.")
   await expect(action).toBeEnabled()
   await expect(page.getByText("Your workspace starts here", { exact: true })).toBeVisible()
 })

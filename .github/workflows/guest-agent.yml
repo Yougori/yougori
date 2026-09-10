@@ -1,0 +1,27 @@
+name: Guest agent checks (manual, no publishing)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: guest-agent-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  guest-agent:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version: stable
+          cache-dependency-path: appliance/agent/go.sum
+      - name: Test Linux guest agent (not a Linux desktop certification)
+        working-directory: appliance/agent
+        run: go test -race ./...
+      - name: Test cloud agent path and permission boundaries
+        run: python3 -m unittest discover -s src-tauri/src/runtime/cloud -p test_agent.py
