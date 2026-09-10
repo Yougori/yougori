@@ -94,10 +94,21 @@ Local verification on 2026-09-09 (Ubuntu 22.04 in WSL 2, QEMU 6.2):
 - 293 frontend tests and frontend build/lint passed.
 - Windows regression checks: 144 ordinary native tests and 21 CLI tests passed.
 
-Local installer: `artifacts/linux/Yougori_1.0.0_amd64.deb` (135,292,898 bytes).
+Previous 2026-09-09 installer: 135,292,898 bytes.
 SHA-256: `b737f84d0a531e0856b664020cae699c028b43e30d20d7a6a6a0071a8774b924`.
 The local package used the freshly built frontend and Linux CLI with a prebuilt
 frontend hook; CI runs the full native-Linux npm build from a clean checkout.
+
+Branding refresh on 2026-09-10: rebuilt the current source on Ubuntu 22.04 WSL
+using the normal release checks, frontend build, Linux CLI build and Tauri DEB
+packaging. The package contains the current cube icons at all three sizes,
+updated description and current app theme. Package contents and dependency
+declarations were inspected; installation and the non-root app/CLI smoke test
+passed with isolated XDG folders, followed by removal of the test installation.
+Ubuntu supplies the installation dialog's controls and theme.
+
+Current installer: `artifacts/linux/Yougori_1.0.0_amd64.deb` (136,290,218 bytes).
+SHA-256: `656b38050f3e94db8ca8ad7fdf44075355218da2aea99580287a5ac3a5d50ae3`.
 
 This is a preview. Interactive desktop QA, clean Debian hardware, Wayland,
 Secure Boot guests, Linux GPU support and authenticated external cloud providers
