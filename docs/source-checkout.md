@@ -63,10 +63,11 @@ release certification described in the platform guides.
 
 ## When GitHub checks run
 
-Windows, guest-agent, Linux desktop preview and macOS checks are all manual.
-Pushes and pull requests do not start them automatically. Use **Run workflow**
-in GitHub Actions and select `staging` to test a candidate version. See the
-[staging and promotion workflow](../CONTRIBUTING.md) before merging into `main`.
+Every push to `staging` automatically starts Windows, guest-agent and Linux
+desktop preview checks. Pushes to other branches and pull requests have no
+automatic trigger. All workflows can still be started with **Run workflow** in
+GitHub Actions; macOS remains manual. Wait for the three staging checks to pass
+and follow the [promotion workflow](../CONTRIBUTING.md) before merging into `main`.
 
 ## Maintainer runtime rebuilds
 

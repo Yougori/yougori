@@ -1,8 +1,8 @@
-name: Verify (manual, no publishing)
+name: Verify (no publishing)
 
 on:
-  # Select staging when testing changes before promoting them to main.
-  # Pushes and pull requests must not start the platform checks automatically.
+  push:
+    branches: [staging]
   workflow_dispatch:
 
 permissions:

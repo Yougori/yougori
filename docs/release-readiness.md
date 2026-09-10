@@ -41,9 +41,10 @@ Redistributable on a fresh PC. Neither
 command publishes, signs, installs drivers nor changes existing environments.
 
 Publish changes to `staging` and follow the [promotion workflow](../CONTRIBUTING.md)
-before merging them into `main`. Windows, guest-agent, Linux and macOS checks are
-manual workflows; select the `staging` branch when explicitly starting a run.
-Pushes and pull requests do not start these checks automatically.
+before merging them into `main`. Each push to `staging` automatically runs
+Windows, guest-agent and Linux desktop checks. Other branches and pull requests
+do not automatically trigger these workflows. Manual runs remain available;
+macOS checks run only when explicitly started.
 CI does not install Windows/Ubuntu guests, exercise physical GPUs, use cloud
 accounts, publish public tunnels, or certify installers. A passing workflow is
 necessary, not sufficient, for release. Dependency audits must be rerun for each

@@ -33,16 +33,19 @@ npm run test:e2e
 npm run release:check
 ```
 
-All GitHub Actions workflows are manual. Pushing a branch or opening a pull
-request does not start Windows, guest-agent, Linux or macOS checks. To request
-a Windows CI run explicitly, select **Actions > Verify > Run workflow** and
-choose the `staging` branch, or use:
+Every push to `staging` automatically runs the Windows, guest-agent and Linux
+desktop checks. Wait for all three to pass before promoting that commit. These
+workflows have no automatic trigger for pushes to other branches or for pull
+requests. macOS checks remain manual.
+
+The three staging workflows can also be started manually. For a Windows run,
+select **Actions > Verify > Run workflow** and choose `staging`, or use:
 
 ```sh
 gh workflow run verify.yml --ref staging
 ```
 
-Run the other platform workflows separately when needed. Record the tested
+Run the macOS workflow separately when needed. Record the tested
 commit and results in the pull request. New commits need checks appropriate to
 their changes before promotion. Complete the relevant packaged and real-machine
 checks in [release readiness](docs/release-readiness.md) before publishing a release.
