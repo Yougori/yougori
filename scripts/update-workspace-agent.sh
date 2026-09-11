@@ -23,6 +23,7 @@ mkdir "$task_directory/root"
   cd "$task_directory/root"
   gzip -dc "$appliance/initramfs-virt" | cpio -idm --quiet
   install -m 0755 "$task_directory/opendock-agent-update" opendock-agent-update
+  install -m 0755 "$repo_root/appliance/rootfs/etc/init.d/containerd" opendock-containerd-service
   mkdir -p opendock-storage-tools
   cp -a "$storage_tools/." opendock-storage-tools/
   # Idempotent: replace the existing updater block if this script ran before.
@@ -43,6 +44,9 @@ mkdir "$task_directory/root"
       print "  if ! cmp -s /opendock-agent-update \"$sysroot/usr/local/sbin/opendock-agent\"; then"
       print "    mount -o remount,rw \"$sysroot\" && cp /opendock-agent-update \"$sysroot/usr/local/sbin/opendock-agent.new\" && chmod 755 \"$sysroot/usr/local/sbin/opendock-agent.new\" && mv \"$sysroot/usr/local/sbin/opendock-agent.new\" \"$sysroot/usr/local/sbin/opendock-agent\" || echo \"Yougori guest agent update failed\""
       print "  fi"
+      print "fi"
+      print "if [ -x /opendock-containerd-service ]; then"
+      print "  cp /opendock-containerd-service \"$sysroot/etc/init.d/containerd\" && chmod 755 \"$sysroot/etc/init.d/containerd\" || echo \"Yougori container storage service update failed\""
       print "fi"
       print "# OPENDOCK_AGENT_UPDATE_END"
     }

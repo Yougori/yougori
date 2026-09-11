@@ -3,6 +3,50 @@ use crate::models::*;
 use serde_json::json;
 use std::path::{Path, PathBuf};
 
+#[tokio::test]
+#[ignore = "uses only the explicitly prepared build/cuda/integration-runtime WSL test distribution"]
+async fn cuda_individual_storage_limits_grow_online() -> Result<(), String> {
+    let root = PathBuf::from(std::env::var("OPENDOCK_CUDA_TEST_ROOT").map_err(|_| "Dedicated CUDA test root is required")?);
+    let expected = Path::new(env!("CARGO_MANIFEST_DIR")).join("../build/cuda/integration-runtime").canonicalize().map_err(|e| e.to_string())?;
+    if root.canonicalize().map_err(|e| e.to_string())? != expected { return Err("Refusing user CUDA storage".into()); }
+    let data = tempfile::tempdir().map_err(|e| e.to_string())?;
+    let mut runtime = RuntimeManager::new(Path::new(env!("CARGO_MANIFEST_DIR")), data.path())?;
+    runtime.cuda = opendock_cuda_runtime::CudaRuntime::new(root)?;
+    if expected.join("installed.json").exists() { runtime.cuda.recover_abandoned().await?; }
+    runtime.install_cuda().await?;
+    let id = format!("quota-gpu-{}", uuid::Uuid::new_v4().simple());
+    let peer = format!("quota-peer-{}", uuid::Uuid::new_v4().simple());
+    let policy: ResourcePolicy = serde_json::from_value(json!({"cpu":{"min":1,"preferred":1,"max":1,"current":0},"memoryGb":{"min":0.5,"preferred":0.5,"max":0.5,"current":0},"priority":"normal","dynamic":true})).unwrap();
+    let result = async {
+        for (entry, limit) in [(&id, 1.0), (&peer, 2.0)] {
+            runtime.register_container_provider(entry, &RuntimeProviderKind::OpenDockCuda)?;
+            runtime.provision_container_with_storage(entry, "docker.io/library/ubuntu:24.04", "sleep 2147483647", &policy, false, true, limit).await?;
+            runtime.container_action(entry, "start", false).await?;
+        }
+        let full = runtime.execute_container_command(&id, "echo gpu-survives > /root/marker; dd if=/dev/zero of=/root/fill bs=1048576 count=1100").await?;
+        if full.exit_code == 0 || !full.stderr.to_lowercase().contains("quota") { return Err(format!("GPU quota was not enforced: {}", full.stderr)); }
+        let gpu = runtime.execute_container_command(&peer, "nvidia-smi -L; echo peer-survives > /root/marker").await?;
+        if gpu.exit_code != 0 || !gpu.stdout.contains("NVIDIA") { return Err(format!("GPU peer failed: {} {}", gpu.stdout, gpu.stderr)); }
+        runtime.set_container_storage(&id, 2.0).await?;
+        let expanded = runtime.execute_container_command(&id, "cat /root/marker; dd if=/dev/zero of=/root/more bs=1048576 count=32 && df -k /").await?;
+        if expanded.exit_code != 0 { return Err(expanded.stderr); }
+        if runtime.container_storage_allocation(&peer).await?.capacity_gb != 2.0 { return Err("GPU peer limit changed".into()); }
+        for entry in [&id, &peer] { runtime.container_action(entry, "stop", false).await?; }
+        runtime.cuda.shutdown().await?;
+        for entry in [&id, &peer] {
+            runtime.container_action(entry, "start", false).await?;
+            let marker = runtime.execute_container_command(entry, "cat /root/marker").await?;
+            let allocation = runtime.container_storage_allocation(entry).await?;
+            if marker.exit_code != 0 || !marker.stdout.contains("survives") || allocation.limit_enforced != Some(true) || allocation.capacity_gb != 2.0 { return Err("GPU storage did not survive restart".into()); }
+        }
+        eprintln!("GPU quota enforced, peer retained NVIDIA access, and online increase/restart preserved files: {}", expanded.stdout);
+        Ok(())
+    }.await;
+    for entry in [&id, &peer] { let _ = runtime.delete_container(entry).await; }
+    runtime.shutdown_all().await;
+    result
+}
+
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 #[ignore = "uses only the explicitly prepared build/cuda/integration-runtime WSL test distribution"]
 async fn cuda_storage_reclamation_preserves_peer() -> Result<(), String> {

@@ -32,7 +32,7 @@ pub fn add_cloud_environment(
             provider:Some(RuntimeProviderKind::CloudSsh),runtime_id:Some(id.clone()),runtime_path:None,
             control_endpoint:None,console_endpoint:None,container_command:None,network_access:false,gpu_access:false,
             sandbox_policy:None,last_error:None,description:"Existing Linux cloud server · private SSH connection · power managed outside Yougori".into(),
-            branch_type:None,created_at:now(),last_opened_at:None,cpu_usage:0.0,memory_usage_gb:0.0,storage_delta_gb:0.0,network_rx_mbps:0.0,
+            branch_type:None,created_at:now(),last_opened_at:None,cpu_usage:0.0,memory_usage_gb:0.0,storage_delta_gb:0.0,storage_limit_gb:None,network_rx_mbps:0.0,
             resource_policy:ResourcePolicy{cpu:range.clone(),memory_gb:range,priority:Priority::Normal,dynamic:true},
         });
         Ok(())

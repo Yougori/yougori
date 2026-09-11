@@ -126,12 +126,13 @@ export const platformApi = {
   getStorageAllocation(environmentId?: string, newVm = false) {
     return run<StorageAllocation>("get_storage_allocation", { environmentId: environmentId ?? null, newVm }, () => {
       const state = readBrowserState()
-      if (!environmentId && newVm) return { capacityGb: 0, physicalGb: 0, maximumGb: Math.max(0, Math.min(16384, Math.floor(state.host.totalStorageGb - state.host.usedStorageGb - 2))), shared: false }
+      if (!environmentId) return { capacityGb: 0, physicalGb: 0, maximumGb: Math.max(0, Math.min(newVm ? 16384 : 16380, Math.floor(state.host.totalStorageGb - state.host.usedStorageGb - 2))), shared: false }
       const environment = environmentId ? state.environments.find(e => e.id === environmentId) : undefined
       if (environmentId && !environment) throw new Error("Environment not found")
-      const shared = !environment || environment.kind === "container"
-      const capacityGb = Number(localStorage.getItem(`${STORAGE_KEY}.disk.${shared ? "shared" : environmentId}`)) || (shared || environment?.kind === "microVm" ? 6 : 64)
-      return { capacityGb, physicalGb: 0.1, maximumGb: Math.max(capacityGb, Math.floor(state.host.totalStorageGb - state.host.usedStorageGb - 2)), shared }
+      const container = environment?.kind === "container"
+      const saved = Number(localStorage.getItem(`${STORAGE_KEY}.disk.${environmentId}`)) || environment?.storageLimitGb
+      const capacityGb = saved || (container ? 20 : environment?.kind === "microVm" ? 6 : 64)
+      return { capacityGb, physicalGb: 0.1, maximumGb: Math.max(capacityGb, Math.floor(state.host.totalStorageGb - state.host.usedStorageGb - 2)), shared: false, limitEnforced: container ? Boolean(saved) : undefined }
     })
   },
 
@@ -141,11 +142,13 @@ export const platformApi = {
       const environment = state.environments.find(e => e.id === environmentId)
       if (!environment) throw new Error("Environment not found")
       const before = await platformApi.getStorageAllocation(environmentId)
-      if (environment.status !== "stopped") throw new Error("Stop the environment before expanding storage.")
-      if (before.shared && state.environments.some(e => e.kind === "container" && ["running", "paused", "provisioning"].includes(e.status))) throw new Error("Stop all running or paused containers before expanding their shared storage.")
-      if (!Number.isInteger(capacityGb) || capacityGb < Math.ceil(before.capacityGb) || capacityGb > Math.min(16384, before.maximumGb)) throw new Error("Storage can only be expanded within the available capacity.")
-      localStorage.setItem(`${STORAGE_KEY}.disk.${before.shared ? "shared" : environmentId}`, String(capacityGb))
-      return { ...before, capacityGb }
+      const container = environment.kind === "container"
+      if (environment.status !== "stopped" && (!container || !before.limitEnforced)) throw new Error(container ? "Stop this container once to enable its storage limit." : "Stop the environment before expanding storage.")
+      const minimum = container ? Math.max(6, Math.floor(before.physicalGb) + 1) : Math.ceil(before.capacityGb)
+      if (!Number.isInteger(capacityGb) || capacityGb < minimum || capacityGb > Math.min(container ? 16380 : 16384, before.maximumGb)) throw new Error(container ? "Choose a storage limit from 6 GB to the available maximum, above this container's current usage." : "Storage can only be expanded within the available capacity.")
+      localStorage.setItem(`${STORAGE_KEY}.disk.${environmentId}`, String(capacityGb))
+      if (container) { environment.storageLimitGb = capacityGb; writeBrowserState(state) }
+      return { ...before, capacityGb, limitEnforced: container ? true : undefined }
     })
   },
   async selectBootMedia() {
@@ -205,13 +208,10 @@ export const platformApi = {
         ? validateContainerResourcePolicy(request.resourcePolicy, state.host)
         : []
       if (policyErrors.length > 0) throw new Error(policyErrors.join(" "))
-      if (request.storageGb !== undefined && (!Number.isInteger(request.storageGb) || request.storageGb < 1 || request.storageGb > Math.min(16384, Math.floor(state.host.totalStorageGb - state.host.usedStorageGb - 2)))) throw new Error("Storage exceeds available capacity.")
+      if (request.storageGb !== undefined && (!Number.isInteger(request.storageGb) || request.storageGb < (request.kind === "container" || request.kind === "microVm" ? 6 : 1) || request.storageGb > Math.min(request.kind === "container" ? 16380 : 16384, Math.floor(state.host.totalStorageGb - state.host.usedStorageGb - 2)))) throw new Error("Storage exceeds available capacity or is below the minimum.")
       const environmentId = id("env")
       if (request.storageGb !== undefined) {
-        const shared = request.kind === "container"
-        const previous = Number(localStorage.getItem(`${STORAGE_KEY}.disk.shared`)) || 6
-        if (shared && request.storageGb > previous && state.environments.some(e => e.kind === "container" && ["running", "paused", "provisioning"].includes(e.status))) throw new Error("Stop all running or paused containers before expanding their shared storage.")
-        localStorage.setItem(`${STORAGE_KEY}.disk.${shared ? "shared" : environmentId}`, String(Math.max(shared ? previous : request.kind === "microVm" ? 6 : 1, request.storageGb)))
+        localStorage.setItem(`${STORAGE_KEY}.disk.${environmentId}`, String(request.storageGb))
       }
       state.environments.unshift({
         id: environmentId,
@@ -226,6 +226,7 @@ export const platformApi = {
         cpuUsage: 0,
         memoryUsageGb: 0,
         storageDeltaGb: 0.1,
+        storageLimitGb: request.kind === "container" ? request.storageGb ?? 20 : undefined,
         networkRxMbps: 0,
         resourcePolicy: {
           ...request.resourcePolicy,

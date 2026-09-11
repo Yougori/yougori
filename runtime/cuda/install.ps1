@@ -46,19 +46,59 @@ function Send-CudaPayload([Diagnostics.ProcessStartInfo]$StartInfo, [string]$Arc
     # tar's first header. Change it only while this binary transfer is running.
     $previousEncoding = [Console]::InputEncoding
     $process = [Diagnostics.Process]::new()
+    $outputBuffer = [IO.MemoryStream]::new()
+    $errorBuffer = [IO.MemoryStream]::new()
+    function Read-CudaProcessOutput([IO.MemoryStream]$Buffer) {
+        $bytes = $Buffer.ToArray()
+        # WSL's own startup errors use UTF-16LE, while guest tools use UTF-8.
+        if ($bytes.Length -ge 2 -and (($bytes[0] -eq 255 -and $bytes[1] -eq 254) -or $bytes[1] -eq 0)) {
+            $text = [Text.Encoding]::Unicode.GetString($bytes)
+        } else {
+            $text = [Text.Encoding]::UTF8.GetString($bytes)
+        }
+        return $text.TrimStart([char]0xfeff).Replace([string][char]0, '').Trim()
+    }
     try {
         [Console]::InputEncoding = [Text.UTF8Encoding]::new($false)
         $process.StartInfo = $StartInfo
         $process.StartInfo.UseShellExecute = $false
         $process.StartInfo.CreateNoWindow = $true
         $process.StartInfo.RedirectStandardInput = $true
+        $process.StartInfo.RedirectStandardOutput = $true
+        $process.StartInfo.RedirectStandardError = $true
         [void]$process.Start()
-        $inputFile = [IO.File]::OpenRead($Archive)
-        try { $inputFile.CopyTo($process.StandardInput.BaseStream) } finally { $inputFile.Dispose(); $process.StandardInput.Close() }
+        # Drain both pipes while sending bytes so a child error cannot deadlock
+        # the transfer. Save CopyTo's error until WSL has reported why it exited.
+        $outputRead = $process.StandardOutput.BaseStream.CopyToAsync($outputBuffer)
+        $errorRead = $process.StandardError.BaseStream.CopyToAsync($errorBuffer)
+        $transferFailure = $null
+        try {
+            $inputFile = [IO.File]::OpenRead($Archive)
+            try { $inputFile.CopyTo($process.StandardInput.BaseStream) } finally { $inputFile.Dispose() }
+        } catch { $transferFailure = $_.Exception.Message }
+        try { $process.StandardInput.Close() } catch {
+            if (!$transferFailure) { $transferFailure = $_.Exception.Message }
+        }
+        if ($transferFailure -and !$process.WaitForExit(10000)) {
+            $process.Kill()
+            $process.WaitForExit()
+            throw 'The CUDA payload receiver did not exit after its input pipe closed. Setup stopped.'
+        }
         $process.WaitForExit()
-        if ($process.ExitCode -ne 0) { throw "Installing the CUDA runtime payload failed (exit $($process.ExitCode))." }
+        $outputRead.GetAwaiter().GetResult()
+        $errorRead.GetAwaiter().GetResult()
+        $diagnostics = ((Read-CudaProcessOutput $outputBuffer) + "`n" + (Read-CudaProcessOutput $errorBuffer)).Trim()
+        if ($diagnostics) { Write-Output $diagnostics }
+        if ($process.ExitCode -ne 0 -or $transferFailure) {
+            $detail = if ($diagnostics) { $diagnostics } else { $transferFailure }
+            $detail = ($detail -replace '\s+', ' ').Trim()
+            if ($detail.Length -gt 1500) { $detail = $detail.Substring(0, 1500) }
+            throw "Installing the CUDA runtime payload failed (exit $($process.ExitCode)): $detail"
+        }
     } finally {
         $process.Dispose()
+        $outputBuffer.Dispose()
+        $errorBuffer.Dispose()
         [Console]::InputEncoding = $previousEncoding
     }
 }
@@ -74,6 +114,10 @@ if ($registered.Count -gt 0) {
     if ($LASTEXITCODE -ne 0) { throw 'Could not inspect running WSL distributions.' }
     if (($running -split "`r?`n" | ForEach-Object { $_.Trim() }) -contains $distro) {
         throw 'Stop the Yougori CUDA runtime before installing or updating it. No running containers were interrupted.'
+    }
+    $diskPath = Join-Path $distributionPath 'ext4.vhdx'
+    if (!(Test-Path -LiteralPath $diskPath -PathType Leaf)) {
+        throw "WSL still lists $distro but its CUDA disk is missing: $diskPath. Restore the disk if it was moved. Setup did not recreate or reset this distribution."
     }
 } else {
     if (Test-Path -LiteralPath $distributionPath) { throw 'Unregistered CUDA storage already exists. It was preserved; recover it before installing again.' }
@@ -111,6 +155,7 @@ try {
     # Apply only this owned distribution's no-automount/no-interop configuration.
     Invoke-Wsl @('--terminate', $distro)
     Invoke-Wsl @('-d', $distro, '-u', 'root', '--exec', '/bin/bash', '/usr/local/sbin/opendock-cuda-setup')
+    Invoke-Wsl @('-d', $distro, '-u', 'root', '--exec', '/usr/local/sbin/opendock-agent', '--prepare-container-storage')
     Invoke-Wsl @('--terminate', $distro)
     $payloadChecksum = Get-CudaSha256 (Join-Path $payloadDirectory 'SHA256SUMS')
     [IO.File]::WriteAllText((Join-Path $dataPath 'installed.json'), (ConvertTo-Json @{ version = 1; distribution = $distro; identity = $digest; payloadChecksum = $payloadChecksum }), [Text.UTF8Encoding]::new($false))

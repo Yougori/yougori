@@ -59,7 +59,7 @@ impl VmPortReservations {
         Self { ports: Vec::new() }
     }
 
-    fn reserve_available(&mut self, excluded: &[u16]) -> Result<u16, String> {
+    pub(super) fn reserve_available(&mut self, excluded: &[u16]) -> Result<u16, String> {
         let mut reserved = vm_port_reservations()
             .lock()
             .map_err(|_| "virtual machine port reservation state is poisoned".to_string())?;

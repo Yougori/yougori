@@ -25,6 +25,7 @@ pub enum VmPowerState {
 mod boot_media;
 mod vm_security;
 pub(crate) mod storage;
+mod container_storage;
 mod storage_reclaim;
 
 pub(crate) fn backup_has_vm_security(path: &Path) -> Result<bool, String> {
@@ -103,6 +104,9 @@ struct RuntimeLayout {
 struct ApplianceProcess {
     child: Child,
     endpoint: AgentEndpoint,
+    qmp_port: u16,
+    max_memory_mib: usize,
+    _port_reservations: vm::VmPortReservations,
     capacity: appliance_capacity::ApplianceCapacity,
     active_containers: std::collections::HashSet<String>,
     gpu: Option<gpu::GpuAdapter>,

@@ -140,6 +140,8 @@ pub struct Environment {
     pub cpu_usage: f64,
     pub memory_usage_gb: f64,
     pub storage_delta_gb: f64,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub storage_limit_gb: Option<f64>,
     pub network_rx_mbps: f64,
     pub resource_policy: ResourcePolicy,
 }
@@ -641,6 +643,7 @@ mod tests {
             cpu_usage: 0.0,
             memory_usage_gb: 0.0,
             storage_delta_gb: 0.0,
+            storage_limit_gb: None,
             network_rx_mbps: 0.0,
             resource_policy: ResourcePolicy {
                 cpu: ResourceRange {

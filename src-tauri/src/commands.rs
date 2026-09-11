@@ -379,6 +379,12 @@ async fn prepare_container_start(
     target: &Environment,
     runtime: &RuntimeManager,
 ) -> Result<Vec<ContainerAllocation>, String> {
+    if let Some(limit) = target.storage_limit_gb {
+        let current = runtime.container_storage_allocation(runtime_id(target)).await?;
+        if current.limit_enforced != Some(true) || limit > current.capacity_gb {
+            runtime.set_container_storage(runtime_id(target), limit.max(current.capacity_gb)).await?;
+        }
+    }
     let mut candidate = state.clone();
     candidate.host = collect_host_metrics(&state.host, runtime.storage_root());
     let target_environment = candidate
@@ -483,10 +489,11 @@ async fn prepare_container_start(
 
     // Reserve the running policies' envelopes once, so normal scheduler changes
     // fit without restarting the appliance on each telemetry tick.
-    // Include stopped definitions so, after stopping to resize, the first start
-    // reserves enough room for the other configured containers to start too.
+    // Stopped definitions do not reserve RAM. The runtime can grow when one of
+    // them is started, without interrupting workloads already running.
     let active = candidate.environments.iter().filter(|e|
-        provider(e) == RuntimeProviderKind::OpenDockOci);
+        provider(e) == RuntimeProviderKind::OpenDockOci
+        && matches!(e.status, EnvironmentStatus::Running | EnvironmentStatus::Paused));
     let envelope_cpu: f64 = active.clone().map(|e| e.resource_policy.cpu.max).sum();
     let envelope_memory: f64 = active.map(|e| e.resource_policy.memory_gb.max).sum();
     let qemu_scheduled = allocations.iter().filter(|(_, next)| runtime.container_provider(&next.id).is_ok_and(|p| p == RuntimeProviderKind::OpenDockOci));
@@ -1026,6 +1033,9 @@ pub async fn create_environment(
     }
     validate_range("CPU", &request.resource_policy.cpu)?;
     if let Some(gb) = request.storage_gb { crate::runtime::storage::storage_bytes(gb)?; }
+    if request.kind == EnvironmentKind::Container && request.storage_gb.is_some_and(|gb| gb < 6.0) {
+        return Err("Container storage limits start at 6 GB.".into());
+    }
     validate_range("Memory", &request.resource_policy.memory_gb)?;
     if request.resource_policy.cpu.max > 255.0 {
         return Err("CPU maximum cannot exceed 255 virtual CPUs".into());
@@ -1135,18 +1145,15 @@ pub async fn create_environment(
             RuntimeProviderKind::CloudSsh => return Err("Use Add cloud environment to connect an existing server".into()),
             RuntimeProviderKind::OpenDockOci | RuntimeProviderKind::OpenDockCuda => {
                 runtime.register_container_provider(&id, &request.provider)?;
-                if let Some(gb) = request.storage_gb.filter(|_| request.provider == RuntimeProviderKind::OpenDockOci) {
-                    let storage = runtime.container_storage().await?;
-                    if gb > storage.capacity_gb { runtime.grow_container_storage(gb).await?; }
-                }
                 runtime
-                    .provision_container(
+                    .provision_container_with_storage(
                         &id,
                         runtime_source,
                         &container_command,
                         &policy,
                         request.network_access,
                         request.gpu_access,
+                        request.storage_gb.unwrap_or(20.0),
                     )
                     .await?;
                 (None, runtime_source.to_owned(), None)

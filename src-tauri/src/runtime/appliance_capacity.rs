@@ -43,8 +43,8 @@ impl ApplianceCapacity {
 }
 
 impl RuntimeManager {
-    /// Grow only an idle appliance. All container operations take a read lease;
-    /// this exclusive lease prevents a start/provision/backup racing shutdown.
+    /// Serialize runtime growth against provision/start/backup. Add RAM to a
+    /// running appliance instead of restarting the containers already using it.
     pub async fn ensure_container_capacity(&self, cpu: f64, memory_gb: f64) -> Result<(), String> {
         let requested = ApplianceCapacity::for_workloads(cpu, memory_gb)?;
         let _exclusive = self.appliance_operations.write().await;
@@ -56,32 +56,8 @@ impl RuntimeManager {
                 .map_err(|e| e.to_string())?
                 .is_none()
             {
-                if process.capacity.contains(requested) {
-                    return Ok(());
-                }
-                if !process.active_containers.is_empty() {
-                    return Err(format!("[OPENDOCK_CAPACITY_RESTART] More container runtime capacity is needed ({cpu:.2} CPUs, {memory_gb:.3} GB). Stop all running or paused containers, then retry. Yougori will resize the shared VM automatically and keep every container disk."));
-                }
-                let response = self
-                    .client
-                    .post(format!("{}/v1/system/shutdown", process.endpoint.base_url))
-                    .bearer_auth(&process.endpoint.token)
-                    .timeout(Duration::from_secs(3))
-                    .send()
-                    .await
-                    .map_err(|e| {
-                        format!("Could not shut down the idle runtime for resizing: {e}")
-                    })?;
-                if !response.status().is_success() {
-                    return Err("The idle runtime refused a clean shutdown; no forced restart was attempted".into());
-                }
-                let status = tokio::time::timeout(Duration::from_secs(15), process.child.wait()).await
-                    .map_err(|_| "The idle runtime is still shutting down. Retry in a moment; it was not force-killed.")?
-                    .map_err(|e| e.to_string())?;
-                if !status.success() {
-                    return Err("The idle runtime did not exit cleanly. No disk was replaced; retry after inspecting its error.".into());
-                }
-                self.record_appliance_overlay_state()?;
+                if process.capacity.contains(requested) { return Ok(()); }
+                return self.grow_live_appliance(process, requested).await;
             }
             guard.take();
         }
@@ -110,6 +86,66 @@ impl RuntimeManager {
         self.appliance_endpoint().await?;
         Ok(())
     }
+
+    async fn grow_live_appliance(&self, process: &mut super::ApplianceProcess, requested: ApplianceCapacity) -> Result<(), String> {
+        use serde_json::json;
+        if requested.cpus > process.capacity.cpus || requested.memory_mib > process.max_memory_mib {
+            return Err("The requested CPU or RAM allocation exceeds this computer's container capacity. Lower that allocation.".into());
+        }
+        // Check the guest API before attaching a device. An older guest agent
+        // must never make an unverified memory increase look successful.
+        let online = || self.client.post(format!("{}/v1/system/capacity", process.endpoint.base_url))
+            .bearer_auth(&process.endpoint.token).timeout(Duration::from_secs(5)).json(&json!({})).send();
+        super::appliance::successful_response(online().await.map_err(|e| e.to_string())?).await?;
+        let summary = super::vm::qmp_request(process.qmp_port, "query-memory-size-summary", None).await?;
+        let base_mib = summary["base-memory"].as_u64().ok_or("Runtime base RAM size is missing")? / 1_048_576;
+        let reserved = base_mib + summary["plugged-memory"].as_u64().unwrap_or(0) / 1_048_576;
+        // Round small changes into enough-sized DIMMs that repeated slider
+        // edits cannot exhaust the 64 hotplug slots before reaching host RAM.
+        let target_mib = memory_growth_target(base_mib, reserved, requested.memory_mib as u64, process.max_memory_mib as u64);
+        let added_mib = target_mib.saturating_sub(reserved);
+        if added_mib > 0 {
+            let mut host = sysinfo::System::new();
+            host.refresh_memory();
+            if added_mib.saturating_add(512) > host.available_memory() / 1_048_576 {
+                return Err(format!("Not enough free RAM to add {:.3} GB to the container runtime. Lower the memory allocation or close another workload.", added_mib as f64 / 1024.0));
+            }
+            let id = format!("yougori-memory-{}", uuid::Uuid::new_v4().simple());
+            super::vm::qmp_execute(process.qmp_port, "object-add", Some(json!({
+                "qom-type": "memory-backend-ram", "id": id, "size": added_mib * 1_048_576
+            }))).await?;
+            if let Err(error) = super::vm::qmp_execute(process.qmp_port, "device_add", Some(json!({
+                "driver": "pc-dimm", "id": format!("dimm-{id}"), "memdev": id
+            }))).await {
+                // object-del refuses a backend referenced by an attached DIMM.
+                // A retry queries actual RAM first, avoiding duplicate growth
+                // if the device_add response was lost after QEMU accepted it.
+                let _ = super::vm::qmp_execute(process.qmp_port, "object-del", Some(json!({"id": id}))).await;
+                return Err(format!("Could not add runtime RAM while containers were running: {error}"));
+            }
+        }
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(30);
+        loop {
+            let response = super::appliance::successful_response(online().await.map_err(|e| e.to_string())?).await?;
+            let capacity: serde_json::Value = response.json().await.map_err(|e| e.to_string())?;
+            // Kernel bookkeeping uses part of attached RAM. The workload
+            // capacity already includes a separate control-plane reserve.
+            if capacity["memoryBytes"].as_u64().unwrap_or(0) / 1_048_576 >= target_mib.saturating_sub(256) {
+                process.capacity.memory_mib = target_mib as usize;
+                *self.appliance_capacity.lock().map_err(|_| "Container capacity lock poisoned")? = process.capacity;
+                return Ok(());
+            }
+            if tokio::time::Instant::now() >= deadline {
+                return Err("Additional RAM was attached, but the runtime has not brought it online yet. Retry shortly; existing containers are still running.".into());
+            }
+            tokio::time::sleep(Duration::from_millis(250)).await;
+        }
+    }
+}
+
+fn memory_growth_target(base: u64, current: u64, requested: u64, maximum: u64) -> u64 {
+    let chunk = maximum.saturating_sub(base).div_ceil(64 * 128).max(1) * 128;
+    (current + requested.saturating_sub(current).div_ceil(chunk) * chunk).min(maximum)
 }
 
 #[cfg(test)]
@@ -139,6 +175,23 @@ mod tests {
         for bad in [0.0, -1.0, f64::NAN, f64::INFINITY] {
             assert!(ApplianceCapacity::for_workloads(bad, 1.0).is_err());
             assert!(ApplianceCapacity::for_workloads(1.0, bad).is_err());
+        }
+    }
+
+    #[test]
+    fn small_resource_edits_do_not_exhaust_memory_slots() {
+        for maximum in [8192, 16384, 65024, 1048576] {
+            let base = 1024;
+            let mut current = base;
+            let mut slots = 0;
+            for requested in (base..=maximum).step_by(128) {
+                let next = memory_growth_target(base, current, requested, maximum);
+                assert!(next >= requested && next <= maximum);
+                if next > current { slots += 1; }
+                current = next;
+            }
+            assert_eq!(current, maximum);
+            assert!(slots <= 64, "{slots} slots needed for {maximum} MiB");
         }
     }
 }

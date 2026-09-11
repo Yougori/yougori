@@ -142,6 +142,7 @@ type bootConfiguration struct {
 }
 
 type provisionRequest struct {
+	StorageBytes  uint64  `json:"storageBytes"`
 	OriginalID    string  `json:"originalId,omitempty"`
 	ID            string  `json:"id"`
 	Image         string  `json:"image"`
@@ -233,6 +234,12 @@ type nerdctlListRecord struct {
 }
 
 func main() {
+	if len(os.Args) == 2 && os.Args[1] == "--prepare-container-storage" {
+		if err := prepareContainerStore(); err != nil {
+			log.Fatal(err)
+		}
+		return
+	}
 	if len(os.Args) == 2 && os.Args[1] == "--trim-storage" {
 		if err := trimRootStorage(); err != nil {
 			log.Fatal(err)
@@ -286,12 +293,15 @@ func main() {
 	mux.HandleFunc("/v1/health", s.auth(method(http.MethodGet, s.health)))
 	mux.HandleFunc("/v1/gpu/verify", s.auth(method(http.MethodPost, s.verifyCUDA)))
 	mux.HandleFunc("/v1/system/shutdown", s.auth(method(http.MethodPost, s.shutdown)))
+	mux.HandleFunc("/v1/system/capacity", s.auth(method(http.MethodPost, s.systemCapacity)))
 	mux.HandleFunc("/v1/storage/reclaim", s.auth(method(http.MethodPost, s.reclaimStorage)))
+	mux.HandleFunc("/v1/storage/grow", s.auth(method(http.MethodPost, s.growStorage)))
 	mux.HandleFunc("/v1/system/exec", s.auth(method(http.MethodPost, s.systemExecute)))
 	mux.HandleFunc("/v1/containers/provision", s.auth(method(http.MethodPost, s.provision)))
 	mux.HandleFunc("/v1/containers/action", s.auth(method(http.MethodPost, s.action)))
 	mux.HandleFunc("/v1/containers/delete", s.auth(method(http.MethodPost, s.deleteContainer)))
 	mux.HandleFunc("/v1/containers/resources", s.auth(method(http.MethodPost, s.resources)))
+	mux.HandleFunc("/v1/containers/storage", s.auth(method(http.MethodPost, s.containerStorage)))
 	mux.HandleFunc("/v1/containers/configuration", s.auth(method(http.MethodPost, s.configuration)))
 	mux.HandleFunc("/v1/containers/startup", s.auth(method(http.MethodPost, s.startup)))
 	mux.HandleFunc("/v1/containers/internet", s.auth(method(http.MethodPost, s.internet)))
@@ -484,6 +494,10 @@ func (s *server) provision(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid CPU or memory allocation")
 		return
 	}
+	if request.StorageBytes != 0 && (request.StorageBytes < 1<<30 || request.StorageBytes > 16380<<30 || request.StorageBytes%(1<<30) != 0) {
+		writeError(w, http.StatusBadRequest, "invalid container storage limit")
+		return
+	}
 	gpuArgs, gpuErr := gpuContainerArguments(request.GPUAccess)
 	if gpuErr != nil {
 		writeError(w, http.StatusConflict, gpuErr.Error())
@@ -526,6 +540,14 @@ func (s *server) provision(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.knownImages.Store(image, struct{}{})
+	limit := request.StorageBytes
+	if limit == 0 {
+		limit = defaultContainerStorage
+	}
+	if err := s.ensureContainerStorage(ctx, request.ID, limit); err != nil {
+		writeError(w, http.StatusConflict, "container was kept stopped: "+err.Error())
+		return
+	}
 	writeJSON(w, http.StatusCreated, map[string]any{"id": request.ID, "output": output})
 }
 
@@ -550,6 +572,12 @@ func (s *server) action(w http.ResponseWriter, r *http.Request) {
 	defer unlock()
 	ctx, cancel := context.WithTimeout(r.Context(), 90*time.Second)
 	defer cancel()
+	if request.Action == "start" || request.Action == "restart" || request.Action == "resume" {
+		if err := s.ensureContainerStorage(ctx, request.ID, 0); err != nil {
+			writeError(w, http.StatusConflict, err.Error())
+			return
+		}
+	}
 	output, err := run(ctx, "nerdctl", append([]string{"--namespace", namespace}, args...)...)
 	if err != nil {
 		writeCommandError(w, err)
@@ -591,6 +619,9 @@ func (s *server) deleteContainer(w http.ResponseWriter, r *http.Request) {
 		log.Printf("release deleted container internet allocation for %s: %v", request.ID, err)
 	}
 	stopFabric(request.ID)
+	if err := s.retireContainerStorage(request.ID); err != nil {
+		log.Printf("record deleted container storage: %v", err)
+	}
 	writeJSON(w, http.StatusOK, output)
 }
 
@@ -695,6 +726,10 @@ func (s *server) configuration(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	releaseRetainedImage(ctx, previousImage)
+	if err := s.ensureContainerStorage(ctx, request.ID, 0); err != nil {
+		writeError(w, http.StatusConflict, "configuration saved; storage needs attention: "+err.Error())
+		return
+	}
 	writeJSON(w, http.StatusOK, output)
 }
 
@@ -854,6 +889,10 @@ func (s *server) restoreSnapshot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	releaseRetainedImage(ctx, previousImage)
+	if err := s.ensureContainerStorage(ctx, request.ID, 0); err != nil {
+		writeError(w, http.StatusConflict, "snapshot restored and kept stopped; storage needs attention: "+err.Error())
+		return
+	}
 	writeJSON(w, http.StatusOK, map[string]string{"id": request.ID})
 }
 
