@@ -57,6 +57,7 @@ export interface Environment {
   cpuUsage: number
   memoryUsageGb: number
   storageDeltaGb: number
+  storageLimitGb?: number
   networkRxMbps: number
   resourcePolicy: ResourcePolicy
 }
@@ -217,6 +218,7 @@ export interface CreateEnvironmentRequest {
 }
 
 export interface StorageAllocation {
+  limitEnforced?: boolean
   capacityGb: number
   physicalGb: number
   maximumGb: number

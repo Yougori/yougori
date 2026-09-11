@@ -1,13 +1,25 @@
 # Storage allocation
 
 New environment → Resources and node settings → Resource allocation include a
-storage slider in GB. This selects disk capacity, not a CPU-style scheduling
-range. Thin QCOW2 disks consume host space as guests write data.
+storage slider in GB. Containers have individual writable storage limits.
+VMs and MicroVMs have separate thin disks that consume host space as guests write.
 
-- Containers share the appliance disk. Changing this pool affects every
-  container; **it is not a per-container quota**. Stop all running/paused
-  containers before expanding. The idle appliance shuts down cleanly and boots
-  again when a container is next started.
+- Standard and GPU containers each have a kernel-enforced project quota.
+  Choose from 6 GB to the available maximum at creation or in Configuration.
+  The default is 20 GB, capped by available space.
+  Writable root files, private image-declared volumes and container logs count
+  toward the same node's limit. Increasing or decreasing an enabled quota applies
+  online without restarting that container or its peers. A new limit must be
+  above current usage. Reducing a quota does not shrink the filesystem or delete files.
+- Runtime services and read-only image caches are reused. Cached images,
+  snapshots and explicitly connected folders consume additional space outside
+  the writable quota. A quota is a limit, not a host-space reservation.
+- Existing installations migrate their owned container data to a quota-enabled
+  filesystem before containerd starts. Source files remain until copies have
+  been verified and the new mounts and recovery state have been saved durably.
+  This one-time update needs temporary room for a copy of existing runtime data.
+  An interrupted copy is retried from the originals. After migration, stop
+  each legacy container once to enable its limit; peers can stay running.
 - VMs and MicroVMs have separate disks. Stop the guest to expand its disk.
 - Bundled Alpine filesystems grow automatically. Windows/custom guests may
   require extending their filesystem/partition inside the guest, e.g. Windows
@@ -21,18 +33,29 @@ range. Thin QCOW2 disks consume host space as guests write data.
 - Storage expansion is immediate and durable in the disk itself, separate from
   Save policy. Dynamic allocation never shrinks disks or deletes guest files.
 
-The bundled base image is not rebuilt/rebased for this feature. The agent and
-small offline filesystem utility are delivered through initramfs. Early growth
-runs before copying updates, so a full old root can gain space first.
+The bundled base image is not rebuilt or rebased. The agent and offline
+filesystem utility are delivered through initramfs. The standard runtime's
+backing disk grows to use space available on the host drive; old fixed pool
+sizes no longer constrain node storage. CUDA uses its own WSL disk. Both
+backends mount a private sparse ext4 store with project quotas. Reclaim space
+trims that store before returning unused outer disk blocks to the host.
+
+Standard containers can also gain CPU/RAM capacity while other containers run.
+All host CPUs are exposed at boot and cgroups enforce each node's CPU limit.
+QEMU memory is added and brought online as required, subject to available host
+RAM. Stopped node definitions do not reserve runtime RAM.
 
 Verification:
 
 ```powershell
-cargo test --manifest-path src-tauri/Cargo.toml storage_ -- --ignored --nocapture --test-threads=1
+cargo test --manifest-path src-tauri/Cargo.toml container_storage_limits_are_independent_and_enforced -- --ignored --nocapture --test-threads=1
 npx vitest run src/components/storage-allocation-editor.test.tsx src/api/platform-api.test.ts
 ```
 
 Native integration tests use disposable images: VM creation with selected sizes,
 grow-only imports, MicroVM filesystem expansion with file preservation, and
-shared container expansion with running-workload protection. No user VM is
+independent container quotas, private volumes, online expansion and restart
+persistence. The legacy migration test takes OPENDOCK_LEGACY_INITRAMFS pointing
+to the preceding release's boot payload. CUDA tests require the explicit
+build/cuda/integration-runtime directory via OPENDOCK_CUDA_TEST_ROOT. No user VM is
 booted, resized, formatted, or removed by these tests.

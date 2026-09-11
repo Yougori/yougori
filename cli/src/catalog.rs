@@ -109,7 +109,7 @@ pub fn methods() -> Vec<Method> {
     method!(reclaim_storage, "Return unused container disk blocks to the host; compact only idle runtime storage. Keeps containers, snapshots, cached container images and exported backups. Reports deferred cleanup and measured disk reduction.", "", json!({}), true, Some("Reclaim unused storage; no running workloads are stopped."));
     method!(
         get_storage_allocation,
-        "Inspect capacity, physical size and maximum available storage.",
+        "Inspect this node's storage capacity, usage and available maximum. Containers also report whether their independent writable limit is enforced.",
         "environmentId?:string newVm?:bool",
         env.clone(),
         false,
@@ -117,7 +117,7 @@ pub fn methods() -> Vec<Method> {
     );
     method!(
         expand_environment_storage,
-        "Grow disk capacity in GB; stop affected workloads first. Does not shrink disks.",
+        "Adjust this container's storage limit from 6 GB to available capacity, above current usage. Enabled limits increase or decrease online; legacy containers must stop once. VM disks only grow and require stopping the VM.",
         "environmentId:string capacityGb:number",
         json!({"environmentId":"env-ID","capacityGb":100}),
         true,

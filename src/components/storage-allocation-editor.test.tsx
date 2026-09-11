@@ -12,12 +12,38 @@ beforeEach(() => { vi.resetAllMocks(); vi.mocked(platformApi.getStorageAllocatio
 afterEach(cleanup)
 
 describe("storage allocation", () => {
-  it("keeps the CUDA disk separate and never offers a QEMU resize", async () => {
-    render(<StorageAllocationEditor environment={{ ...environment, provider: "openDockCuda", kind: "container" }} otherContainersActive={false} />)
-    expect(await screen.findByText(/CUDA uses its own shared WSL disk/)).toBeTruthy()
-    expect(screen.getByText(/Host space used: 2.00 GB/)).toBeTruthy()
-    expect(screen.queryByRole("slider")).toBeNull()
-    expect(screen.queryByRole("button", { name: "Expand storage" })).toBeNull()
+  it.each(["openDockOci", "openDockCuda"] as const)("increases a running %s container's own limit while peers run", async provider => {
+    vi.mocked(platformApi.getStorageAllocation).mockResolvedValue({ ...storage, limitEnforced: true })
+    vi.mocked(platformApi.expandEnvironmentStorage).mockResolvedValue({ ...storage, capacityGb: 100, limitEnforced: true })
+    render(<StorageAllocationEditor environment={{ ...environment, provider, kind: "container", status: "running" }} otherContainersActive />)
+    const slider = await screen.findByRole("slider", { name: "Storage limit" })
+    expect(screen.getByText(/Used by this container: 2.00 GB/)).toBeTruthy()
+    fireEvent.change(slider, { target: { value: "100" } })
+    fireEvent.click(screen.getByRole("button", { name: "Save storage limit" }))
+    await waitFor(() => expect(platformApi.expandEnvironmentStorage).toHaveBeenCalledWith(environment.id, 100))
+    expect(await screen.findByText(/Storage limit saved for this container/)).toBeTruthy()
+    expect(slider.getAttribute("min")).toBe("6")
+    expect(slider.getAttribute("max")).toBe("200")
+  })
+
+  it.each(["openDockOci", "openDockCuda"] as const)("reduces a running %s container to 6 GB when its files fit", async provider => {
+    vi.mocked(platformApi.getStorageAllocation).mockResolvedValue({ ...storage, capacityGb: 20, limitEnforced: true })
+    vi.mocked(platformApi.expandEnvironmentStorage).mockResolvedValue({ ...storage, capacityGb: 6, limitEnforced: true })
+    render(<StorageAllocationEditor environment={{ ...environment, provider, kind: "container", status: "running" }} otherContainersActive />)
+    const slider = await screen.findByRole("slider", { name: "Storage limit" })
+    fireEvent.change(slider, { target: { value: "6" } })
+    fireEvent.click(screen.getByRole("button", { name: "Save storage limit" }))
+    await waitFor(() => expect(platformApi.expandEnvironmentStorage).toHaveBeenCalledWith(environment.id, 6))
+    expect(await screen.findByText(/Storage limit saved for this container/)).toBeTruthy()
+    expect(slider.getAttribute("min")).toBe("6")
+  })
+
+  it("explains why a selected limit below current usage cannot be saved", async () => {
+    vi.mocked(platformApi.getStorageAllocation).mockResolvedValue({ ...storage, capacityGb: 20, physicalGb: 9.27, limitEnforced: true })
+    render(<StorageAllocationEditor environment={{ ...environment, kind: "container", status: "running" }} otherContainersActive />)
+    fireEvent.change(await screen.findByRole("slider"), { target: { value: "6" } })
+    expect((await screen.findByRole("alert")).textContent).toContain("Choose at least 10 GB")
+    expect((screen.getByRole("button", { name: "Save storage limit" }) as HTMLButtonElement).disabled).toBe(true)
     expect(platformApi.expandEnvironmentStorage).not.toHaveBeenCalled()
   })
 
@@ -37,12 +63,17 @@ describe("storage allocation", () => {
     expect(slider.getAttribute("min")).toBe("100")
   })
 
-  it("prevents expanding shared storage while another container is active", async () => {
-    vi.mocked(platformApi.getStorageAllocation).mockResolvedValue({ ...storage, shared: true })
-    render(<StorageAllocationEditor environment={{ ...environment, kind: "container" }} otherContainersActive />)
-    fireEvent.change(await screen.findByRole("slider"), { target: { value: "100" } })
-    expect((screen.getByRole("button", { name: "Expand storage" }) as HTMLButtonElement).disabled).toBe(true)
-    expect(screen.getByText(/shared pool, not a per-container limit/)).toBeTruthy()
+  it("requires only the legacy target to stop once and permits accepting its suggested limit", async () => {
+    vi.mocked(platformApi.getStorageAllocation).mockResolvedValue({ ...storage, limitEnforced: false })
+    vi.mocked(platformApi.expandEnvironmentStorage).mockResolvedValue({ ...storage, limitEnforced: true })
+    const { rerender } = render(<StorageAllocationEditor environment={{ ...environment, kind: "container", status: "running" }} otherContainersActive />)
+    await screen.findByRole("slider")
+    expect((screen.getByRole("button", { name: "Set storage limit" }) as HTMLButtonElement).disabled).toBe(true)
+    expect(screen.getByText(/Other containers can keep running/)).toBeTruthy()
+    rerender(<StorageAllocationEditor environment={{ ...environment, kind: "container", status: "stopped" }} otherContainersActive />)
+    await screen.findByRole("slider")
+    fireEvent.click(screen.getByRole("button", { name: "Set storage limit" }))
+    await waitFor(() => expect(platformApi.expandEnvironmentStorage).toHaveBeenCalledWith(environment.id, 64))
   })
 
   it("shows failures without claiming that storage was expanded", async () => {

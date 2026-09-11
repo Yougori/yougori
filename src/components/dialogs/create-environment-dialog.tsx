@@ -67,7 +67,7 @@ export function CreateEnvironmentDialog({ open, onOpenChange, initialKind }: { o
   const [cpu, setCpu] = useState([0.5, 0.5, 1])
   const [memory, setMemory] = useState([0.5, 0.5, 0.5])
   const [priority, setPriority] = useState<Priority>("normal")
-  const [storage, setStorage] = useState(6)
+  const [storage, setStorage] = useState(20)
   const [storageInfo, setStorageInfo] = useState<StorageAllocation | null>(null)
   const [storageError, setStorageError] = useState("")
   const [submitting, setSubmitting] = useState(false)
@@ -82,19 +82,19 @@ export function CreateEnvironmentDialog({ open, onOpenChange, initialKind }: { o
     priority, dynamic: true,
   }
   const policyErrors = creationResourceErrors(policy, kind, cpuMaximum, memoryMaximum)
-  const storageMinimum = kind === "container" ? Math.ceil(storageInfo?.capacityGb ?? 6) : kind === "microVm" ? 6 : 1
+  const storageMinimum = kind === "container" || kind === "microVm" ? 6 : 1
   const storageMaximum = Math.max(storageMinimum, storageInfo?.maximumGb ?? storageMinimum)
 
   useEffect(() => {
-    if (!open || cudaContainer) return
+    if (!open) return
     let active = true
     setStorageInfo(null); setStorageError("")
     platformApi.getStorageAllocation(undefined, kind === "fullVm" || kind === "microVm").then(info => {
       if (!active) return
-      const required = kind === "microVm" ? 6 : kind === "container" ? Math.ceil(info.capacityGb) : 1
+      const required = kind === "container" || kind === "microVm" ? 6 : 1
       if (info.maximumGb < required) { setStorageError(`Not enough free space on the Yougori drive. At least ${required} GB is needed, with 2 GB kept free for the host.`); return }
       setStorageInfo(info)
-      setStorage(kind === "container" ? Math.ceil(info.capacityGb) : Math.min(kind === "fullVm" ? 64 : 6, info.maximumGb))
+      setStorage(Math.min(kind === "container" ? 20 : kind === "fullVm" ? 64 : 6, info.maximumGb))
     }).catch(reason => { if (active) setStorageError(String(reason)) })
     return () => { active = false }
   }, [open, kind, cudaContainer])
@@ -190,7 +190,7 @@ export function CreateEnvironmentDialog({ open, onOpenChange, initialKind }: { o
     if (policyErrors.length) { setFormError(policyErrors[0]!); return }
     if (cudaContainer && (!cudaStatus?.supported || !cudaStatus.installed || cudaStatus.updateAvailable)) { setFormError(cudaStatus?.supported === false ? cudaStatus.detail : "Set up or update NVIDIA CUDA first, then create this GPU environment."); return }
     if (cudaContainer && gpuImageIssue(runtime)) { setFormError(gpuImageIssue(runtime)!); return }
-    if (!cudaContainer && (!storageInfo || storageError || storage < storageMinimum || storage > storageMaximum)) { setFormError(storageError || "Wait for storage capacity to load, then choose an available size."); return }
+    if (!storageInfo || storageError || storage < storageMinimum || storage > storageMaximum) { setFormError(storageError || "Wait for storage capacity to load, then choose an available size."); return }
     if (state?.environments.some(environment => environment.name.toLowerCase() === name.trim().toLowerCase())) {
       setFormError("An environment with this name already exists.")
       return
@@ -202,7 +202,7 @@ export function CreateEnvironmentDialog({ open, onOpenChange, initialKind }: { o
       if (kind === "container" && !cudaContainer) trackTourCreation(name.trim())
       const creation = createEnvironment({
         name: name.trim(),
-        storageGb: cudaContainer ? undefined : storage,
+        storageGb: storage,
         kind,
         runtime: runtime.trim(),
         provider: kind === "container" ? containerRuntime : "qemu",
@@ -325,9 +325,9 @@ export function CreateEnvironmentDialog({ open, onOpenChange, initialKind }: { o
                 <div className="creation-section-heading"><h2><SlidersHorizontalIcon aria-hidden="true" />Resources</h2><span>Drag to allocate</span></div>
                 <CreationResourceSliders label="CPU" max={limits.cpu.max} min={limits.cpu.min} onChange={setCpu} step={limits.cpu.step} unit="CPUs" disabled={submitting} value={cpu} />
                 <CreationResourceSliders label="Memory" max={limits.memory.max} min={limits.memory.min} onChange={setMemory} step={limits.memory.step} unit="GB" disabled={submitting} value={memory} />
-                {cudaContainer ? <p className="creation-resource-note">CUDA storage grows as files are written, limited by free host space and the WSL disk capacity. It is a separate shared pool, not a per-container disk limit.</p> : storageInfo ? <StorageCapacitySlider value={storage} min={storageMinimum} max={storageMaximum} disabled={submitting} shared={kind === "container"} onChange={setStorage} /> : <p role="status" className="creation-resource-note">{storageError || "Loading storage capacity…"}</p>}
+                {storageInfo ? <StorageCapacitySlider value={storage} min={storageMinimum} max={storageMaximum} disabled={submitting} container={kind === "container"} onChange={setStorage} /> : <p role="status" className="creation-resource-note">{storageError || "Loading storage capacity…"}</p>}
                 {state?.host.storageDrive ? <p className="creation-resource-note">Stored on {state.host.storageDrive} · Space on other drives is not included. Original installer files are kept when you delete a VM.</p> : null}
-                {kind === "container" && !cudaContainer && storageInfo && storage > storageInfo.capacityGb ? <p className="creation-resource-note">Expands storage for every standard container. Stop all running or paused standard containers before creating with this larger capacity.</p> : null}
+                {kind === "container" ? <p className="creation-resource-note">Writable files, private volumes and logs use this container's limit. Cached images, snapshots and connected folders use additional space.</p> : null}
                 {kind === "fullVm" && storage < 64 ? <p className="creation-resource-note">Windows 11 requires a disk of at least 64 GB.</p> : null}
                 {policyErrors.length ? <p role="alert" className="creation-error">{policyErrors[0]}</p> : null}
                 <div className="creation-priority">
@@ -337,7 +337,7 @@ export function CreateEnvironmentDialog({ open, onOpenChange, initialKind }: { o
                   </RadioGroup>
                 </div>
                 <p className="creation-resource-note">Resources adjust automatically between Minimum and Maximum, aiming for Preferred. {kind === "microVm" ? "Memory changes apply on restart." : kind === "container" ? "Slider limits reflect your computer’s CPU and RAM." : "Live memory changes require a guest balloon driver."}</p>
-                {kind === "container" ? <p className="creation-resource-note">{cudaContainer ? "Effective limits also depend on WSL resources. GPU memory is shared, not reserved; large models may exceed available memory on smaller GPUs." : "The shared VM reserves space for configured container limits and keeps RAM for your computer. If it needs to grow, stop all containers and retry; their disks are preserved."}</p> : null}
+                {kind === "container" ? <p className="creation-resource-note">{cudaContainer ? "Effective limits also depend on WSL resources. GPU memory is shared, not reserved; large models may exceed available memory on smaller GPUs." : "Yougori adjusts runtime capacity as containers start and keeps RAM available for your computer."}</p> : null}
               </section>
             </div>
           </DialogPanel>

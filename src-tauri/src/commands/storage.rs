@@ -37,11 +37,10 @@ pub async fn reclaim_storage(store: State<'_, PlatformStore>, runtime: State<'_,
 #[tauri::command]
 pub async fn get_storage_allocation(environment_id: Option<String>, new_vm: Option<bool>, store: State<'_, PlatformStore>, runtime: State<'_, RuntimeManager>) -> Result<StorageAllocation, String> {
     if environment_id.is_none() && new_vm.unwrap_or(false) { return runtime.new_vm_storage(); }
-    let Some(id) = environment_id else { return runtime.container_storage().await; };
+    let Some(id) = environment_id else { return runtime.new_vm_storage(); };
     let environment = store.snapshot()?.environments.into_iter().find(|e| e.id == id).ok_or("Environment not found")?;
     match provider(&environment) {
-        RuntimeProviderKind::OpenDockOci => runtime.container_storage().await,
-        RuntimeProviderKind::OpenDockCuda => runtime.cuda_storage().await,
+        RuntimeProviderKind::OpenDockOci | RuntimeProviderKind::OpenDockCuda => runtime.container_storage_allocation(runtime_id(&environment)).await,
         RuntimeProviderKind::Qemu => runtime.vm_storage_allocation(runtime_id(&environment), &vm_disk(&environment)?).await,
         _ => Err("Storage allocation is not available for this environment.".into()),
     }
@@ -53,16 +52,21 @@ pub async fn expand_environment_storage(environment_id: String, capacity_gb: f64
     let _serial = CONTAINER_POLICY_OPERATIONS.lock().await;
     let state = store.snapshot()?;
     let environment = state.environments.iter().find(|e| e.id == environment_id).ok_or("Environment not found")?;
-    if environment.status != EnvironmentStatus::Stopped { return Err("Stop the environment before expanding storage.".into()); }
     match provider(environment) {
-        RuntimeProviderKind::OpenDockCuda => Err("CUDA storage grows automatically in its separate WSL disk. This is not the standard container pool; its capacity was not changed.".into()),
-        RuntimeProviderKind::OpenDockOci => {
-            if state.environments.iter().any(|e| provider(e) == RuntimeProviderKind::OpenDockOci && matches!(e.status, EnvironmentStatus::Running | EnvironmentStatus::Paused | EnvironmentStatus::Provisioning)) {
-                return Err("Stop all running or paused containers before expanding their shared storage.".into());
-            }
-            runtime.grow_container_storage(capacity_gb).await
+        RuntimeProviderKind::OpenDockOci | RuntimeProviderKind::OpenDockCuda => {
+            if capacity_gb < 6.0 { return Err("Container storage limits start at 6 GB.".into()); }
+            let allocation = runtime.set_container_storage(runtime_id(environment), capacity_gb).await?;
+            store.mutate(|state| {
+                let item = state.environments.iter_mut().find(|e| e.id == environment_id).ok_or("Environment not found")?;
+                item.storage_limit_gb = Some(allocation.capacity_gb);
+                Ok(())
+            })?;
+            Ok(allocation)
         },
-        RuntimeProviderKind::Qemu if environment.kind != EnvironmentKind::ComputerBranch => runtime.grow_vm_storage(runtime_id(environment), &vm_disk(environment)?, capacity_gb).await,
+        RuntimeProviderKind::Qemu if environment.kind != EnvironmentKind::ComputerBranch => {
+            if environment.status != EnvironmentStatus::Stopped { return Err("Stop the environment before expanding storage.".into()); }
+            runtime.grow_vm_storage(runtime_id(environment), &vm_disk(environment)?, capacity_gb).await
+        },
         _ => Err("Storage expansion is not available for this environment.".into()),
     }
 }

@@ -5,12 +5,27 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"os/exec"
 	"strconv"
 	"strings"
 	"time"
 )
+
+func (s *server) growStorage(w http.ResponseWriter, r *http.Request) {
+	if s.microVM {
+		writeError(w, http.StatusConflict, "container storage cannot resize a microVM")
+		return
+	}
+	unlock := s.locks.lock("storage-quotas")
+	defer unlock()
+	if err := growBundledRoot(); err != nil {
+		writeError(w, http.StatusConflict, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]bool{"ready": true})
+}
 
 // Only the bundled, whole-device ext4 root is eligible. Never guess partitions
 // or operate on host shares, custom filesystems, or an arbitrary client path.

@@ -14,7 +14,16 @@ import (
 // Only the private runtime root is trimmed. FITRIM asks the filesystem for free
 // extents; it never zeros occupied files, guest partitions, or host shares.
 func trimRootStorage() error {
-	file, err := os.Open("/")
+	if _, err := containerStoreDevice(); err == nil {
+		if err := trimStoragePath(containerStoreMount); err != nil {
+			return err
+		}
+	}
+	return trimStoragePath("/")
+}
+
+func trimStoragePath(path string) error {
+	file, err := os.Open(path)
 	if err != nil {
 		return err
 	}

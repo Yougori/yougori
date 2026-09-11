@@ -4,7 +4,7 @@ import { platformApi } from "@/api/platform-api"
 import { workspaceApi } from "@/api/workspace-api"
 import type { CreateEnvironmentRequest } from "@/types/platform"
 
-async function createTestEnvironment(name: string) {
+async function createTestEnvironment(name: string, overrides: Partial<CreateEnvironmentRequest> = {}) {
   const request: CreateEnvironmentRequest = {
     name,
     kind: "container",
@@ -17,12 +17,37 @@ async function createTestEnvironment(name: string) {
       priority: "normal",
       dynamic: true,
     },
+    ...overrides,
   }
   const state = await platformApi.createEnvironment(request)
   return state.environments[0]!
 }
 
 describe("browser platform adapter", () => {
+  it("persists independent standard and GPU limits and increases one without stopping either node", async () => {
+    const initial = await platformApi.getState()
+    initial.host.totalStorageGb = 512
+    initial.host.usedStorageGb = 100
+    localStorage.setItem("opendock.platform.v1", JSON.stringify(initial))
+    const cpu = await createTestEnvironment("Storage CPU", { storageGb: 20 })
+    const gpu = await createTestEnvironment("Storage GPU", { provider: "openDockCuda", runtime: "docker.io/library/ubuntu:24.04", storageGb: 100, gpuAccess: true })
+    await platformApi.setEnvironmentStatus(cpu.id, "running")
+    await platformApi.setEnvironmentStatus(gpu.id, "running")
+    expect(await platformApi.getStorageAllocation(cpu.id)).toMatchObject({ capacityGb: 20, shared: false, limitEnforced: true })
+    expect(await platformApi.getStorageAllocation(gpu.id)).toMatchObject({ capacityGb: 100, shared: false, limitEnforced: true })
+    await platformApi.expandEnvironmentStorage(cpu.id, 40)
+    const restored = await platformApi.getState()
+    expect(restored.environments.find(e => e.id === cpu.id)).toMatchObject({ status: "running", storageLimitGb: 40 })
+    expect(restored.environments.find(e => e.id === gpu.id)).toMatchObject({ status: "running", storageLimitGb: 100 })
+    expect((await platformApi.getStorageAllocation(cpu.id)).capacityGb).toBe(40)
+    expect((await platformApi.getStorageAllocation(gpu.id)).capacityGb).toBe(100)
+    await platformApi.expandEnvironmentStorage(cpu.id, 6)
+    expect((await platformApi.getStorageAllocation(cpu.id)).capacityGb).toBe(6)
+    expect((await platformApi.getStorageAllocation(gpu.id)).capacityGb).toBe(100)
+    await expect(platformApi.expandEnvironmentStorage(cpu.id, 5)).rejects.toThrow("6 GB")
+    await expect(createTestEnvironment("Too small", { storageGb: 5 })).rejects.toThrow("minimum")
+  })
+
   it("persists a trimmed display name without changing runtime or resource metadata", async () => {
     const environment = await createTestEnvironment("Original name")
     const state = await platformApi.renameEnvironment(environment.id, "  Renamed VM  ")
@@ -87,7 +112,7 @@ describe("browser platform adapter", () => {
     state.host.totalStorageGb = 100
     state.host.usedStorageGb = 99
     localStorage.setItem("opendock.platform.v1", JSON.stringify(state))
-    expect((await platformApi.getStorageAllocation()).maximumGb).toBeGreaterThanOrEqual(6)
+    expect((await platformApi.getStorageAllocation()).maximumGb).toBe(0)
     expect(await platformApi.getStorageAllocation(undefined, true)).toEqual({ capacityGb: 0, physicalGb: 0, maximumGb: 0, shared: false })
     state.host.usedStorageGb = 80
     localStorage.setItem("opendock.platform.v1", JSON.stringify(state))

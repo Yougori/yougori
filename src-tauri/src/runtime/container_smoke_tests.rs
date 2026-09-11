@@ -22,14 +22,9 @@ async fn container_capacity_grows_without_losing_data_or_restarting_active_workl
         assert!(output.stdout.contains("2147483648"), "{}", output.stdout);
         assert!(output.stdout.contains("400000 100000"), "{}", output.stdout);
         eprintln!("Large container initial limits: {}", output.stdout);
-        let error = runtime.ensure_container_capacity(8.0, 4.0).await.unwrap_err();
-        assert!(error.contains("OPENDOCK_CAPACITY_RESTART"), "{error}");
-        assert_eq!(before, runtime.appliance.lock().await.as_ref().unwrap().child.id());
-        runtime.container_action("env-capacity", "stop", false).await?;
         runtime.ensure_container_capacity(8.0, 4.0).await?;
-        assert_ne!(before, runtime.appliance.lock().await.as_ref().unwrap().child.id());
+        assert_eq!(before, runtime.appliance.lock().await.as_ref().unwrap().child.id());
         runtime.update_container_resources("env-capacity", 8.0, 4.0).await?;
-        runtime.container_action("env-capacity", "start", false).await?;
         let output = runtime.execute_container_command("env-capacity", "cat /root/capacity-marker; cat /sys/fs/cgroup/memory.max; cat /sys/fs/cgroup/cpu.max; head -3 /proc/meminfo").await?;
         assert_eq!(output.exit_code, 0, "{}", output.stderr);
         assert!(output.stdout.contains("capacity-survives"), "{}", output.stdout);

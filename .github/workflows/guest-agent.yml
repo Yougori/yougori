@@ -1,6 +1,8 @@
 name: Guest agent checks (no publishing)
 
 on:
+  push:
+    branches: [staging]
   workflow_dispatch:
 
 permissions:

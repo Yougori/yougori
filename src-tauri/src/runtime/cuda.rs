@@ -248,6 +248,7 @@ impl RuntimeManager {
             ((bytes as f64 / 1_073_741_824.0 - 0.5).max(0.0) * 8.0).floor() / 8.0,
         ))
     }
+    #[cfg(test)]
     pub async fn cuda_storage(&self) -> Result<super::storage::StorageAllocation, String> {
         let (capacity, physical) = self.cuda.storage_sizes()?;
         let path = self.cuda.storage_path();
@@ -264,6 +265,7 @@ impl RuntimeManager {
             physical_gb: physical as f64 / gb,
             maximum_gb: maximum.min(capacity as f64 / gb).floor(),
             shared: true,
+            limit_enforced: None,
         })
     }
 

@@ -12,7 +12,6 @@ vi.mock("@/api/platform-api", () => ({ platformApi: { getStorageAllocation: vi.f
 // Resource drag gestures have their own tests; keep these tests focused on
 // category selection, compatibility, and the submitted native request.
 vi.mock("@/components/dialogs/creation-resource-sliders", () => ({ CreationResourceSliders: () => null }))
-vi.mock("@/components/storage-capacity-slider", () => ({ StorageCapacitySlider: () => null }))
 
 beforeEach(() => {
   vi.stubGlobal("PointerEvent", MouseEvent)
@@ -31,8 +30,21 @@ it("creates a separate GPU category with CUDA enabled but no network or PC folde
   fireEvent.change(screen.getByRole("textbox", { name: "Name" }), { target: { value: "AI workspace" } })
   fireEvent.click(screen.getByRole("button", { name: "Create environment" }))
   await waitFor(() => expect(create).toHaveBeenCalledOnce())
-  expect(create).toHaveBeenCalledWith(expect.objectContaining({ kind: "container", provider: "openDockCuda", runtime: "docker.io/library/ubuntu:24.04", gpuAccess: true, networkAccess: false, storageGb: undefined }))
+  expect(create).toHaveBeenCalledWith(expect.objectContaining({ kind: "container", provider: "openDockCuda", runtime: "docker.io/library/ubuntu:24.04", gpuAccess: true, networkAccess: false, storageGb: 20 }))
   expect(create.mock.calls[0]![0]).not.toHaveProperty("shares")
+})
+
+it.each(["Container", "GPU"])("offers 6 GB through the available maximum for new %s storage", async category => {
+  render(<CreateEnvironmentDialog open onOpenChange={() => {}} />)
+  fireEvent.click(await screen.findByRole("radio", { name: category }))
+  if (category === "GPU") await screen.findByText("Installed")
+  const slider = await screen.findByRole("slider", { name: "Storage limit" })
+  expect(slider.getAttribute("min")).toBe("6")
+  expect(slider.getAttribute("max")).toBe("100")
+  fireEvent.change(slider, { target: { value: "6" } })
+  fireEvent.change(screen.getByRole("textbox", { name: "Name" }), { target: { value: `${category} minimum` } })
+  fireEvent.click(screen.getByRole("button", { name: "Create environment" }))
+  await waitFor(() => expect(create).toHaveBeenCalledWith(expect.objectContaining({ storageGb: 6 })))
 })
 
 it("does not leak GPU permission or image selection back into standard containers", async () => {

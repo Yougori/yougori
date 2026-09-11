@@ -99,6 +99,7 @@ SOFTWARE.
 - Go-FUSE 2.5.1: BSD-3-Clause. Source: https://github.com/hanwen/go-fuse/tree/v2.5.1
 - Go `golang.org/x/sys`: BSD-3-Clause. Source: https://go.googlesource.com/sys/
 - Container startup configuration uses the containerd Go API, containerd/log, containerd/ttrpc, gRPC-Go, and Google RPC generated types (Apache-2.0), Go protobuf and `golang.org/x/net` / `golang.org/x/text` (BSD-3-Clause), and Logrus (MIT). Exact versions and upstream license texts are included in `WORKSPACE_LICENSES.txt`; the agent's `go.mod` and `go.sum` pin the source dependencies.
+- Container storage inspection also uses opencontainers/image-spec 1.1.1 and opencontainers/go-digest 1.0.0 (Apache-2.0). Their upstream license texts are included in `WORKSPACE_LICENSES.txt`. Sources: https://github.com/opencontainers/image-spec/tree/v1.1.1 and https://github.com/opencontainers/go-digest/tree/v1.0.0.
 - License texts for these additions are included in `WORKSPACE_LICENSES.txt` beside this notice.
 - Optional cloudflared 2026.8.3 is downloaded directly from Cloudflare's release when the user enables a tunnel. It is not bundled in Yougori. Source and Apache-2.0 license: https://github.com/cloudflare/cloudflared/tree/2026.8.3
 

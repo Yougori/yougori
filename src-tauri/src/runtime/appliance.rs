@@ -13,7 +13,7 @@ use tokio_util::io::ReaderStream;
 use uuid::Uuid;
 
 use super::{
-    available_port, command_output, configure_background_process, path_string, AgentEndpoint,
+    command_output, configure_background_process, path_string, AgentEndpoint,
     ApplianceProcess, PerfSpan, RuntimeManager,
 };
 use crate::models::{CommandResult, ConnectionDirection, PermissionKind, ResourcePolicy};
@@ -44,6 +44,7 @@ pub struct ContainerTelemetry {
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 struct ProvisionRequest<'a> {
+    storage_bytes: u64,
     #[serde(skip_serializing_if = "Option::is_none")]
     original_id: Option<&'a str>,
     id: &'a str,
@@ -179,6 +180,7 @@ struct ExistingApplianceMarker {
 }
 
 impl RuntimeManager {
+    #[cfg(test)]
     pub async fn provision_container(
         &self,
         id: &str,
@@ -188,7 +190,19 @@ impl RuntimeManager {
         network_access: bool,
         gpu_access: bool,
     ) -> Result<(), String> {
+        self.provision_container_with_storage(id, image, command, policy, network_access, gpu_access, 20.0).await
+    }
+
+    pub async fn provision_container_with_storage(
+        &self, id: &str, image: &str, command: &str, policy: &ResourcePolicy,
+        network_access: bool, gpu_access: bool, storage_gb: f64,
+    ) -> Result<(), String> {
+        let storage_bytes = super::storage::storage_bytes(storage_gb)?;
+        if storage_gb > self.new_vm_storage()?.maximum_gb.min(16380.0) {
+            return Err("Not enough free space on the Yougori drive for this container storage limit.".into());
+        }
         let request = ProvisionRequest {
+            storage_bytes,
             original_id: None,
             id,
             image,
@@ -207,6 +221,7 @@ impl RuntimeManager {
     pub async fn provision_reset_container(&self, id: &str, old_id: &str, environment: &crate::models::Environment) -> Result<(), String> {
         self.register_container_provider(id, &self.container_provider(old_id)?)?;
         let request = ProvisionRequest {
+            storage_bytes: super::storage::storage_bytes(environment.storage_limit_gb.unwrap_or(20.0))?,
             original_id: Some(old_id), id, image: &environment.runtime,
             command: environment.container_command.as_deref().unwrap_or_default(),
             cpus: environment.resource_policy.cpu.preferred,
@@ -732,15 +747,25 @@ impl RuntimeManager {
         // Never inspect, rebase, or archive a disk still owned by an older app's VM.
         self.check_external_appliance(false).await?;
         self.prepare_appliance_overlay().await?;
+        self.prepare_container_pool_capacity().await?;
         let _boot_trace = PerfSpan::new("appliance boot");
+        let mut port_reservations = super::vm::VmPortReservations::new();
+        let agent_port = port_reservations.reserve_available(&[])?;
+        let qmp_port = port_reservations.reserve_available(&[agent_port])?;
         let endpoint = AgentEndpoint {
-            base_url: format!("http://127.0.0.1:{}", available_port()?),
+            base_url: format!("http://127.0.0.1:{agent_port}"),
             token: format!("{}{}", Uuid::new_v4().simple(), Uuid::new_v4().simple()),
         };
 
         let accelerators = super::host_platform::x86_accelerators(std::env::consts::OS, std::env::consts::ARCH, false);
         let mut last_error = String::new();
-        let capacity = *self.appliance_capacity.lock().map_err(|_| "Container capacity lock poisoned")?;
+        let mut capacity = *self.appliance_capacity.lock().map_err(|_| "Container capacity lock poisoned")?;
+        // Idle vCPU threads do not reserve physical cores. Make the host's CPUs
+        // available from boot; each container still has its own cgroup limit.
+        capacity.cpus = std::thread::available_parallelism().map(usize::from).unwrap_or(1).min(255);
+        let mut host = sysinfo::System::new();
+        host.refresh_memory();
+        let max_memory_mib = ((host.total_memory() / 1_048_576) as usize / 128 * 128).max(capacity.memory_mib);
         let gpu_launch = self.prepare_gpu_launch(&self.data_root.join("appliance")).await?;
         if !cfg!(target_os = "windows") && gpu_launch.explicit() {
             return Err("The saved GPU selection requires the Windows GPU runtime. No GPU fallback was started.".into());
@@ -750,8 +775,9 @@ impl RuntimeManager {
         for gpu_enabled in if cfg!(target_os = "windows") { vec![true, false] } else { vec![false] } {
             if !gpu_enabled && gpu_launch.explicit() { break; }
             for accelerator in accelerators {
-                let mut child = self.spawn_appliance(&endpoint, accelerator, gpu_enabled, &gpu_launch)?;
+                let mut child = self.spawn_appliance(&endpoint, accelerator, gpu_enabled, &gpu_launch, capacity, max_memory_mib, qmp_port)?;
                 let deadline = Instant::now() + super::host_platform::guest_boot_timeout();
+                let storage_deadline = Instant::now() + Duration::from_secs(31 * 60);
                 loop {
                     if let Some(status) = child
                         .try_wait()
@@ -773,13 +799,16 @@ impl RuntimeManager {
                         *process_guard = Some(ApplianceProcess {
                             child,
                             endpoint: endpoint.clone(),
+                            qmp_port,
+                            max_memory_mib,
+                            _port_reservations: port_reservations,
                             capacity,
                             active_containers: Default::default(),
                             gpu,
                         });
                         return Ok(endpoint);
                     }
-                    if Instant::now() >= deadline {
+                    if Instant::now() >= deadline && !(Instant::now() < storage_deadline && storage_preparation_in_progress(&self.appliance_log_tail())) {
                         last_error = format!(
                             "Yougori appliance did not become ready: {}",
                             self.appliance_log_tail()
@@ -934,6 +963,9 @@ impl RuntimeManager {
         accelerator: &str,
         gpu_enabled: bool,
         gpu_launch: &super::gpu::GpuLaunch,
+        capacity: super::appliance_capacity::ApplianceCapacity,
+        max_memory_mib: usize,
+        qmp_port: u16,
     ) -> Result<tokio::process::Child, String> {
         let port = endpoint
             .base_url
@@ -947,9 +979,8 @@ impl RuntimeManager {
             .map_err(|error| format!("reset {}: {error}", log_path.display()))?;
         let error_log = File::create(&error_path)
             .map_err(|error| format!("create {}: {error}", error_path.display()))?;
-        let capacity = *self.appliance_capacity.lock().map_err(|_| "Container capacity lock poisoned")?;
         let appliance_cpus = capacity.cpus.to_string();
-        let appliance_memory = capacity.memory_mib.to_string();
+        let appliance_memory = format!("{},slots=64,maxmem={}M", capacity.memory_mib, max_memory_mib);
         let mut command = tokio::process::Command::new(&self.layout.qemu_system);
         command
             .current_dir(self.layout.qemu_system.parent().unwrap_or(&self.layout.root))
@@ -1008,6 +1039,8 @@ impl RuntimeManager {
                 &format!("file:{}", path_string(&log_path)),
                 "-monitor",
                 "none",
+                "-qmp",
+                &format!("tcp:127.0.0.1:{qmp_port},server=on,wait=off"),
                 "-no-reboot",
                 "-rtc",
                 "base=utc",
@@ -1055,6 +1088,12 @@ impl RuntimeManager {
         }
         combined.trim().to_string()
     }
+}
+
+fn storage_preparation_in_progress(log: &str) -> bool {
+    let started = log.rfind("Yougori storage preparation started");
+    let ended = log.rfind("Yougori storage preparation finished").max(log.rfind("Yougori storage preparation failed"));
+    started.is_some() && started > ended
 }
 
 pub(super) async fn successful_response(response: Response) -> Result<Response, String> {

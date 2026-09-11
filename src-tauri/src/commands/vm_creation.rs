@@ -34,6 +34,7 @@ pub(super) async fn create_on_graph(
         cpu_usage: 0.0,
         memory_usage_gb: 0.0,
         storage_delta_gb: 0.0,
+        storage_limit_gb: request.provider.is_container().then(|| request.storage_gb.unwrap_or(20.0)),
         network_rx_mbps: 0.0,
         resource_policy: policy,
     };
