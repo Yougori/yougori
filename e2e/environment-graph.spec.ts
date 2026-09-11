@@ -1836,12 +1836,18 @@ test("network handles stay anchored on hover and still open the connection form"
   await openGraph(page)
   const source = page.locator('[data-environment-id="Alpha"] .react-flow__handle-right')
   const target = page.locator('[data-environment-id="Beta"] .react-flow__handle-left')
-  const before = await center(source)
+  for (const handle of [source, target]) {
+    const before = await center(handle)
+    await handle.hover()
+    // An immediate assertion can pass before the hover transition has moved
+    // the handle. Check its final position on both sides of the node.
+    await handle.evaluate(element => Promise.all(element.getAnimations().map(animation => animation.finished)))
+    await expect.poll(async () => {
+      const after = await center(handle)
+      return Math.hypot(after.x - before.x, after.y - before.y)
+    }).toBeLessThan(0.5)
+  }
   await source.hover()
-  await expect.poll(async () => {
-    const after = await center(source)
-    return Math.hypot(after.x - before.x, after.y - before.y)
-  }).toBeLessThan(0.5)
   const end = await center(target)
   await page.mouse.down()
   await page.mouse.move(end.x, end.y, { steps: 15 })
