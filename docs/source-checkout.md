@@ -63,11 +63,12 @@ release certification described in the platform guides.
 
 ## When GitHub checks run
 
-Every push to `staging` automatically starts Windows, guest-agent and Linux
-desktop preview checks. Pushes to other branches and pull requests have no
-automatic trigger. All workflows can still be started with **Run workflow** in
-GitHub Actions; macOS remains manual. Wait for the three staging checks to pass
-and follow the [promotion workflow](../CONTRIBUTING.md) before merging into `main`.
+Every push to `staging` automatically starts only Windows verification.
+Guest-agent, Linux desktop preview and macOS checks are manual. Pushes to other
+branches and pull requests have no automatic trigger. All workflows can still
+be started with **Run workflow** in GitHub Actions. Wait for Windows verification
+and any other checks relevant to the changes to pass, then follow the
+[promotion workflow](../CONTRIBUTING.md) before merging into `main`.
 
 ## Maintainer runtime rebuilds
 

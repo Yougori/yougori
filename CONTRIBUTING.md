@@ -33,19 +33,19 @@ npm run test:e2e
 npm run release:check
 ```
 
-Every push to `staging` automatically runs the Windows, guest-agent and Linux
-desktop checks. Wait for all three to pass before promoting that commit. These
-workflows have no automatic trigger for pushes to other branches or for pull
-requests. macOS checks remain manual.
+Every push to `staging` automatically runs only the Windows verification.
+Wait for it to pass before promoting that commit. Guest-agent, Linux desktop
+and macOS checks run manually when needed. These workflows have no automatic
+trigger for pushes to other branches or for pull requests.
 
-The three staging workflows can also be started manually. For a Windows run,
+All workflows can be started manually. For a Windows run,
 select **Actions > Verify > Run workflow** and choose `staging`, or use:
 
 ```sh
 gh workflow run verify.yml --ref staging
 ```
 
-Run the macOS workflow separately when needed. Record the tested
+Run the guest-agent, Linux and macOS workflows separately when needed. Record the tested
 commit and results in the pull request. New commits need checks appropriate to
 their changes before promotion. Complete the relevant packaged and real-machine
 checks in [release readiness](docs/release-readiness.md) before publishing a release.

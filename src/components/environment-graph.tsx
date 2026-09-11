@@ -286,7 +286,11 @@ export function EnvironmentGraph({ environments, connections, errorContainer, on
   }, [initialNodes, setNodes])
   useEffect(() => setEdges(initialEdges), [initialEdges, setEdges])
   useEffect(() => {
-    if (fitNewNodesRef.current && flowRef.current && nodes.length && nodes.every(node => node.measured?.width && node.measured?.height)) {
+    // setNodes above is asynchronous. The previous, already measured nodes can
+    // still be rendered here while a new node (including the tour preview) is
+    // pending. Keep the fit request until every expected node is measured.
+    const allMeasured = nodes.length === knownNodesRef.current.size && nodes.every(node => knownNodesRef.current.has(node.id) && node.measured?.width && node.measured?.height)
+    if (fitNewNodesRef.current && flowRef.current && nodes.length && allMeasured) {
       fitNewNodesRef.current = false
       void flowRef.current.fitView({ padding: 0.25, maxZoom: 1, nodes: preview ? [{ id: preview.id }] : undefined })
     }

@@ -1141,6 +1141,32 @@ test("desktop VM manual ports validate before adding a connectable service", asy
 })
 
 test("PORT labels open service ports on containers, MicroVMs and VMs and the guide highlights PORT", async ({ page }) => {
+  // Measure an existing node while the new preview's measurement is delayed.
+  // An early fit would be consumed without including the preview, leaving it
+  // off-screen. Control that ordering without depending on CPU speed.
+  await page.addInitScript(() => {
+    const NativeResizeObserver = window.ResizeObserver
+    let released = false
+    document.addEventListener("measure-test-preview", () => { released = true }, { once: true })
+    window.ResizeObserver = class extends NativeResizeObserver {
+      constructor(callback: ResizeObserverCallback) {
+        super((entries, observer) => {
+          const delayed = entries.filter(entry => !released && entry.target.matches(".react-flow__node") && entry.target.querySelector("[data-tour-preview]"))
+          const ready = entries.filter(entry => !delayed.includes(entry))
+          if (ready.length) {
+            callback(ready, observer)
+            if (!released && document.documentElement.hasAttribute("data-preview-measurement-pending") && ready.some(entry => entry.target.matches(".react-flow__node"))) {
+              document.documentElement.setAttribute("data-existing-node-measured", "true")
+            }
+          }
+          if (delayed.length) {
+            document.documentElement.setAttribute("data-preview-measurement-pending", "true")
+            document.addEventListener("measure-test-preview", () => callback(delayed, observer), { once: true })
+          }
+        })
+      }
+    }
+  })
   await openGraph(page, [fixture("Container"), fixture("Micro", "microVm"), fixture("VM", "fullVm")])
   for (const name of ["Container", "Micro", "VM"]) {
     const button = page.getByRole("button", { name: `Add service port to ${name}`, exact: true })
@@ -1153,6 +1179,13 @@ test("PORT labels open service ports on containers, MicroVMs and VMs and the gui
   }
   const before = await page.evaluate(() => [localStorage.getItem("opendock.platform.v1"), localStorage.getItem("opendock.workspace.manual.v2")])
   await page.getByRole("button", { name: "Instructions", exact: true }).click()
+  await expect(page.locator("html")).toHaveAttribute("data-preview-measurement-pending", "true")
+  await page.locator('[data-environment-id="Container"]').evaluate(element => { element.style.width = "290px" })
+  await expect(page.locator("html")).toHaveAttribute("data-existing-node-measured", "true")
+  await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => {
+    document.dispatchEvent(new Event("measure-test-preview"))
+    resolve()
+  }))))
   const guide = page.locator(".tour-card")
   for (const expected of overviewSteps.slice(1, overviewSteps.indexOf("service-ports") + 1)) {
     await guide.getByRole("button", { name: "Next", exact: true }).click()
@@ -1162,7 +1195,7 @@ test("PORT labels open service ports on containers, MicroVMs and VMs and the gui
   // The overview targets its temporary preview, not an existing node whose
   // position in React Flow's DOM can change independently of the guide.
   const previewPort = page.locator('[data-tour-preview] [data-tour="node-port"]')
-  await expect(previewPort).toBeVisible()
+  await expect(previewPort).toBeInViewport({ ratio: 1 })
   await expect.poll(() => previewPort.evaluate(element => {
     const button = element.getBoundingClientRect()
     return [...document.querySelectorAll("[data-tour-highlight]")].some(element => {
