@@ -72,6 +72,8 @@ test("an open display socket without a greeting has a bounded readiness timeout"
 })
 
 test("another protocol on the port cannot count as a ready VNC display", async t => {
-  const url = await display(t, socket => frame(socket, "NOT A VNC!!!"))
-  await assert.rejects(waitForVnc(url, { timeoutMs: 150 }), /Unexpected VNC greeting/)
+  let attempts = 0
+  const url = await display(t, socket => { attempts++; frame(socket, "NOT A VNC!!!") })
+  await assert.rejects(waitForVnc(url), /Unexpected VNC greeting/)
+  assert.equal(attempts, 1)
 })

@@ -1,5 +1,7 @@
 import { setTimeout as delay } from "node:timers/promises"
 
+class VncProtocolError extends Error {}
+
 // Test fixtures must wait for the display protocol, not just a spawned process
 // or an open TCP port. EGL initialization can finish after page navigation.
 function greeting(url, timeoutMs, signal) {
@@ -23,7 +25,7 @@ function greeting(url, timeoutMs, signal) {
     socket.addEventListener("message", event => {
       bytes = Buffer.concat([bytes, Buffer.from(event.data)]).subarray(0, 12)
       if (bytes.length < 12) return
-      finish(/^RFB \d{3}\.\d{3}\n$/.test(bytes.toString("ascii")) ? undefined : new Error("Unexpected VNC greeting"))
+      finish(/^RFB \d{3}\.\d{3}\n$/.test(bytes.toString("ascii")) ? undefined : new VncProtocolError("Unexpected VNC greeting"))
     })
     signal?.addEventListener("abort", aborted, { once: true })
     if (signal?.aborted) aborted()
@@ -41,6 +43,9 @@ export async function waitForVnc(url, { timeoutMs = 15_000, signal } = {}) {
       return
     } catch (error) {
       signal?.throwIfAborted()
+      // A different service on this port will not become VNC by reconnecting.
+      // Preserve the protocol error instead of replacing it with a later timeout.
+      if (error instanceof VncProtocolError) throw error
       lastError = error
     }
     await delay(Math.max(0, Math.min(100, deadline - performance.now())), undefined, { signal })
