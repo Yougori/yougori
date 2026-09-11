@@ -48,7 +48,11 @@ for (const newline of ["\n", "\r\n", "\r"]) test(`shared file browser uploads ch
   await page.getByRole("button", { name: "Save changes" }).click()
   await expect.poll(() => files.get("project.txt")!.toString()).toBe("edited ✓")
   const payload = Buffer.alloc(300_000, 65)
-  await page.locator("#pick").setInputFiles({ name: "data.bin", mimeType: "application/octet-stream", buffer: payload })
+  // The write reaches the fixture before save/truncate/list finish. Use the
+  // visible button so actionability waits for the browser to leave its busy state.
+  const choosing = page.waitForEvent("filechooser")
+  await page.getByRole("button", { name: "Upload files", exact: true }).click()
+  await (await choosing).setFiles({ name: "data.bin", mimeType: "application/octet-stream", buffer: payload })
   await expect(page.getByRole("row").filter({ hasText: "data.bin" })).toBeVisible()
   expect(files.get("data.bin")).toEqual(payload)
   expect(writes).toBeGreaterThanOrEqual(4)
@@ -1155,8 +1159,12 @@ test("PORT labels open service ports on containers, MicroVMs and VMs and the gui
     await expect(page.locator("[data-tour-step]")).toHaveAttribute("data-tour-step", expected)
   }
   await expect(guide.getByRole("heading", { name: "Add a service port", exact: true })).toBeVisible()
-  await expect.poll(() => page.evaluate(() => {
-    const button = document.querySelector('[data-tour="node-port"]')!.getBoundingClientRect()
+  // The overview targets its temporary preview, not an existing node whose
+  // position in React Flow's DOM can change independently of the guide.
+  const previewPort = page.locator('[data-tour-preview] [data-tour="node-port"]')
+  await expect(previewPort).toBeVisible()
+  await expect.poll(() => previewPort.evaluate(element => {
+    const button = element.getBoundingClientRect()
     return [...document.querySelectorAll("[data-tour-highlight]")].some(element => {
       const ring = element.getBoundingClientRect()
       return ring.left <= button.left && ring.top <= button.top && ring.right >= button.right && ring.bottom >= button.bottom
