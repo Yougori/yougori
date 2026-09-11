@@ -8,6 +8,7 @@ import { readFile } from "node:fs/promises"
 import { createHash } from "node:crypto"
 import { terminalInstallers } from "../src/lib/terminal-installers"
 import { overviewSteps } from "../src/lib/instructions-tour"
+import { waitForVnc } from "../scripts/wait-for-vnc.mjs"
 
 for (const newline of ["\n", "\r\n", "\r"]) test(`shared file browser uploads chunks, edits, downloads and respects read-only and disconnect (${JSON.stringify(newline)} line endings)`, async ({ page }) => {
   const html = (await readFile(resolve("src-tauri/src/runtime/connection_files.html"), "utf8")).replace(/\r\n?|\n/g, newline)
@@ -1607,15 +1608,20 @@ for (const accelerated of [false, true]) test(`real QEMU ${accelerated ? "accele
     "-vnc", `127.0.0.1:${rfbPort - 5900},websocket=127.0.0.1:${websocketPort},share=force-shared`,
   ], { cwd: directory, windowsHide: true, stdio: ["ignore", "ignore", "pipe"] })
   let startupError = ""
+  const stopped = new AbortController()
+  const viewerErrors: string[] = []
+  page.on("console", message => { if (message.type() === "error") { viewerErrors.push(message.text()); if (viewerErrors.length > 10) viewerErrors.shift() } })
   qemu.stderr.on("data", data => { startupError = (startupError + String(data)).slice(-4096) })
-  qemu.on("error", error => { startupError = error.message })
+  qemu.on("error", error => { startupError = error.message; stopped.abort(error) })
+  qemu.once("exit", (code, signal) => stopped.abort(new Error(`Disposable QEMU exited (${signal ?? code})`)))
   const exited = new Promise<void>(done => qemu.once("close", () => done()))
   try {
     const state = structuredClone(seed) as PlatformState
     state.environments = [fixture("env-vnc-fixture", "fullVm")]
     await page.addInitScript(state => localStorage.setItem("opendock.platform.v1", JSON.stringify(state)), state)
     await page.goto("/?environment=env-vnc-fixture")
-    expect(qemu.exitCode, startupError).toBeNull()
+    const websocketUrl = `ws://127.0.0.1:${websocketPort}`
+    await waitForVnc(websocketUrl, { signal: stopped.signal })
     await page.evaluate(async url => {
       const modulePath = "/node_modules/@novnc/novnc/core/rfb.js"
       const { default: RFB } = await import(modulePath)
@@ -1632,7 +1638,7 @@ for (const accelerated of [false, true]) test(`real QEMU ${accelerated ? "accele
         client.addEventListener("connect", () => { clearTimeout(timeout); resolveConnection() }, { once: true })
         client.addEventListener("disconnect", () => { clearTimeout(timeout); reject(new Error("Disposable VNC disconnected")) }, { once: true })
       })
-    }, `ws://127.0.0.1:${websocketPort}`)
+    }, websocketUrl)
     const target = page.locator("#real-vnc-fixture"), canvas = target.locator("canvas")
     for (const [width, height] of [[800, 500], [500, 800], [1234, 777]]) {
       await target.evaluate((element, size) => { element.style.width = `${size[0]}px`; element.style.height = `${size[1]}px` }, [width, height])
@@ -1653,6 +1659,8 @@ for (const accelerated of [false, true]) test(`real QEMU ${accelerated ? "accele
       return bounds ? [Math.round(bounds.width), Math.round(bounds.height)] : null
     }).toEqual(source)
     await page.evaluate(() => { (window as unknown as { displayFixture: { disconnect(): void } }).displayFixture.disconnect() })
+  } catch (error) {
+    throw new Error(`${error instanceof Error ? error.message : String(error)}\nQEMU exit: ${qemu.signalCode ?? qemu.exitCode ?? "still running"}\nQEMU stderr: ${startupError || "(empty)"}\nViewer errors: ${viewerErrors.join("\n") || "(empty)"}`, { cause: error })
   } finally {
     // This child has no disks and has never run a guest instruction.
     if (qemu.exitCode === null) qemu.kill()

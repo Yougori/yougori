@@ -42,6 +42,10 @@ jobs:
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           npm run build
           exit $LASTEXITCODE
+      - name: Browser interaction tests (no images)
+        run: npm run test:e2e
+      - name: Bounded native-test harness regressions (disposable processes only)
+        run: npm run test:harness
       - name: Native toolchain
         run: rustup toolchain install stable --profile minimal --no-self-update
       - name: CLI and native checks
@@ -58,7 +62,3 @@ jobs:
         env:
           RUSTUP_TOOLCHAIN: stable
         run: npm run cli:bundle
-      - name: Browser interaction tests (no images)
-        run: npm run test:e2e
-      - name: Bounded native-test harness regressions (disposable processes only)
-        run: npm run test:harness
