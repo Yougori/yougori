@@ -8,6 +8,7 @@ import { readFile } from "node:fs/promises"
 import { createHash } from "node:crypto"
 import { terminalInstallers } from "../src/lib/terminal-installers"
 import { overviewSteps } from "../src/lib/instructions-tour"
+import { waitForVnc } from "../scripts/wait-for-vnc.mjs"
 
 for (const newline of ["\n", "\r\n", "\r"]) test(`shared file browser uploads chunks, edits, downloads and respects read-only and disconnect (${JSON.stringify(newline)} line endings)`, async ({ page }) => {
   const html = (await readFile(resolve("src-tauri/src/runtime/connection_files.html"), "utf8")).replace(/\r\n?|\n/g, newline)
@@ -48,7 +49,11 @@ for (const newline of ["\n", "\r\n", "\r"]) test(`shared file browser uploads ch
   await page.getByRole("button", { name: "Save changes" }).click()
   await expect.poll(() => files.get("project.txt")!.toString()).toBe("edited ✓")
   const payload = Buffer.alloc(300_000, 65)
-  await page.locator("#pick").setInputFiles({ name: "data.bin", mimeType: "application/octet-stream", buffer: payload })
+  // The write reaches the fixture before save/truncate/list finish. Use the
+  // visible button so actionability waits for the browser to leave its busy state.
+  const choosing = page.waitForEvent("filechooser")
+  await page.getByRole("button", { name: "Upload files", exact: true }).click()
+  await (await choosing).setFiles({ name: "data.bin", mimeType: "application/octet-stream", buffer: payload })
   await expect(page.getByRole("row").filter({ hasText: "data.bin" })).toBeVisible()
   expect(files.get("data.bin")).toEqual(payload)
   expect(writes).toBeGreaterThanOrEqual(4)
@@ -310,6 +315,67 @@ async function openGraph(page: Page, environments = [fixture("Alpha"), fixture("
   await expect(page.locator("[data-environment-connection-point]")).toHaveCount(environments.filter(e => e.kind !== "cloud").length, { timeout: 45_000 })
   await page.getByRole("button", { name: "Fit environments", exact: true }).click()
 }
+
+for (const kind of ["container", "gpu", "microVm", "fullVm"] as const) test(`native folder drop shows an independent copy on the ${kind} node`, async ({ page }) => {
+  await page.route("**/src/api/file-import-api.ts*", async route => {
+    const response = await route.fetch()
+    await route.fulfill({ response, body: await response.text() + `
+      fileImportApi.listen = async callback => {
+        const listener = event => callback(event.detail);
+        window.addEventListener("test-native-drop", listener);
+        return () => window.removeEventListener("test-native-drop", listener);
+      };
+      fileImportApi.copy = async (id, paths, report) => {
+        document.documentElement.dataset.importCall = JSON.stringify({ id, paths });
+        report({ phase: "copying", completedBytes: 50, totalBytes: 100 });
+        return new Promise(resolve => window.addEventListener("test-copy-finish", event => resolve(event.detail), { once: true }));
+      };
+    ` })
+  })
+  const environment = fixture("Drop target", kind === "gpu" ? "container" : kind)
+  environment.status = "running"
+  if (kind === "gpu") { environment.provider = "openDockCuda"; environment.gpuAccess = true }
+  await openGraph(page, [environment, fixture("Other")])
+  const node = page.locator('[data-environment-id="Drop target"]')
+  const point = await center(node)
+  const paths = ["C:\\Projects\\My folder", "C:\\notes.txt"]
+  await page.evaluate(({ point, paths }) => {
+    const position = { x: point.x * devicePixelRatio, y: point.y * devicePixelRatio }
+    window.dispatchEvent(new CustomEvent("test-native-drop", { detail: { type: "drop", position, paths } }))
+  }, { point, paths })
+  await expect(node).toHaveAttribute("aria-busy", "true")
+  await expect(node.getByRole("status")).toContainText("Copying files · 50%")
+  await expect(node).toContainText("Originals stay on your computer")
+  await expect(page.getByRole("dialog")).toHaveCount(0)
+  await expect(page.locator('[data-environment-id="Other"]').getByRole("button", { name: "Start", exact: true })).toBeEnabled()
+  expect(await page.evaluate(() => JSON.parse(document.documentElement.dataset.importCall!))).toEqual({ id: environment.id, paths })
+  const destination = kind === "fullVm" ? "YOUGORI · 12345678" : "/yougori-import-12345678"
+  await page.evaluate(({ destination, drive }) => window.dispatchEvent(new CustomEvent("test-copy-finish", { detail: { destination, files: 2, bytes: 100, skippedLinks: 0, delivery: drive ? "drive" : "directory" } })), { destination, drive: kind === "fullVm" })
+  await expect(node).toHaveAttribute("aria-busy", "false")
+  await expect(node.getByRole("status")).toContainText(destination)
+  if (kind === "fullVm") await expect(node).toContainText("Open the YOUGORI drive inside your VM")
+})
+
+test("VM imported drives can be disconnected and reconnected while stopped", async ({ page }) => {
+  await openGraph(page, [fixture("Import VM", "fullVm")])
+  await page.evaluate(async () => {
+    const url = "/src/api/file-import-api.ts"
+    const { fileImportApi } = await import(url)
+    const drive = { id: "12345678123456781234567812345678", attached: true, bytes: 67108864 }
+    fileImportApi.drives = async () => [drive]
+    fileImportApi.setDriveAttached = async (environmentId: string, transferId: string, attached: boolean) => {
+      if (environmentId !== "Import VM" || transferId !== drive.id) throw Error("Wrong imported drive")
+      return [{ ...drive, attached }]
+    }
+  })
+  await page.getByRole("button", { name: "Configure Import VM", exact: true }).click()
+  const section = page.getByRole("region", { name: "Imported files", exact: true })
+  await expect(section).toContainText("Disconnected copies stay saved")
+  await section.getByRole("button", { name: "Disconnect drive" }).click()
+  await expect(section).toContainText("Saved")
+  await section.getByRole("button", { name: "Connect drive" }).click()
+  await expect(section).toContainText("Connected")
+})
 
 async function seedServices(page: Page, id = "Alpha") {
   await page.addInitScript(id => localStorage.setItem("opendock.workspace.v1", JSON.stringify({ [id]: { services: [{ port: 4200, protocol: "tcp", name: "Dev server", address: "127.0.0.1" }, { port: 8080, protocol: "tcp", name: "Web server", address: "0.0.0.0" }], publications: [], shares: [], notice: "" } })), id)
@@ -613,6 +679,27 @@ test("running environments cannot start a local disk backup", async ({ page }) =
   const dialog = page.getByRole("dialog", { name: "Back up Alpha", exact: true })
   await expect(dialog.getByRole("alert")).toContainText("Stop this environment")
   await expect(dialog.getByRole("button", { name: "Choose destination folder", exact: true })).toBeDisabled()
+})
+
+for (const gpu of [false, true]) test(`container startup command can be saved and cleared in configuration (GPU ${gpu})`, async ({ page }) => {
+  const env = fixture("Alpha")
+  env.containerCommand = "sleep 2147483647"
+  if (gpu) { env.provider = "openDockCuda"; env.gpuAccess = true }
+  await openGraph(page, [env])
+  await page.getByRole("button", { name: "Configure Alpha", exact: true }).click()
+  const sheet = page.getByRole("dialog", { name: "Alpha", exact: true })
+  const input = sheet.getByRole("textbox", { name: "Startup command", exact: true })
+  await expect(input).toHaveValue("sleep 2147483647")
+  await input.fill("cd /project\nexec npm start")
+  await sheet.getByRole("button", { name: "Save startup command", exact: true }).click()
+  await expect(sheet.getByRole("button", { name: "Save startup command", exact: true })).toBeDisabled()
+  await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem("opendock.platform.v1")!).environments[0].containerCommand)).toBe("cd /project\nexec npm start")
+  await sheet.getByRole("tab", { name: "Resources", exact: true }).click()
+  await sheet.getByRole("tab", { name: "Overview", exact: true }).click()
+  await expect(input).toHaveValue("cd /project\nexec npm start")
+  await input.fill("")
+  await sheet.getByRole("button", { name: "Save startup command", exact: true }).click()
+  await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem("opendock.platform.v1")!).environments[0].containerCommand)).toBeUndefined()
 })
 
 test("configuration sidebar keeps compact stats, tabs and actions usable in narrow windows", async ({ page }) => {
@@ -1055,6 +1142,32 @@ test("desktop VM manual ports validate before adding a connectable service", asy
 })
 
 test("PORT labels open service ports on containers, MicroVMs and VMs and the guide highlights PORT", async ({ page }) => {
+  // Measure an existing node while the new preview's measurement is delayed.
+  // An early fit would be consumed without including the preview, leaving it
+  // off-screen. Control that ordering without depending on CPU speed.
+  await page.addInitScript(() => {
+    const NativeResizeObserver = window.ResizeObserver
+    let released = false
+    document.addEventListener("measure-test-preview", () => { released = true }, { once: true })
+    window.ResizeObserver = class extends NativeResizeObserver {
+      constructor(callback: ResizeObserverCallback) {
+        super((entries, observer) => {
+          const delayed = entries.filter(entry => !released && entry.target.matches(".react-flow__node") && entry.target.querySelector("[data-tour-preview]"))
+          const ready = entries.filter(entry => !delayed.includes(entry))
+          if (ready.length) {
+            callback(ready, observer)
+            if (!released && document.documentElement.hasAttribute("data-preview-measurement-pending") && ready.some(entry => entry.target.matches(".react-flow__node"))) {
+              document.documentElement.setAttribute("data-existing-node-measured", "true")
+            }
+          }
+          if (delayed.length) {
+            document.documentElement.setAttribute("data-preview-measurement-pending", "true")
+            document.addEventListener("measure-test-preview", () => callback(delayed, observer), { once: true })
+          }
+        })
+      }
+    }
+  })
   await openGraph(page, [fixture("Container"), fixture("Micro", "microVm"), fixture("VM", "fullVm")])
   for (const name of ["Container", "Micro", "VM"]) {
     const button = page.getByRole("button", { name: `Add service port to ${name}`, exact: true })
@@ -1067,14 +1180,25 @@ test("PORT labels open service ports on containers, MicroVMs and VMs and the gui
   }
   const before = await page.evaluate(() => [localStorage.getItem("opendock.platform.v1"), localStorage.getItem("opendock.workspace.manual.v2")])
   await page.getByRole("button", { name: "Instructions", exact: true }).click()
+  await expect(page.locator("html")).toHaveAttribute("data-preview-measurement-pending", "true")
+  await page.locator('[data-environment-id="Container"]').evaluate(element => { element.style.width = "290px" })
+  await expect(page.locator("html")).toHaveAttribute("data-existing-node-measured", "true")
+  await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => {
+    document.dispatchEvent(new Event("measure-test-preview"))
+    resolve()
+  }))))
   const guide = page.locator(".tour-card")
   for (const expected of overviewSteps.slice(1, overviewSteps.indexOf("service-ports") + 1)) {
     await guide.getByRole("button", { name: "Next", exact: true }).click()
     await expect(page.locator("[data-tour-step]")).toHaveAttribute("data-tour-step", expected)
   }
   await expect(guide.getByRole("heading", { name: "Add a service port", exact: true })).toBeVisible()
-  await expect.poll(() => page.evaluate(() => {
-    const button = document.querySelector('[data-tour="node-port"]')!.getBoundingClientRect()
+  // The overview targets its temporary preview, not an existing node whose
+  // position in React Flow's DOM can change independently of the guide.
+  const previewPort = page.locator('[data-tour-preview] [data-tour="node-port"]')
+  await expect(previewPort).toBeInViewport({ ratio: 1 })
+  await expect.poll(() => previewPort.evaluate(element => {
+    const button = element.getBoundingClientRect()
     return [...document.querySelectorAll("[data-tour-highlight]")].some(element => {
       const ring = element.getBoundingClientRect()
       return ring.left <= button.left && ring.top <= button.top && ring.right >= button.right && ring.bottom >= button.bottom
@@ -1484,15 +1608,20 @@ for (const accelerated of [false, true]) test(`real QEMU ${accelerated ? "accele
     "-vnc", `127.0.0.1:${rfbPort - 5900},websocket=127.0.0.1:${websocketPort},share=force-shared`,
   ], { cwd: directory, windowsHide: true, stdio: ["ignore", "ignore", "pipe"] })
   let startupError = ""
+  const stopped = new AbortController()
+  const viewerErrors: string[] = []
+  page.on("console", message => { if (message.type() === "error") { viewerErrors.push(message.text()); if (viewerErrors.length > 10) viewerErrors.shift() } })
   qemu.stderr.on("data", data => { startupError = (startupError + String(data)).slice(-4096) })
-  qemu.on("error", error => { startupError = error.message })
+  qemu.on("error", error => { startupError = error.message; stopped.abort(error) })
+  qemu.once("exit", (code, signal) => stopped.abort(new Error(`Disposable QEMU exited (${signal ?? code})`)))
   const exited = new Promise<void>(done => qemu.once("close", () => done()))
   try {
     const state = structuredClone(seed) as PlatformState
     state.environments = [fixture("env-vnc-fixture", "fullVm")]
     await page.addInitScript(state => localStorage.setItem("opendock.platform.v1", JSON.stringify(state)), state)
     await page.goto("/?environment=env-vnc-fixture")
-    expect(qemu.exitCode, startupError).toBeNull()
+    const websocketUrl = `ws://127.0.0.1:${websocketPort}`
+    await waitForVnc(websocketUrl, { signal: stopped.signal })
     await page.evaluate(async url => {
       const modulePath = "/node_modules/@novnc/novnc/core/rfb.js"
       const { default: RFB } = await import(modulePath)
@@ -1509,7 +1638,7 @@ for (const accelerated of [false, true]) test(`real QEMU ${accelerated ? "accele
         client.addEventListener("connect", () => { clearTimeout(timeout); resolveConnection() }, { once: true })
         client.addEventListener("disconnect", () => { clearTimeout(timeout); reject(new Error("Disposable VNC disconnected")) }, { once: true })
       })
-    }, `ws://127.0.0.1:${websocketPort}`)
+    }, websocketUrl)
     const target = page.locator("#real-vnc-fixture"), canvas = target.locator("canvas")
     for (const [width, height] of [[800, 500], [500, 800], [1234, 777]]) {
       await target.evaluate((element, size) => { element.style.width = `${size[0]}px`; element.style.height = `${size[1]}px` }, [width, height])
@@ -1530,6 +1659,8 @@ for (const accelerated of [false, true]) test(`real QEMU ${accelerated ? "accele
       return bounds ? [Math.round(bounds.width), Math.round(bounds.height)] : null
     }).toEqual(source)
     await page.evaluate(() => { (window as unknown as { displayFixture: { disconnect(): void } }).displayFixture.disconnect() })
+  } catch (error) {
+    throw new Error(`${error instanceof Error ? error.message : String(error)}\nQEMU exit: ${qemu.signalCode ?? qemu.exitCode ?? "still running"}\nQEMU stderr: ${startupError || "(empty)"}\nViewer errors: ${viewerErrors.join("\n") || "(empty)"}`, { cause: error })
   } finally {
     // This child has no disks and has never run a guest instruction.
     if (qemu.exitCode === null) qemu.kill()
@@ -1705,12 +1836,18 @@ test("network handles stay anchored on hover and still open the connection form"
   await openGraph(page)
   const source = page.locator('[data-environment-id="Alpha"] .react-flow__handle-right')
   const target = page.locator('[data-environment-id="Beta"] .react-flow__handle-left')
-  const before = await center(source)
+  for (const handle of [source, target]) {
+    const before = await center(handle)
+    await handle.hover()
+    // An immediate assertion can pass before the hover transition has moved
+    // the handle. Check its final position on both sides of the node.
+    await handle.evaluate(element => Promise.all(element.getAnimations().map(animation => animation.finished)))
+    await expect.poll(async () => {
+      const after = await center(handle)
+      return Math.hypot(after.x - before.x, after.y - before.y)
+    }).toBeLessThan(0.5)
+  }
   await source.hover()
-  await expect.poll(async () => {
-    const after = await center(source)
-    return Math.hypot(after.x - before.x, after.y - before.y)
-  }).toBeLessThan(0.5)
   const end = await center(target)
   await page.mouse.down()
   await page.mouse.move(end.x, end.y, { steps: 15 })
@@ -2548,12 +2685,12 @@ test("removed PC Apps entry is not offered in the toolbar", async ({ page }) => 
   await expect(page.getByRole("button", { name: "New environment", exact: true })).toBeVisible()
 })
 
-test("Cloudflare account authentication is optional and quick links never read saved credentials", async ({ page }) => {
+test("Cloudflare quick links can still be chosen when saved credentials are unavailable", async ({ page }) => {
   const env = fixture("Alpha"); env.status = "running"
   await seedServices(page); await openGraph(page, [env])
   await page.evaluate(async () => {
     const url = "/src/api/workspace-api.ts", { workspaceApi } = await import(url)
-    workspaceApi.savedCloudflare = async () => { throw new Error("Vault must not be queried for a Quick Tunnel") }
+    workspaceApi.savedCloudflare = async () => { throw new Error("Vault unavailable") }
     const original = workspaceApi.publish
     workspaceApi.publish = (...args: Parameters<typeof original>) => {
       if (args[4] !== undefined) throw new Error("Quick link received account credentials")
@@ -2581,7 +2718,7 @@ test("Cloudflare account tokens stay masked, authenticate optionally, and can be
   await expect(dialog).toContainText("Account authentication does not make visitors log in")
   const token = dialog.getByLabel("Tunnel token", { exact: true })
   await expect(token).toHaveAttribute("type", "password")
-  await expect(dialog.getByRole("checkbox", { name: "Remember in this PC’s credential vault", exact: true })).not.toBeChecked()
+  await expect(dialog.getByRole("checkbox", { name: "Remember for this node and port", exact: true })).toBeChecked()
   await dialog.getByLabel("Public hostname", { exact: true }).fill("app.example.com")
   await dialog.getByLabel("Local tunnel port", { exact: true }).fill("45000")
   await expect(dialog.getByLabel("Cloudflare service URL", { exact: true })).toHaveText("http://127.0.0.1:45000")
@@ -2590,7 +2727,6 @@ test("Cloudflare account tokens stay masked, authenticate optionally, and can be
   await expect(dialog.getByRole("alert")).toContainText("Review the dedicated tunnel")
   await expect(dialog.getByRole("button", { name: "Disconnect cloudflare from port 4200", exact: true })).toHaveCount(0)
   await dialog.getByRole("checkbox", { name: "I reviewed this dedicated tunnel’s routes", exact: true }).check()
-  await dialog.getByRole("checkbox", { name: "Remember in this PC’s credential vault", exact: true }).check()
   await dialog.getByRole("button", { name: "Publish service", exact: true }).click()
   await expect(dialog.getByRole("button", { name: "https://app.example.com", exact: true })).toBeVisible()
   await expect(token).toHaveValue("")
@@ -2598,18 +2734,44 @@ test("Cloudflare account tokens stay masked, authenticate optionally, and can be
   expect(await page.evaluate(() => JSON.stringify(localStorage))).not.toContain("fake-test-only-token")
   await dialog.getByRole("button", { name: "Disconnect cloudflare from port 4200", exact: true }).click()
   await dialog.getByRole("button", { name: "Done", exact: true }).click()
+  // Reconnecting the same node/port uses the vault without opening setup.
+  await drag(page, page.locator('[data-service-connection-point="Alpha:4200"]'), page.locator('[data-publication-connection-point="public"]'))
+  await expect(page.locator('[data-service-card="Alpha:4200"]')).toContainText("CF")
+  await expect(dialog).toHaveCount(0)
   await page.getByRole("button", { name: "Port 4200 in Alpha", exact: true }).click()
   await dialog.getByRole("radio", { name: "Public access / Cloudflare Tunnel", exact: true }).check()
-  await expect(dialog.getByRole("radio", { name: "Quick link — no account", exact: true })).toBeChecked()
-  await dialog.getByRole("radio", { name: "Use my Cloudflare account (optional)", exact: true }).check()
+  await expect(dialog.getByRole("radio", { name: "Use my Cloudflare account (optional)", exact: true })).toBeChecked()
   await expect(dialog.getByLabel("Public hostname", { exact: true })).toHaveValue("app.example.com")
+  await expect(dialog.getByLabel("Local tunnel port", { exact: true })).toHaveValue("45000")
   await expect(token).toHaveValue("")
-  await dialog.getByRole("checkbox", { name: "I reviewed this dedicated tunnel’s routes", exact: true }).check()
-  await dialog.getByRole("button", { name: "Publish service", exact: true }).click()
+  await expect(dialog.getByRole("checkbox", { name: "I reviewed this dedicated tunnel’s routes", exact: true })).toBeChecked()
   await expect(dialog.getByRole("button", { name: "https://app.example.com", exact: true })).toBeVisible()
   await dialog.getByRole("button", { name: "Forget saved token", exact: true }).click()
   await expect(dialog.getByRole("button", { name: "Forget saved token", exact: true })).toHaveCount(0)
   await expect(dialog.getByRole("button", { name: "Disconnect cloudflare from port 4200", exact: true })).toBeVisible()
+  await dialog.getByRole("button", { name: "Disconnect cloudflare from port 4200", exact: true }).click()
+  await dialog.getByRole("button", { name: "Done", exact: true }).click()
+  await drag(page, page.locator('[data-service-connection-point="Alpha:4200"]'), page.locator('[data-publication-connection-point="public"]'))
+  await expect(dialog.getByRole("radio", { name: "Quick link — no account", exact: true })).toBeChecked()
+  await expect(page.locator('[data-service-card="Alpha:4200"]')).not.toContainText("CF")
+})
+
+test("remembered Cloudflare reconnect errors reopen account settings", async ({ page }) => {
+  const env = fixture("Alpha"); env.status = "running"
+  await seedServices(page); await openGraph(page, [env])
+  await page.evaluate(async () => {
+    const url = "/src/api/workspace-api.ts", { workspaceApi } = await import(url)
+    const publication = await workspaceApi.publish("Alpha", 4200, "cloudflare", 45000, { hostname: "app.example.com", token: "fake-test-only-token", remember: true, routesReviewed: true })
+    await workspaceApi.unpublish(publication.id)
+    workspaceApi.publish = async () => { throw new Error("Saved tunnel token has expired") }
+  })
+  await drag(page, page.locator('[data-service-connection-point="Alpha:4200"]'), page.locator('[data-publication-connection-point="public"]'))
+  const dialog = page.getByRole("dialog")
+  await expect(dialog.getByRole("alert")).toContainText("Saved tunnel token has expired")
+  await expect(dialog.getByRole("radio", { name: "Use my Cloudflare account (optional)", exact: true })).toBeChecked()
+  await expect(dialog.getByLabel("Public hostname", { exact: true })).toHaveValue("app.example.com")
+  await expect(dialog.getByLabel("Tunnel token", { exact: true })).toHaveValue("")
+  await expect(page.locator('[data-service-card="Alpha:4200"]')).not.toContainText("CF")
 })
 
 test("Cloudflare account failure allows retry without an anonymous fallback or exposing the token", async ({ page }) => {

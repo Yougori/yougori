@@ -49,8 +49,9 @@ button { -webkit-tap-highlight-color: transparent; }
 
 .react-flow__node { font-family: inherit; }
 .react-flow__edge-path { transition: stroke 180ms ease, opacity 180ms ease; }
-.react-flow__handle { transition: background-color 180ms ease, scale 180ms ease; }
-.react-flow__handle:hover { scale: 1.15; }
+/* Scaling also scales React Flow's positioning translation and moves the plug. */
+.react-flow__handle { transition: background-color 180ms ease, box-shadow 180ms ease; }
+.react-flow__handle:hover { box-shadow: 0 0 0 2px color-mix(in srgb, var(--node-accent, var(--primary)) 35%, transparent); }
 .react-flow__selection { background: color-mix(in srgb, var(--primary) 8%, transparent); border-color: color-mix(in srgb, var(--primary) 50%, transparent); }
 
 @theme inline {

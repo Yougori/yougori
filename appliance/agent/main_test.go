@@ -51,6 +51,7 @@ func TestSnapshotDoesNotPauseStoppedOrAlreadyPausedContainers(t *testing.T) {
 		{`{"Running":false,"Status":"exited"}`, "--pause=false"},
 		{`{"Running":true,"Paused":false}`, "--pause=true"},
 		{`{"Running":true,"Paused":true}`, "--pause=false"},
+		{`{"Running":false,"Paused":true,"Status":"paused"}`, "--pause=false"},
 	} {
 		got, err := snapshotPauseArgument(tc.state)
 		if err != nil || got != tc.want {

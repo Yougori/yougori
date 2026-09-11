@@ -64,4 +64,6 @@ npm run desktop:dev
 
 [Technical reference and troubleshooting](docs/technical-reference.md) · [CLI and AI agents](skills/yougori/references/cli.md) · [CUDA setup](runtime/cuda/README.md)
 
+[Development, testing and releases](CONTRIBUTING.md)
+
 [License](LICENSE) · [Third-party notices](src-tauri/resources/THIRD_PARTY_NOTICES.md)

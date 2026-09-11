@@ -24,6 +24,26 @@ The bundled runtime lives in `src-tauri/resources/runtime/`; EFI helpers are in
 an ordinary Windows source checkout. Linux and macOS prerequisites and
 limitations remain in their platform guides.
 
+### Development window cannot reach localhost
+
+`npm run desktop:dev` starts both the native engine and Vite. Keep that command
+running while using the development app. Starting the debug executable with
+`yougori-cli app start` starts only the engine; its dashboard still needs Vite.
+
+On Windows, a second `npm run desktop:dev` now checks for an existing engine
+before starting either part. This includes engines with no visible window.
+If an old development engine is still running after Vite has closed, finish any
+pending operations, then shut it down normally and restart development:
+
+```powershell
+.\src-tauri\resources\cli\yougori-cli.exe app quit --yes
+npm run desktop:dev
+```
+
+`app quit` also stops that engine's workloads and publications. Container files,
+VM disks and saved snapshots remain on disk. Installed release builds include
+their frontend and do not need Vite.
+
 ## Full Windows verification before pushing
 
 With the Node/npm versions above, stable Rust, Git Bash, Python 3 with the `py`
@@ -43,22 +63,12 @@ release certification described in the platform guides.
 
 ## When GitHub checks run
 
-Pushes that only change or delete files under `docs/`, the root `README.md`,
-its images `yougorilogo.png`, `yougori1.png`, `discord.webp` and `xcom.webp`, `CHANGELOG.md`,
-`CONTRIBUTING.md`, or diagnostic logs `githuberror.txt` and `linux-x64.txt`
-do not start Windows verification. The verification configuration itself,
-`.github/workflows/verify.yml`, is also excluded from push triggers so changing
-these rules alongside the README does not start a Windows run.
-Any other changed file still triggers the full Windows checks, including code
-deletions, dependencies, other workflows, bundled runtime files, product AI guides,
-and license notices. Mixed documentation/code pushes still run the checks.
-
-Windows is the only job that runs automatically on pushes and pull requests.
-Pull requests always run Windows verification so required status checks are not
-left pending by path filters. Guest-agent, Linux desktop preview and macOS
-checks run only when explicitly requested with their **Run workflow** buttons
-in GitHub Actions. Windows verification also remains available manually. These
-rules apply after the workflow changes are pushed and do not cancel existing runs.
+Every push to `staging` automatically starts only Windows verification.
+Guest-agent, Linux desktop preview and macOS checks are manual. Pushes to other
+branches and pull requests have no automatic trigger. All workflows can still
+be started with **Run workflow** in GitHub Actions. Wait for Windows verification
+and any other checks relevant to the changes to pass, then follow the
+[promotion workflow](../CONTRIBUTING.md) before merging into `main`.
 
 ## Maintainer runtime rebuilds
 

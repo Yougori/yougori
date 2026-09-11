@@ -35,12 +35,15 @@ base64 = "0.22"
 keyring = "4.2"
 age = "0.12.1"
 tar = "0.4"
+fatfs = "0.3.6"
+tempfile = "3"
 zstd = "0.13"
+flate2 = "1"
 object_store = { version = "0.14.1", features = ["aws", "azure", "gcp"] }
 tokio = { version = "1", features = ["fs", "io-util", "macros", "net", "process", "rt-multi-thread", "sync", "time"] }
 url = "2"
 reqwest = { version = "0.13", default-features = false, features = ["json", "stream", "rustls"] }
-tokio-util = { version = "0.7", features = ["io"] }
+tokio-util = { version = "0.7", features = ["io", "io-util"] }
 smoltcp = { version = "0.12", default-features = false, features = ["std", "medium-ethernet", "proto-ipv4", "socket-tcp"] }
 
 [target.'cfg(target_os = "windows")'.dependencies]
@@ -56,10 +59,8 @@ windows-sys = { version = "0.61", features = [
   "Win32_System_JobObjects",
   "Win32_System_Performance",
   "Win32_System_Threading",
+  "Win32_Storage_FileSystem",
 ] }
-
-[dev-dependencies]
-tempfile = "3"
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"

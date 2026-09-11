@@ -40,8 +40,11 @@ separately built executable does not silently require an unbundled VC++
 Redistributable on a fresh PC. Neither
 command publishes, signs, installs drivers nor changes existing environments.
 
-Automatic CI runs Windows frontend/native checks. Guest-agent and Linux desktop
-checks are separate manual workflows; run them explicitly when validating those platforms.
+Publish changes to `staging` and follow the [promotion workflow](../CONTRIBUTING.md)
+before merging them into `main`. Each push to `staging` automatically runs only
+Windows verification. Other branches and pull requests do not automatically
+trigger these workflows. Guest-agent, Linux desktop and macOS checks run only
+when explicitly started; manual Windows runs also remain available.
 CI does not install Windows/Ubuntu guests, exercise physical GPUs, use cloud
 accounts, publish public tunnels, or certify installers. A passing workflow is
 necessary, not sufficient, for release. Dependency audits must be rerun for each

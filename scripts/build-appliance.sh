@@ -7,6 +7,7 @@ if [[ $# -ne 2 ]]; then
 fi
 
 repo_root="$(realpath "$1")"
+bash "$repo_root/scripts/check-agent-go.sh"
 output_directory="$(realpath -m "$2")"
 cache_directory="$repo_root/build/appliance-cache"
 alpine_version="3.24.1"
@@ -75,9 +76,9 @@ if [[ "$nerdctl_actual" != "$nerdctl_expected" ]]; then
   exit 1
 fi
 
-if ! command -v go >/dev/null 2>&1 || ! command -v qemu-img >/dev/null 2>&1 || ! command -v musl-gcc >/dev/null 2>&1; then
+if ! command -v qemu-img >/dev/null 2>&1 || ! command -v musl-gcc >/dev/null 2>&1; then
   apt-get update
-  DEBIAN_FRONTEND=noninteractive apt-get install --yes --no-install-recommends golang-go musl-tools qemu-utils
+  DEBIAN_FRONTEND=noninteractive apt-get install --yes --no-install-recommends musl-tools qemu-utils
 fi
 
 echo "Building Yougori appliance agent"

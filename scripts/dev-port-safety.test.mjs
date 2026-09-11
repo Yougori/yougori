@@ -10,6 +10,14 @@ function runCase(scenario) {
     $ErrorActionPreference = 'Stop'
     $global:yougoriDevTestListenerQueries = 0
     $global:yougoriDevTestStopped = @()
+    function Get-Process {
+      param($Name, $ErrorAction)
+      if ($env:YOUGORI_DEV_TEST_CASE -eq 'desktop-headless') {
+        [pscustomobject]@{ Id=333; SessionId=[System.Diagnostics.Process]::GetCurrentProcess().SessionId; MainWindowHandle=0 }
+      } elseif ($env:YOUGORI_DEV_TEST_CASE -eq 'desktop-other-session') {
+        [pscustomobject]@{ Id=444; SessionId=([System.Diagnostics.Process]::GetCurrentProcess().SessionId + 1) }
+      }
+    }
     function Get-NetTCPConnection {
       param($LocalPort, $State, $ErrorAction)
       $global:yougoriDevTestListenerQueries++
@@ -32,7 +40,15 @@ function runCase(scenario) {
       $global:yougoriDevTestStopped += $Id
       if ($env:YOUGORI_DEV_TEST_CASE -ne 'orphan' -or $Id -ne 111) { throw 'UNSAFE_PROCESS_TERMINATION' }
     }
-    try { & $env:YOUGORI_DEV_TEST_SCRIPT } catch { Write-Output $_.Exception.Message }
+    try {
+      if ($env:YOUGORI_DEV_TEST_CASE.StartsWith('desktop-')) {
+        & $env:YOUGORI_DEV_TEST_SCRIPT -CheckDesktopOnly
+      } else {
+        & $env:YOUGORI_DEV_TEST_SCRIPT
+      }
+      Write-Output 'CHECK_PASSED'
+    } catch { Write-Output $_.Exception.Message }
+    Write-Output ('LISTENER_QUERIES:' + $global:yougoriDevTestListenerQueries)
     Write-Output ('STOPPED:' + ($global:yougoriDevTestStopped -join ','))
   `
   const result = spawnSync("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", command], {
@@ -64,4 +80,23 @@ test("an unrelated process owning the dev port is preserved", { skip: process.pl
 
 test("only an orphaned workspace Vite server is eligible for cleanup", { skip: process.platform !== "win32" }, () => {
   assert.match(runCase("orphan"), /STOPPED:111\s*$/)
+})
+
+test("desktop preflight catches a headless engine before touching the development server", { skip: process.platform !== "win32" }, () => {
+  const output = runCase("desktop-headless")
+  assert.match(output, /already running \(PID 333\)/)
+  assert.match(output, /app quit --yes/)
+  assert.match(output, /LISTENER_QUERIES:0/)
+  assert.match(output, /STOPPED:\s*$/)
+  assert.doesNotMatch(output, /CHECK_PASSED|UNSAFE_PROCESS_TERMINATION/)
+})
+
+test("desktop preflight allows a fresh launch without inspecting or stopping listeners", { skip: process.platform !== "win32" }, () => {
+  for (const scenario of ["desktop-empty", "desktop-other-session"]) {
+    const output = runCase(scenario)
+    assert.match(output, /CHECK_PASSED/)
+    assert.match(output, /LISTENER_QUERIES:0/)
+    assert.match(output, /STOPPED:\s*$/)
+    assert.doesNotMatch(output, /already running|UNSAFE_PROCESS_TERMINATION/)
+  }
 })

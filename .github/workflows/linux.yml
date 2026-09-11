@@ -1,4 +1,4 @@
-name: Linux desktop preview (manual, no publishing)
+name: Linux desktop preview (no publishing)
 
 on:
   workflow_dispatch:

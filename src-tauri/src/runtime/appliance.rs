@@ -9,7 +9,6 @@ use std::{
 use reqwest::{Response, StatusCode};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use sha2::{Digest, Sha256};
-use tokio::io::AsyncWriteExt;
 use tokio_util::io::ReaderStream;
 use uuid::Uuid;
 
@@ -38,6 +37,7 @@ pub struct ContainerStats {
 pub struct ContainerTelemetry {
     pub id: String,
     pub running: bool,
+    pub paused: bool,
     pub stats: ContainerStats,
 }
 
@@ -146,6 +146,8 @@ struct StatsBatchResponse {
 struct StatsBatchEntry {
     id: String,
     running: bool,
+    #[serde(default)]
+    paused: bool,
     cpu_percent: f64,
     memory_bytes: u64,
     network_rx_bytes: u64,
@@ -303,6 +305,22 @@ impl RuntimeManager {
         Ok(())
     }
 
+    pub async fn update_container_startup(
+        &self,
+        environment: &crate::models::Environment,
+        command: &str,
+    ) -> Result<(), String> {
+        let _: AgentCommandOutput = self.agent_post(
+            "/v1/containers/startup",
+            &serde_json::json!({
+                "id": environment.runtime_id.as_deref().unwrap_or(&environment.id),
+                "command": command,
+                "image": environment.runtime,
+            }),
+        ).await?;
+        Ok(())
+    }
+
     pub async fn delete_container(&self, id: &str) -> Result<(), String> {
         let _lease = self.appliance_operations.read().await;
         let _: AgentCommandOutput = self
@@ -370,98 +388,10 @@ impl RuntimeManager {
         &self,
         id: &str,
         snapshot_id: &str,
-        image: &str,
-        command: &str,
+        _image: &str,
+        _command: &str,
     ) -> Result<SnapshotArtifact, String> {
-        self.register_snapshot_provider(snapshot_id, &self.container_provider(id)?)?;
-        let created: AgentSnapshot = self
-            .agent_post(
-                "/v1/snapshots/create",
-                &SnapshotRequest {
-                    id,
-                    snapshot_id,
-                    image,
-                    command,
-                    network_access: false,
-                    gpu_access: false,
-                },
-            )
-            .await?;
-        let snapshot_lease = self.appliance_operations.read().await;
-        let endpoint = self.container_endpoint(id).await?;
-        let response = self
-            .client
-            .get(format!(
-                "{}/v1/snapshots/artifact/{}",
-                endpoint.base_url, snapshot_id
-            ))
-            .bearer_auth(&endpoint.token)
-            .send()
-            .await
-            .map_err(|error| format!("download snapshot artifact: {error}"))?;
-        let mut response = successful_response(response).await?;
-        let destination = self
-            .data_root
-            .join("snapshots")
-            .join(format!("{snapshot_id}.oci.tar"));
-        let temporary = destination.with_extension("tar.part");
-        let mut file = tokio::fs::File::create(&temporary)
-            .await
-            .map_err(|error| format!("create {}: {error}", temporary.display()))?;
-        let mut digest = Sha256::new();
-        let mut downloaded = 0_u64;
-        while let Some(chunk) = response
-            .chunk()
-            .await
-            .map_err(|error| format!("read snapshot artifact: {error}"))?
-        {
-            file.write_all(&chunk)
-                .await
-                .map_err(|error| format!("write {}: {error}", temporary.display()))?;
-            digest.update(&chunk);
-            downloaded = downloaded.saturating_add(chunk.len() as u64);
-        }
-        file.sync_all()
-            .await
-            .map_err(|error| format!("flush {}: {error}", temporary.display()))?;
-        drop(file);
-        drop(snapshot_lease);
-        if downloaded != created.size_bytes {
-            let _ = tokio::fs::remove_file(&temporary).await;
-            let _ = self.release_container_snapshot_data(snapshot_id).await;
-            return Err(format!(
-                "snapshot download was incomplete: expected {} bytes, received {downloaded}",
-                created.size_bytes
-            ));
-        }
-        let checksum_sha256 = hex::encode(digest.finalize());
-        if !checksum_sha256.eq_ignore_ascii_case(&created.checksum_sha256) {
-            let _ = tokio::fs::remove_file(&temporary).await;
-            let _ = self.release_container_snapshot_data(snapshot_id).await;
-            return Err(format!(
-                "snapshot checksum mismatch: expected {}, received {checksum_sha256}",
-                created.checksum_sha256
-            ));
-        }
-        if let Err(error) = tokio::fs::rename(&temporary, &destination).await {
-            let _ = tokio::fs::remove_file(&temporary).await;
-            let _ = self.release_container_snapshot_data(snapshot_id).await;
-            return Err(format!("finalize {}: {error}", destination.display()));
-        }
-        let artifact = SnapshotArtifact {
-            provider_snapshot_id: created.provider_snapshot_id,
-            path: destination,
-            size_bytes: downloaded,
-            checksum_sha256,
-        };
-        if let Err(error) = self.release_container_snapshot_data(snapshot_id).await {
-            // The host copy is fully flushed and checksum-verified at this point.
-            // Keeping both copies is safer than failing a valid snapshot and
-            // orphaning its random identifier; release is idempotent and will
-            // be retried by restore or explicit deletion.
-            eprintln!("Yougori snapshot {snapshot_id} guest cleanup deferred: {error}");
-        }
-        Ok(artifact)
+        self.stream_container_snapshot(id, snapshot_id).await
     }
 
     async fn release_container_snapshot_data(&self, snapshot_id: &str) -> Result<(), String> {
@@ -737,6 +667,7 @@ impl RuntimeManager {
                 ContainerTelemetry {
                     id: entry.id,
                     running: entry.running,
+                    paused: entry.paused,
                     stats: ContainerStats {
                         cpu_percent: entry.cpu_percent,
                         memory_bytes: entry.memory_bytes,
@@ -1126,7 +1057,7 @@ impl RuntimeManager {
     }
 }
 
-async fn successful_response(response: Response) -> Result<Response, String> {
+pub(super) async fn successful_response(response: Response) -> Result<Response, String> {
     if response.status().is_success() {
         return Ok(response);
     }

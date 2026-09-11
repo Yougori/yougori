@@ -3,6 +3,7 @@ set -euo pipefail
 
 # Update boot-time agent code without rebuilding/rebasing the immutable data disk.
 repo_root="$(realpath "${1:?repository path required}")"
+bash "$repo_root/scripts/check-agent-go.sh"
 appliance="${2:-$repo_root/src-tauri/resources/runtime/appliance}"
 storage_tools="$repo_root/build/appliance-cache/storage-tools"
 if [ ! -x "$storage_tools/resize2fs" ]; then

@@ -15,6 +15,7 @@ export default tseslint.config(
       "src-tauri/target/**",
       "src/components/ui/**",
       "test-results/**",
+      "tmp/**",
     ],
   },
   {

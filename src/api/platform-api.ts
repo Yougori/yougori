@@ -349,6 +349,20 @@ export const platformApi = {
     })
   },
 
+  updateContainerStartupCommand(environmentId: string, command: string) {
+    command = command.trim()
+    if (new TextEncoder().encode(command).length > 32768 || command.includes("\0")) return Promise.reject(new Error("Startup command must be at most 32 KB and cannot contain null characters"))
+    return run<PlatformState>("update_container_startup_command", { environmentId, command }, () => {
+      const state = readBrowserState()
+      const environment = state.environments.find(item => item.id === environmentId)
+      if (!environment) throw new Error("Environment not found")
+      if (environment.kind !== "container") throw new Error("Startup commands are available for local containers only")
+      if (environment.status !== "stopped") throw new Error("Stop the container before changing its startup command")
+      environment.containerCommand = command || undefined
+      return writeBrowserState(state)
+    })
+  },
+
   updateResourcePolicy(environmentId: string, resourcePolicy: ResourcePolicy) {
     resourcePolicy = { ...resourcePolicy, dynamic: true }
     return run<PlatformState>("update_resource_policy", { environmentId, resourcePolicy }, () => {

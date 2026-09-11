@@ -5,7 +5,7 @@ import { workspaceApi } from "@/api/workspace-api"
 import { useWorkspaceFeatures } from "@/components/use-workspace-features"
 import type { Environment } from "@/types/platform"
 
-vi.mock("@/api/workspace-api", () => ({ workspaceApi: { manualPorts: vi.fn(), setManualPort: vi.fn(), services: vi.fn() } }))
+vi.mock("@/api/workspace-api", () => ({ workspaceApi: { manualPorts: vi.fn(), setManualPort: vi.fn(), services: vi.fn(), savedCloudflare: vi.fn(), publish: vi.fn() } }))
 const node = { id: "env-test", name: "Test", kind: "fullVm", status: "stopped" } as Environment
 let saved: Record<string, number[]>
 beforeEach(() => {
@@ -17,6 +17,61 @@ beforeEach(() => {
     return structuredClone(saved)
   })
   vi.mocked(workspaceApi.services).mockResolvedValue({ services: [], publications: [], shares: [], notice: "" })
+  vi.mocked(workspaceApi.savedCloudflare).mockResolvedValue({ saved: false, hostname: "", hostPort: null })
+  vi.mocked(workspaceApi.publish).mockResolvedValue({ id: "pub-test", environmentId: node.id, port: 8080, kind: "cloudflare", hostPort: 45000, urls: ["https://app.example.com"], status: "active", message: "", cloudflareAccount: true })
+})
+
+describe("remembered Cloudflare connections", () => {
+  const running = { ...node, status: "running" as const }
+  it("reconnects the matching node and port without a dialog, including after remount", async () => {
+    vi.mocked(workspaceApi.savedCloudflare).mockImplementation(async (id, port) => id === node.id && port === 8080
+      ? { saved: true, hostname: "app.example.com", hostPort: 45000 }
+      : { saved: false, hostname: "", hostPort: null })
+    const first = renderHook(() => useWorkspaceFeatures([running]))
+    await act(() => first.result.current.connectPublication(node.id, 8080, "public"))
+    expect(first.result.current.dialog).toBeNull()
+    expect(workspaceApi.publish).toHaveBeenCalledExactlyOnceWith(node.id, 8080, "cloudflare", 45000, { hostname: "app.example.com", token: undefined, remember: true, routesReviewed: true })
+    first.unmount()
+    const second = renderHook(() => useWorkspaceFeatures([running]))
+    await act(() => second.result.current.connectPublication(node.id, 8080, "cloudflare"))
+    expect(second.result.current.dialog).toBeNull()
+    expect(workspaceApi.publish).toHaveBeenCalledTimes(2)
+    await act(() => second.result.current.connectPublication(node.id, 3000, "public"))
+    expect(second.result.current.dialog).toMatchObject({ port: 3000, kind: "cloudflare" })
+    await act(() => second.result.current.connectPublication("another-node", 8080, "public"))
+    expect(second.result.current.dialog).toMatchObject({ environmentId: "another-node", port: 8080 })
+    expect(workspaceApi.publish).toHaveBeenCalledTimes(2)
+  })
+  it("returns to account setup with the error if saved credentials fail", async () => {
+    vi.mocked(workspaceApi.savedCloudflare).mockResolvedValue({ saved: true, hostname: "app.example.com", hostPort: 45000 })
+    vi.mocked(workspaceApi.publish).mockRejectedValue(new Error("Token revoked"))
+    const { result } = renderHook(() => useWorkspaceFeatures([running]))
+    await act(() => result.current.connectPublication(node.id, 8080, "cloudflare"))
+    expect(result.current.dialog).toMatchObject({ account: true, error: "Token revoked", kind: "cloudflare" })
+    expect(workspaceApi.publish).toHaveBeenCalledTimes(1)
+  })
+  it("opens setup on vault failure and never falls back to a quick link", async () => {
+    vi.mocked(workspaceApi.savedCloudflare).mockRejectedValue(new Error("Vault locked"))
+    const { result } = renderHook(() => useWorkspaceFeatures([running]))
+    await act(() => result.current.connectPublication(node.id, 8080, "public"))
+    expect(result.current.dialog).toMatchObject({ account: true, error: "Vault locked" })
+    expect(workspaceApi.publish).not.toHaveBeenCalled()
+  })
+  it("does not duplicate a pending connection and leaves settings accessible", async () => {
+    let resolve!: (value: Awaited<ReturnType<typeof workspaceApi.savedCloudflare>>) => void
+    vi.mocked(workspaceApi.savedCloudflare).mockReturnValue(new Promise(done => { resolve = done }))
+    const { result } = renderHook(() => useWorkspaceFeatures([running]))
+    await act(async () => {
+      const first = result.current.connectPublication(node.id, 8080, "public")
+      await result.current.connectPublication(node.id, 8080, "public")
+      resolve({ saved: true, hostname: "app.example.com", hostPort: 45000 })
+      await first
+    })
+    expect(workspaceApi.publish).toHaveBeenCalledTimes(1)
+    expect(result.current.dialog).toBeNull()
+    act(() => result.current.openService(node.id, 8080))
+    expect(result.current.dialog).toMatchObject({ port: 8080 })
+  })
 })
 afterEach(() => { cleanup(); vi.clearAllMocks(); localStorage.clear() })
 

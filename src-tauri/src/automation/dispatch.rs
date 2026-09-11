@@ -194,6 +194,7 @@ pub(super) async fn dispatch(app: &AppHandle, method: &str, p: &Value) -> Result
                 .await?,
         ),
         "rename_environment" => encoded(commands::rename_environment(a!("environmentId"), a!("name"), store).await?),
+        "update_container_startup_command" => encoded(commands::startup::update_container_startup_command(a!("environmentId"), a!("command"), store, runtime).await?),
         "update_resource_policy" => encoded(
             commands::update_resource_policy(
                 a!("environmentId"),
@@ -266,6 +267,16 @@ pub(super) async fn dispatch(app: &AppHandle, method: &str, p: &Value) -> Result
         "detach_host_folder" => {
             encoded(workspace::detach_host_folder(a!("shareId"), runtime, manager).await?)
         }
+        "copy_files_to_environment" => {
+            let id: String = a!("environmentId");
+            encoded(crate::file_import::copy_files(&id, a!("paths"), &store, &runtime, |_| {}).await?)
+        },
+        "list_imported_drives" => encoded(crate::file_import::list_imported_drives(a!("environmentId"), store, runtime)?),
+        "set_imported_drive_attached" => {
+            let id: String = a!("environmentId");
+            let transfer: String = a!("transferId");
+            encoded(crate::file_import::set_drive_attached(&id, &transfer, a!("attached"), &store, &runtime).await?)
+        },
         "list_environment_services" => encoded(
             workspace::list_environment_services(a!("environmentId"), store, runtime, manager)
                 .await?,

@@ -203,6 +203,7 @@ type connectionRequest struct {
 type statsResponse struct {
 	ID             string  `json:"id"`
 	Running        bool    `json:"running"`
+	Paused         bool    `json:"paused"`
 	CPUPercent     float64 `json:"cpuPercent"`
 	MemoryBytes    uint64  `json:"memoryBytes"`
 	NetworkRxBytes uint64  `json:"networkRxBytes"`
@@ -292,10 +293,12 @@ func main() {
 	mux.HandleFunc("/v1/containers/delete", s.auth(method(http.MethodPost, s.deleteContainer)))
 	mux.HandleFunc("/v1/containers/resources", s.auth(method(http.MethodPost, s.resources)))
 	mux.HandleFunc("/v1/containers/configuration", s.auth(method(http.MethodPost, s.configuration)))
+	mux.HandleFunc("/v1/containers/startup", s.auth(method(http.MethodPost, s.startup)))
 	mux.HandleFunc("/v1/containers/internet", s.auth(method(http.MethodPost, s.internet)))
 	mux.HandleFunc("/v1/containers/exec", s.auth(method(http.MethodPost, s.execute)))
 	mux.HandleFunc("/v1/containers/status/", s.auth(method(http.MethodGet, s.containerStatus)))
 	mux.HandleFunc("/v1/snapshots/create", s.auth(method(http.MethodPost, s.createSnapshot)))
+	mux.HandleFunc("/v1/snapshots/export", s.auth(method(http.MethodPost, s.exportSnapshot)))
 	mux.HandleFunc("/v1/snapshots/restore", s.auth(method(http.MethodPost, s.restoreSnapshot)))
 	mux.HandleFunc("/v1/snapshots/release", s.auth(method(http.MethodPost, s.releaseSnapshot)))
 	mux.HandleFunc("/v1/snapshots/delete", s.auth(method(http.MethodPost, s.deleteSnapshot)))
@@ -1124,20 +1127,24 @@ func (s *server) batchStats(w http.ResponseWriter, r *http.Request) {
 
 func prepareStatsEntries(ids []string, listed []nerdctlListRecord) ([]statsResponse, []string) {
 	states := make(map[string]bool, len(listed))
+	paused := make(map[string]bool, len(listed))
 	for _, record := range listed {
 		id := strings.TrimPrefix(strings.TrimSpace(record.Names), "/")
 		if id == "" {
 			id = strings.TrimSpace(record.ID)
 		}
 		status := strings.ToLower(strings.TrimSpace(record.Status))
-		states[id] = strings.EqualFold(strings.TrimSpace(record.State), "running") ||
+		paused[id] = strings.EqualFold(strings.TrimSpace(record.State), "paused") ||
+			strings.EqualFold(strings.TrimSpace(record.State), "pausing") ||
+			status == "paused" || status == "pausing" || strings.HasPrefix(status, "paused ") || strings.Contains(status, "(paused)")
+		states[id] = paused[id] || strings.EqualFold(strings.TrimSpace(record.State), "running") ||
 			status == "up" || strings.HasPrefix(status, "up ")
 	}
 	entries := make([]statsResponse, len(ids))
 	runningIDs := make([]string, 0, len(ids))
 	for index, id := range ids {
-		entries[index] = statsResponse{ID: id, Running: states[id]}
-		if entries[index].Running {
+		entries[index] = statsResponse{ID: id, Running: states[id], Paused: paused[id]}
+		if entries[index].Running && !entries[index].Paused {
 			runningIDs = append(runningIDs, id)
 		}
 	}

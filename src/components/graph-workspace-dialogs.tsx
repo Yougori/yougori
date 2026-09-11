@@ -41,11 +41,12 @@ function WorkspaceDialogContent({ dialog, model, onBusyChange }: { dialog: Works
   const env = model.decorated.find(item => item.id === dialog.environmentId)
   const [busy, setBusy] = useState(false)
   const operationLock = useRef(false)
-  const [error, setError] = useState("")
+  const [error, setError] = useState(dialog.type === "service" ? dialog.error ?? "" : "")
   const [writeAccess, setWriteAccess] = useState(false)
   const [folders, setFolders] = useState<string[]>([])
   const [hostPort, setHostPort] = useState("")
-  const [cloudflare, setCloudflare] = useState(emptyCloudflareDraft)
+  const [cloudflare, setCloudflare] = useState(() => ({ ...emptyCloudflareDraft(), ...(dialog.type === "service" && dialog.account ? { mode: "account" as const } : {}) }))
+  const [cloudflareLoading, setCloudflareLoading] = useState(true)
   const [kind, setKind] = useState<"local" | "cloudflare">(dialog.type === "service" && dialog.kind && dialog.kind !== "local" ? "cloudflare" : "local")
   const perform = async (action: () => Promise<unknown>) => {
     if (operationLock.current) return
@@ -102,9 +103,9 @@ function WorkspaceDialogContent({ dialog, model, onBusyChange }: { dialog: Works
         </div>)}
         <fieldset className="flex flex-col gap-2"><legend className="mb-2 text-sm font-medium">Publish to</legend><RadioGroup aria-label="Publish to" className="flex flex-wrap gap-3" disabled={busy} onValueChange={value => setKind(value === "local" ? "local" : "cloudflare")} value={publicationDestination(kind)}>{publicationDestinations.map(item => <label className="flex items-center gap-1.5 text-xs" key={item.kind}><Radio value={item.kind} />{item.title}</label>)}</RadioGroup></fieldset>
         <p className="text-xs text-muted-foreground">{kind === "cloudflare" ? "Publishes through Cloudflare. The verified tunnel helper downloads on first use. Public services are accessible to anyone unless you configure visitor access rules." : "Available from this PC, private-network devices, and Internet-enabled managed guests via the displayed host address. The listener rejects public source addresses."}</p>
-        {kind === "cloudflare" ? <CloudflareAccountFields environmentId={dialog.environmentId} port={port} value={cloudflare} onChange={setCloudflare} busy={busy} perform={perform} refreshKey={publications.filter(p => p.kind === "cloudflare").map(p => p.id).join(",")} /> : null}
+        {kind === "cloudflare" ? <CloudflareAccountFields environmentId={dialog.environmentId} port={port} value={cloudflare} onChange={setCloudflare} onLoadingChange={setCloudflareLoading} busy={busy || cloudflareLoading} perform={perform} refreshKey={publications.filter(p => p.kind === "cloudflare").map(p => p.id).join(",")} /> : null}
         {kind !== "cloudflare" ? <Field><FieldLabel>Host port (optional)</FieldLabel><Input disabled={busy} inputMode="numeric" onChange={event => setHostPort(event.target.value)} placeholder="Choose an available port automatically" type="text" value={hostPort} /></Field> : null}
-        <Button disabled={!running || publications.some(p => p.kind === kind)} loading={busy} onClick={() => void perform(async () => {
+        <Button disabled={!running || (kind === "cloudflare" && cloudflareLoading) || publications.some(p => p.kind === kind)} loading={busy} onClick={() => void perform(async () => {
           const current = getTour()
           if (isWebsiteTour(dialog.environmentId, "demo-publish")) {
             if (port !== 3000 || kind !== "cloudflare" || cloudflare.mode !== "quick") throw new Error("For this tutorial, choose Public access / Cloudflare Tunnel and Quick link — no account. Nothing was published.")

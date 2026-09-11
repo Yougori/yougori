@@ -32,6 +32,7 @@ interface PlatformContextValue {
   recoverContainerRuntime(environmentId: string): Promise<void>
   factoryResetEnvironment(environmentId: string, confirmation: string): Promise<void>
   renameEnvironment(environmentId: string, name: string): Promise<void>
+  updateContainerStartupCommand(environmentId: string, command: string): Promise<void>
   updateResourcePolicy(environmentId: string, resourcePolicy: ResourcePolicy): Promise<void>
   updateContainerNetwork(environmentId: string, enabled: boolean): Promise<void>
   updateEnvironmentGpu(environmentId: string, enabled: boolean): Promise<void>
@@ -299,6 +300,11 @@ export function PlatformProvider({ children, pollHostMetrics = true }: { childre
     renameEnvironment: (environmentId, name) => perform(
       () => platformApi.renameEnvironment(environmentId, name),
       "Name saved",
+    ),
+    updateContainerStartupCommand: (environmentId, command) => perform(
+      () => platformApi.updateContainerStartupCommand(environmentId, command),
+      "Startup command saved",
+      "It will run the next time you start this container.",
     ),
     updateResourcePolicy: (environmentId, resourcePolicy) => perform(
       () => platformApi.updateResourcePolicy(environmentId, resourcePolicy),

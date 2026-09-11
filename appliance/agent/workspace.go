@@ -46,6 +46,7 @@ type guestService struct {
 
 func (s *server) registerWorkspaceRoutes(mux *http.ServeMux) {
 	s.registerAppRoutes(mux)
+	mux.HandleFunc("/v1/files/import", s.auth(method(http.MethodPost, s.importFiles)))
 	mux.HandleFunc("/v1/workspace/version", s.auth(method(http.MethodGet, func(w http.ResponseWriter, r *http.Request) { writeJSON(w, 200, map[string]int{"version": 1}) })))
 	mux.HandleFunc("/v1/terminal/create", s.auth(method(http.MethodPost, s.terminalCreate)))
 	mux.HandleFunc("/v1/terminal/read", s.auth(method(http.MethodPost, s.terminalRead)))

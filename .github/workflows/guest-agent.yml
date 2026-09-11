@@ -1,4 +1,4 @@
-name: Guest agent checks (manual, no publishing)
+name: Guest agent checks (no publishing)
 
 on:
   workflow_dispatch:

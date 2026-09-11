@@ -1,9 +1,23 @@
 module opendock.local/appliance-agent
 
-go 1.18
+go 1.25.0
 
 require github.com/hanwen/go-fuse/v2 v2.5.1
 
 require github.com/gorilla/websocket v1.5.3
 
-require golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a
+require (
+	github.com/containerd/containerd/api v1.11.1
+	golang.org/x/sys v0.47.0
+	google.golang.org/grpc v1.83.2
+	google.golang.org/protobuf v1.36.11
+)
+
+require (
+	github.com/containerd/log v0.1.0 // indirect
+	github.com/containerd/ttrpc v1.2.5 // indirect
+	github.com/sirupsen/logrus v1.9.3 // indirect
+	golang.org/x/net v0.58.0 // indirect
+	golang.org/x/text v0.41.0 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20260526163538-3dc84a4a5aaa // indirect
+)
