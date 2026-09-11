@@ -1,6 +1,8 @@
 name: Linux desktop preview (no publishing)
 
 on:
+  push:
+    branches: [staging]
   workflow_dispatch:
 
 permissions:
