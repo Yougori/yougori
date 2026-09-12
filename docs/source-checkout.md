@@ -70,6 +70,19 @@ still be started with **Run workflow** in GitHub Actions. Wait for all three
 automatic checks and any additional checks needed to pass, then follow the
 [promotion workflow](../CONTRIBUTING.md) before merging into `main`.
 
+## Packaged terminal styling
+
+The terminal renderer creates styles at runtime for ANSI colours, monospace
+fonts and character widths. Keep `style-src 'self' 'unsafe-inline'` and exclude
+only `style-src` from Tauri's automatic CSP nonce injection. Otherwise the nonce
+overrides `unsafe-inline` in packaged WebViews and those styles are blocked,
+even though the development server renders the terminal correctly. Script CSP
+hashes/nonces and the other content restrictions stay enabled.
+
+`e2e/terminal-csp.spec.ts` exercises the real terminal renderer with the release
+CSP transformation, checks colours/font/cell styling, reproduces the old failure,
+and verifies that unauthorized inline scripts remain blocked. It captures no images.
+
 ## Maintainer runtime rebuilds
 
 1. Prepare 7-Zip and Ubuntu 22.04 in WSL, then follow the runtime-build section
