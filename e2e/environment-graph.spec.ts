@@ -1513,8 +1513,13 @@ test("terminal output automatically gets local QR cards scoped to its tab", asyn
   const terminal = () => page.getByRole("tabpanel").locator(".xterm")
   await expect(terminal().locator(".xterm-screen")).toContainText("Yougori test terminal")
   await terminal().locator(".xterm-helper-textarea").focus()
-  await page.keyboard.type("echo https://example.com/setup?code=abc http://localhost:3000/"); await page.keyboard.press("Enter")
   const panel = () => page.getByRole("tabpanel")
+  // Force a scan between output chunks. A URL still being typed must be
+  // replaced as it grows, rather than retained as another historical QR card.
+  await page.keyboard.type("echo https://example.com/setup?code=a")
+  await expect(panel().locator('[data-terminal-link="https://example.com/setup?code=a"]')).toBeVisible()
+  await terminal().locator(".xterm-helper-textarea").focus()
+  await page.keyboard.type("bc http://localhost:3000/"); await page.keyboard.press("Enter")
   await expect(panel().locator("[data-terminal-link]")).toHaveCount(2)
   await expect(panel().getByRole("img", { name: "QR code for https://example.com/setup?code=abc", exact: true })).toBeVisible()
   await expect(panel().getByText("Localhost is device-only.", { exact: false })).toBeVisible()

@@ -34,6 +34,7 @@ export function GuestTerminal({ environmentId, sessionId, active, onReady, insta
       const nativeSessionId = `term-${crypto.randomUUID()}`
       let disposed = false, timer = 0, linkTimer = 0, offset = 0, ready = false, created = false
       let inputQueue = Promise.resolve()
+      let completedLinks: string[] = []
       const terminal = new Terminal({ fontSize: 13, fontFamily: '"Cascadia Code", "Cascadia Mono", Consolas, monospace', cursorBlink: true, scrollback: 3000, theme: terminalTheme })
       terminal.options.disableStdin = Boolean(installer)
       const fit = new FitAddon(); terminal.loadAddon(fit); terminal.open(target); fit.fit()
@@ -70,18 +71,32 @@ export function GuestTerminal({ environmentId, sessionId, active, onReady, insta
       const collectLinks = () => {
         if (disposed) return
         const buffer = terminal.buffer.active
-        let text = ""
+        const cursorRow = buffer.baseY + buffer.cursorY
+        let completedText = "", currentText = "", line = "", containsCursor = false
         for (let row = Math.max(0, buffer.length - 200); row < buffer.length; row++) {
           const wraps = buffer.getLine(row + 1)?.isWrapped
-          text += (buffer.getLine(row)?.translateToString(!wraps) ?? "") + (wraps ? "" : "\n")
+          containsCursor ||= row === cursorRow
+          line += buffer.getLine(row)?.translateToString(!wraps) ?? ""
+          if (!wraps) {
+            if (containsCursor) currentText += line + "\n"
+            else completedText += line + "\n"
+            line = ""; containsCursor = false
+          }
         }
-        setLinks(previous => mergeTerminalLinks(previous, extractTerminalLinks(text)))
+        // The cursor's logical line can still change as output arrives or the
+        // user types. Show its links, but replace them on the next scan instead
+        // of saving partial URLs in history. Wrapped rows belong to one line.
+        completedLinks = mergeTerminalLinks(completedLinks, extractTerminalLinks(completedText))
+        setLinks(mergeTerminalLinks(completedLinks, extractTerminalLinks(currentText)))
       }
       // OSC 8 links can hide their URL behind a label. Observe them, but do not
       // consume the sequence or enable any guest-driven clipboard functionality.
       const hyperlink = terminal.parser.registerOscHandler(8, data => {
         const url = normalizeTerminalLink(data.slice(data.indexOf(";") + 1))
-        if (url && !disposed) setLinks(previous => mergeTerminalLinks(previous, [url]))
+        if (url && !disposed) {
+          completedLinks = mergeTerminalLinks(completedLinks, [url])
+          setLinks(previous => mergeTerminalLinks(previous, [url]))
+        }
         return false
       })
       const queueLinkScan = () => {
