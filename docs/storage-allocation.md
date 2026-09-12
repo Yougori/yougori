@@ -45,10 +45,23 @@ All host CPUs are exposed at boot and cgroups enforce each node's CPU limit.
 QEMU memory is added and brought online as required, subject to available host
 RAM. Stopped node definitions do not reserve runtime RAM.
 
+Hotplug readiness is verified against the online state of every added DIMM's
+memory blocks. Linux's `MemTotal` excludes kernel reservations, so it is not
+compared with the attached RAM using a fixed allowance. This avoids false
+timeouts when a runtime starts with a large initial memory allocation.
+
+Container deletion confirms the container name is absent before removing its
+node. Idle cleanup checks the live container list under the runtime operation
+lock, so a workload that exits by itself cannot leave stale bookkeeping that
+prevents the empty runtime from shutting down and returning its RAM. Cleanup
+keeps genuinely running or paused peers alive.
+
 Verification:
 
 ```powershell
 cargo test --manifest-path src-tauri/Cargo.toml container_storage_limits_are_independent_and_enforced -- --ignored --nocapture --test-threads=1
+cargo test --manifest-path src-tauri/Cargo.toml container_capacity_grows_without_losing_data_or_restarting_active_workloads -- --ignored --nocapture --test-threads=1
+cargo test --manifest-path src-tauri/Cargo.toml deletion_reclaims_disk_blocks_and_preserves_peer -- --ignored --nocapture --test-threads=1
 npx vitest run src/components/storage-allocation-editor.test.tsx src/api/platform-api.test.ts
 ```
 
@@ -59,3 +72,5 @@ persistence. The legacy migration test takes OPENDOCK_LEGACY_INITRAMFS pointing
 to the preceding release's boot payload. CUDA tests require the explicit
 build/cuda/integration-runtime directory via OPENDOCK_CUDA_TEST_ROOT. No user VM is
 booted, resized, formatted, or removed by these tests.
+The large-capacity regression requires enough available host RAM to reserve
+roughly 37 GB for its isolated runtime.

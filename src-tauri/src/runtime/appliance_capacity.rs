@@ -94,9 +94,13 @@ impl RuntimeManager {
         }
         // Check the guest API before attaching a device. An older guest agent
         // must never make an unverified memory increase look successful.
-        let online = || self.client.post(format!("{}/v1/system/capacity", process.endpoint.base_url))
-            .bearer_auth(&process.endpoint.token).timeout(Duration::from_secs(5)).json(&json!({})).send();
-        super::appliance::successful_response(online().await.map_err(|e| e.to_string())?).await?;
+        let online = |ranges: &serde_json::Value| self.client.post(format!("{}/v1/system/capacity", process.endpoint.base_url))
+            .bearer_auth(&process.endpoint.token).timeout(Duration::from_secs(5)).json(&json!({"memoryRanges": ranges})).send();
+        let check: serde_json::Value = super::appliance::successful_response(online(&json!([])).await.map_err(|e| e.to_string())?).await?
+            .json().await.map_err(|e| e.to_string())?;
+        if check["memoryRangesOnline"].as_bool().is_none() {
+            return Err("The container runtime needs its updated memory helper. Close Yougori normally and reopen the updated app, then retry. Container files were kept.".into());
+        }
         let summary = super::vm::qmp_request(process.qmp_port, "query-memory-size-summary", None).await?;
         let base_mib = summary["base-memory"].as_u64().ok_or("Runtime base RAM size is missing")? / 1_048_576;
         let reserved = base_mib + summary["plugged-memory"].as_u64().unwrap_or(0) / 1_048_576;
@@ -124,23 +128,40 @@ impl RuntimeManager {
                 return Err(format!("Could not add runtime RAM while containers were running: {error}"));
             }
         }
+        let devices = super::vm::qmp_request(process.qmp_port, "query-memory-devices", None).await?;
+        let ranges = hotplug_memory_ranges(&devices, target_mib.saturating_sub(base_mib) * 1_048_576)?;
         let deadline = tokio::time::Instant::now() + Duration::from_secs(30);
         loop {
-            let response = super::appliance::successful_response(online().await.map_err(|e| e.to_string())?).await?;
+            let response = super::appliance::successful_response(online(&ranges).await.map_err(|e| e.to_string())?).await?;
             let capacity: serde_json::Value = response.json().await.map_err(|e| e.to_string())?;
-            // Kernel bookkeeping uses part of attached RAM. The workload
-            // capacity already includes a separate control-plane reserve.
-            if capacity["memoryBytes"].as_u64().unwrap_or(0) / 1_048_576 >= target_mib.saturating_sub(256) {
+            // The guest must have every attached DIMM block online. MemTotal
+            // excludes kernel reservations and is not a hotplug readiness test.
+            if capacity["memoryRangesOnline"].as_bool() == Some(true) {
                 process.capacity.memory_mib = target_mib as usize;
                 *self.appliance_capacity.lock().map_err(|_| "Container capacity lock poisoned")? = process.capacity;
                 return Ok(());
             }
             if tokio::time::Instant::now() >= deadline {
-                return Err("Additional RAM was attached, but the runtime has not brought it online yet. Retry shortly; existing containers are still running.".into());
+                return Err("The runtime is still bringing additional RAM online. Retry in a moment; no environments were restarted.".into());
             }
             tokio::time::sleep(Duration::from_millis(250)).await;
         }
     }
+}
+
+fn hotplug_memory_ranges(devices: &serde_json::Value, expected_bytes: u64) -> Result<serde_json::Value, String> {
+    let mut total = 0u64;
+    let mut ranges = Vec::new();
+    for device in devices.as_array().ok_or("Invalid runtime memory device list")? {
+        if device["type"] != "dimm" { return Err("Unexpected runtime memory device".into()); }
+        let start = device["data"]["addr"].as_u64().ok_or("Missing runtime DIMM address")?;
+        let size = device["data"]["size"].as_u64().filter(|size| *size > 0).ok_or("Missing runtime DIMM size")?;
+        start.checked_add(size).ok_or("Invalid runtime DIMM address range")?;
+        total = total.checked_add(size).ok_or("Invalid runtime DIMM total")?;
+        ranges.push(serde_json::json!({"start": start, "size": size}));
+    }
+    if total != expected_bytes { return Err("Runtime RAM devices do not match the attached capacity; retry shortly.".into()); }
+    Ok(serde_json::Value::Array(ranges))
 }
 
 fn memory_growth_target(base: u64, current: u64, requested: u64, maximum: u64) -> u64 {
@@ -151,6 +172,21 @@ fn memory_growth_target(base: u64, current: u64, requested: u64, maximum: u64) -
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn hotplug_verification_covers_all_attached_dimm_ranges() {
+        let devices = serde_json::json!([
+            {"type":"dimm","data":{"addr":4294967296u64,"size":2147483648u64}},
+            {"type":"dimm","data":{"addr":8589934592u64,"size":1073741824u64}}
+        ]);
+        let ranges = hotplug_memory_ranges(&devices, 3221225472).unwrap();
+        assert_eq!(ranges, serde_json::json!([
+            {"start":4294967296u64,"size":2147483648u64},
+            {"start":8589934592u64,"size":1073741824u64}
+        ]));
+        assert!(hotplug_memory_ranges(&devices, 4294967296).is_err());
+        assert!(hotplug_memory_ranges(&serde_json::json!([{"type":"dimm","data":{"size":1}}]), 1).is_err());
+        assert!(hotplug_memory_ranges(&serde_json::json!([{"type":"virtio-mem"}]), 0).is_err());
+    }
     #[test]
     fn capacity_adds_control_plane_memory_without_a_tiny_fixed_ceiling() {
         let large = ApplianceCapacity::for_workloads(8.0, 8.0).unwrap();

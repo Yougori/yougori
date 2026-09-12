@@ -13,7 +13,7 @@ async fn container_capacity_grows_without_losing_data_or_restarting_active_workl
         priority: Priority::Normal, dynamic: false,
     };
     let result = async {
-        runtime.ensure_container_capacity(4.0, 2.0).await?;
+        runtime.ensure_container_capacity(4.0, 16.625).await?;
         runtime.provision_container("env-capacity", "quay.io/libpod/alpine:latest", "sleep 2147483647", &policy, false, false).await?;
         runtime.container_action("env-capacity", "start", false).await?;
         let before = runtime.appliance.lock().await.as_ref().unwrap().child.id();
@@ -22,7 +22,9 @@ async fn container_capacity_grows_without_losing_data_or_restarting_active_workl
         assert!(output.stdout.contains("2147483648"), "{}", output.stdout);
         assert!(output.stdout.contains("400000 100000"), "{}", output.stdout);
         eprintln!("Large container initial limits: {}", output.stdout);
-        runtime.ensure_container_capacity(8.0, 4.0).await?;
+        let growth = runtime.ensure_container_capacity(8.0, 18.5).await;
+        eprintln!("First hotplug result: {growth:?}; guest memory: {:?}", runtime.execute_container_command("env-capacity", "head -3 /proc/meminfo").await);
+        growth?;
         assert_eq!(before, runtime.appliance.lock().await.as_ref().unwrap().child.id());
         runtime.update_container_resources("env-capacity", 8.0, 4.0).await?;
         let output = runtime.execute_container_command("env-capacity", "cat /root/capacity-marker; cat /sys/fs/cgroup/memory.max; cat /sys/fs/cgroup/cpu.max; head -3 /proc/meminfo").await?;
@@ -31,6 +33,21 @@ async fn container_capacity_grows_without_losing_data_or_restarting_active_workl
         assert!(output.stdout.contains("4294967296"), "{}", output.stdout);
         assert!(output.stdout.contains("800000 100000"), "{}", output.stdout);
         eprintln!("Resized container limits and preserved data: {}", output.stdout);
+        // At this size the kernel's reserved memory exceeds the former fixed
+        // 256 MiB allowance, even when every hotplug block is already online.
+        let larger = runtime.ensure_container_capacity(8.0, 36.0).await;
+        eprintln!("Large hotplug result: {larger:?}; guest memory: {:?}", runtime.execute_container_command("env-capacity", "head -3 /proc/meminfo").await);
+        larger?;
+        runtime.ensure_container_capacity(8.0, 36.0).await?;
+        assert_eq!(before, runtime.appliance.lock().await.as_ref().unwrap().child.id());
+        runtime.provision_container("env-delete-live", "quay.io/libpod/alpine:latest", "sleep 2147483647", &policy, false, false).await?;
+        runtime.container_action("env-delete-live", "start", false).await?;
+        runtime.delete_container("env-delete-live").await?;
+        runtime.delete_container("env-delete-live").await?; // Retry remains safe.
+        let deleted = runtime.execute_container_command("env-delete-live", "true").await;
+        assert!(deleted.is_err() || deleted.as_ref().is_ok_and(|output| output.exit_code != 0), "Deleted container accepted a command: {deleted:?}");
+        assert!(!runtime.appliance.lock().await.as_ref().unwrap().active_containers.contains("env-delete-live"));
+        assert_eq!(runtime.execute_container_command("env-capacity", "cat /root/capacity-marker").await?.stdout.trim(), "capacity-survives");
         Ok(())
     }.await;
     runtime.shutdown_all().await;

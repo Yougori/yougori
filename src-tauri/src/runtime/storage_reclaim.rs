@@ -35,7 +35,10 @@ mod tests {
         };
         let result = async {
             for id in ["reclaim-delete", "reclaim-keep"] {
-                runtime.provision_container(id, "quay.io/libpod/alpine:latest", "sleep 2147483647", &policy, false, false).await?;
+                let command = if id == "reclaim-keep" {
+                    "while [ ! -f /root/exit-request ]; do sleep 1; done; rm /root/exit-request"
+                } else { "sleep 2147483647" };
+                runtime.provision_container(id, "quay.io/libpod/alpine:latest", command, &policy, false, false).await?;
                 runtime.container_action(id, "start", false).await?;
             }
             let marker = runtime.execute_container_command("reclaim-keep", "echo peer-safe > /root/marker; sync").await?;
@@ -48,10 +51,18 @@ mod tests {
             #[cfg(windows)] check!(result.warnings.iter().any(|w| w.contains("running or paused")));
             let output = runtime.execute_container_command("reclaim-keep", "cat /root/marker").await?;
             check!(output.stdout.trim() == "peer-safe");
-            runtime.container_action("reclaim-keep", "stop", false).await?;
+            // A workload can exit without a dashboard Stop action clearing
+            // the conservative active-container cache.
+            check!(runtime.execute_container_command("reclaim-keep", "touch /root/exit-request").await?.exit_code == 0);
+            let deadline = tokio::time::Instant::now() + Duration::from_secs(10);
+            while runtime.container_failure_detail("reclaim-keep").await?.is_none() {
+                if tokio::time::Instant::now() >= deadline { return Err("Test container did not exit".into()); }
+                tokio::time::sleep(Duration::from_millis(100)).await;
+            }
             let compacted = runtime.reclaim_container_storage(&RuntimeProviderKind::OpenDockOci).await?;
             eprintln!("Idle compaction: {}", serde_json::to_string(&compacted).unwrap());
             check!(compacted.warnings.is_empty());
+            #[cfg(windows)] check!(runtime.appliance.lock().await.is_none());
             check!(result.reclaimed_disk_bytes + compacted.reclaimed_disk_bytes > 128 * 1024 * 1024);
             runtime.container_action("reclaim-keep", "start", false).await?;
             check!(runtime.execute_container_command("reclaim-keep", "cat /root/marker").await?.stdout.trim() == "peer-safe");
@@ -104,6 +115,14 @@ impl RuntimeManager {
             if result.busy {
                 cleanup.warnings.push(format!("{} containers are still running or paused. Free space is reusable inside their disk; stop them and choose Storage → Reclaim space to return it to Windows. No workloads were stopped.", if cuda { "GPU" } else { "Standard" }));
             } else {
+                // The agent verified no running/paused containers while the
+                // writer lease excludes new starts. Workloads that exit on
+                // their own can leave conservative start tracking stale.
+                if !cuda {
+                    if let Some(process) = self.appliance.lock().await.as_mut() {
+                        process.active_containers.clear();
+                    }
+                }
                 let compact = if cuda { self.cuda.compact_idle_storage().await } else { self.compact_idle_appliance().await };
                 if let Err(error) = compact { cleanup.warnings.push(error); }
             }

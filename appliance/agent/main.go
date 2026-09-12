@@ -609,8 +609,8 @@ func (s *server) deleteContainer(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 2*time.Minute)
 	defer cancel()
 	retained := retainedContainerImage(ctx, request.ID)
-	output, err := run(ctx, "nerdctl", "--namespace", namespace, "rm", "--force", "--volumes", request.ID)
-	if err != nil && !commandReportsNotFound(err, request.ID) {
+	output, err := deleteContainerVerified(ctx, request.ID, run)
+	if err != nil {
 		writeCommandError(w, err)
 		return
 	}
