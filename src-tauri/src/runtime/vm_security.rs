@@ -363,6 +363,7 @@ pub(super) async fn prepare_required(layout: &RuntimeLayout, directory: &Path, s
         "qemu-system-x86_64.exe",
         "opendock-tpm.dll",
         "opendock-tpm-init.exe",
+        "opendock-tpm-worker.exe",
         "OVMF.qemuvars.fd",
         "secure-vars.json",
     ] {

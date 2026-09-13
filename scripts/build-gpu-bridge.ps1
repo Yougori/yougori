@@ -32,6 +32,7 @@ try {
 if (-not (Test-Path -LiteralPath $original)) { Copy-Item -LiteralPath $egl -Destination $original }
 Copy-Item -LiteralPath (Join-Path $build 'libEGL.dll') -Destination $egl -Force
 Copy-Item -LiteralPath (Join-Path $build 'opendock-gpu-probe.exe') -Destination $qemu -Force
+Copy-Item -LiteralPath (Join-Path $repo 'runtime/gpu/LICENSE') -Destination (Join-Path $qemu 'GPU-BRIDGE-LICENSE.txt')
 $manifest = Join-Path $qemu 'SHA256SUMS'
 $checksums = Get-ChildItem -LiteralPath $qemu -File -Recurse | Where-Object FullName -ne $manifest | Sort-Object FullName | ForEach-Object {
   '{0}  {1}' -f (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant(), $_.FullName.Substring($qemu.Length + 1).Replace('\', '/')

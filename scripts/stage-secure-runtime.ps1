@@ -15,6 +15,7 @@ foreach ($file in @(
   "$QemuBuildDirectory/qemu-system-x86_64.exe",
   "$repo/build/secure-runtime/tpm/opendock-tpm.dll",
   "$repo/build/secure-runtime/tpm/opendock-tpm-init.exe",
+  "$repo/build/secure-runtime/tpm/opendock-tpm-worker.exe",
   "$ucrt/libEGL.dll", "$ucrt/libGLESv2.dll"
 )) { $queue.Enqueue($file) }
 $seen = [Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
@@ -61,6 +62,20 @@ Copy-Item -LiteralPath "$repo/build/runtime-cache/edk2-secure-src/License.txt" -
 Copy-Item -LiteralPath "$repo/build/runtime-cache/secureboot-objects/License.txt" -Destination "$output/SECUREBOOT-OBJECTS-LICENSE.txt"
 Copy-Item -LiteralPath "$repo/runtime/security/SOURCES.md" -Destination $output
 Copy-Item -LiteralPath "$repo/runtime/security/LICENSE" -Destination "$output/OPENDOCK-TPM-LICENSE.txt"
+$sourceRecord = [ordered]@{
+  schemaVersion = 1
+  source = 'https://github.com/qemu/qemu'
+  revision = '84f07211cc5b4fc6a371559bf8a5de4fb068e648'
+  buildScript = 'scripts/build-secure-qemu.sh'
+  buildScriptSha256 = (Get-FileHash -LiteralPath "$repo/scripts/build-secure-qemu.sh" -Algorithm SHA256).Hash.ToLowerInvariant()
+  tpmTransport = 'Private process with anonymous pipes; OpenSSL is loaded only inside the BSD TPM worker'
+  patches = @(@('qemu-windows-tpm.patch', 'qemu-whpx-tpm-ppi.patch', 'qemu-whpx-reboot.patch', 'tpm-qemu.c', 'tpm-api.h', 'tpm-worker.c') | ForEach-Object {
+    [ordered]@{ path = "runtime/security/$_"; sha256 = (Get-FileHash -LiteralPath "$repo/runtime/security/$_" -Algorithm SHA256).Hash.ToLowerInvariant() }
+  })
+  dependencyProvenance = 'PACKAGES.txt; DLLs copied from the package-managed UCRT64 toolchain'
+  firmware = 'SOURCES.md and retained content-addressed firmware; existing VM identities are preserved'
+}
+[IO.File]::WriteAllText("$output/SOURCE_BUILD.json", ($sourceRecord | ConvertTo-Json -Depth 8) + "`n", [Text.UTF8Encoding]::new($false))
 $licenses = "$output/licenses"
 Copy-Item -LiteralPath "$ucrt/../share/licenses" -Destination $licenses -Recurse
 Copy-Item -LiteralPath "$repo/runtime/security/licenses" -Destination "$licenses/extra" -Recurse

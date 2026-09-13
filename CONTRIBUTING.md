@@ -69,3 +69,12 @@ If `main` has diverged, merge `origin/main` into `staging`, resolve any conflict
 there, and test the result before promotion. Do not force-push either branch.
 Building installers and publishing a GitHub release or website download remain
 separate release steps.
+
+## Licenses and source materials
+
+Original contributions are supplied under Apache-2.0 unless the affected files
+carry a separate license. Retain existing component notices and attribution.
+Read [licensing and source distribution](docs/licensing.md) before changing a
+bundled dependency. Run `npm run compliance:check` after updating the evidence.
+Installer builds additionally require `npm run release:distribution`; unresolved
+source or license findings block packaging, including preview installers.

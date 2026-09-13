@@ -31,9 +31,15 @@ jobs:
       - name: Dependency advisories
         run: npm audit --audit-level=moderate
       - name: Verify shipped payloads and architecture
-        run: npm run release:check
+        run: |
+          npm run release:check
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          npm run compliance:check
+          exit $LASTEXITCODE
       - name: Require test-only shell and Python prerequisites (do not silently skip)
         run: pwsh -NoProfile -File scripts/check-windows-test-prerequisites.ps1
+      - name: Source collector regression checks
+        run: python scripts/compliance-collect.test.py
       - name: Frontend lint, unit tests and build
         run: |
           npm run lint

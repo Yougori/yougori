@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later
- * Private in-process Windows TPM backend for OpenDock. Only the CRB/TIS guest
- * device is exposed; there are no simulator control sockets or host-TPM calls.
+ * Windows TPM backend using a separate, private helper process. Only standard
+ * TPM bytes and lifecycle requests cross anonymous pipes, never QEMU internals.
  */
 #include "qemu/osdep.h"
 #include "qapi/error.h"
@@ -16,15 +16,117 @@
 OBJECT_DECLARE_SIMPLE_TYPE(TPMOpenDock, TPM_OPENDOCK)
 struct TPMOpenDock {
     TPMBackend parent;
-    HMODULE library;
-    OdTpmOpen open;
-    OdTpmReset reset;
-    OdTpmExecute execute;
-    OdTpmClose close;
+    HANDLE process, job, input, output;
     char *state;
     Error *migration_blocker;
     bool opened;
 };
+
+#define OD_WIRE_MAGIC 0x5954504du
+
+static int od_write(TPMOpenDock *s, const void *buffer, uint32_t size)
+{
+    const uint8_t *bytes = buffer;
+    while (size) {
+        DWORD count = 0;
+        if (!WriteFile(s->input, bytes, size, &count, NULL) || !count) return -1;
+        bytes += count;
+        size -= count;
+    }
+    return 0;
+}
+
+static int od_read(TPMOpenDock *s, void *buffer, uint32_t size)
+{
+    uint8_t *bytes = buffer;
+    ULONGLONG deadline = GetTickCount64() + 30000;
+    while (size) {
+        DWORD available = 0, count = 0;
+        if (!PeekNamedPipe(s->output, NULL, 0, NULL, &available, NULL)) return -1;
+        if (!available) {
+            if (GetTickCount64() >= deadline || WaitForSingleObject(s->process, 0) != WAIT_TIMEOUT) return -1;
+            Sleep(1);
+            continue;
+        }
+        DWORD wanted = MIN(size, available);
+        if (!ReadFile(s->output, bytes, wanted, &count, NULL) || !count) return -1;
+        bytes += count;
+        size -= count;
+    }
+    return 0;
+}
+
+static int od_call(TPMOpenDock *s, uint32_t operation, uint32_t argument,
+                   const void *input, uint32_t input_size, void *output, uint32_t *output_size)
+{
+    uint32_t request[4] = { OD_WIRE_MAGIC, operation, argument, input_size };
+    uint32_t response[4];
+    if (od_write(s, request, sizeof(request)) || od_write(s, input, input_size) ||
+        od_read(s, response, sizeof(response)) || response[0] != OD_WIRE_MAGIC ||
+        response[3] != OD_TPM_ABI || response[2] > (output_size ? *output_size : 0)) return -1;
+    if (od_read(s, output, response[2])) return -1;
+    if (output_size) *output_size = response[2];
+    return (int32_t)response[1];
+}
+
+static int od_spawn(TPMOpenDock *s)
+{
+    wchar_t path[32768] = {0};
+    DWORD length = GetModuleFileNameW(NULL, path, ARRAY_SIZE(path));
+    wchar_t *slash = length && length < ARRAY_SIZE(path) ? wcsrchr(path, L'\\') : NULL;
+    if (!slash || slash - path > 32700) return -1;
+    wcscpy(slash + 1, L"opendock-tpm-worker.exe");
+    wchar_t command[32768];
+    if (swprintf(command, ARRAY_SIZE(command), L"\"%ls\"", path) < 0) return -1;
+    SECURITY_ATTRIBUTES security = { sizeof(security), NULL, TRUE };
+    HANDLE child_input = NULL, child_output = NULL, errors = INVALID_HANDLE_VALUE;
+    STARTUPINFOEXW startup = {0};
+    PROCESS_INFORMATION process = {0};
+    SIZE_T attribute_size = 0;
+    bool attributes_ready = false;
+    int result = -1;
+    if (!CreatePipe(&child_input, &s->input, &security, 65536) ||
+        !CreatePipe(&s->output, &child_output, &security, 65536) ||
+        !SetHandleInformation(s->input, HANDLE_FLAG_INHERIT, 0) ||
+        !SetHandleInformation(s->output, HANDLE_FLAG_INHERIT, 0)) goto cleanup;
+    errors = CreateFileW(L"NUL", GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE,
+                         &security, OPEN_EXISTING, 0, NULL);
+    if (errors == INVALID_HANDLE_VALUE) goto cleanup;
+    InitializeProcThreadAttributeList(NULL, 1, 0, &attribute_size);
+    startup.lpAttributeList = g_malloc0(attribute_size);
+    if (!InitializeProcThreadAttributeList(startup.lpAttributeList, 1, 0, &attribute_size)) goto cleanup;
+    attributes_ready = true;
+    HANDLE handles[] = { child_input, child_output, errors };
+    if (!UpdateProcThreadAttribute(startup.lpAttributeList, 0, PROC_THREAD_ATTRIBUTE_HANDLE_LIST,
+                                   handles, sizeof(handles), NULL, NULL)) goto cleanup;
+    startup.StartupInfo.cb = sizeof(startup);
+    startup.StartupInfo.dwFlags = STARTF_USESTDHANDLES;
+    startup.StartupInfo.hStdInput = child_input;
+    startup.StartupInfo.hStdOutput = child_output;
+    startup.StartupInfo.hStdError = errors;
+    s->job = CreateJobObjectW(NULL, NULL);
+    JOBOBJECT_EXTENDED_LIMIT_INFORMATION limits = {0};
+    limits.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
+    if (!s->job || !SetInformationJobObject(s->job, JobObjectExtendedLimitInformation, &limits, sizeof(limits))) goto cleanup;
+    if (!CreateProcessW(path, command, NULL, NULL, TRUE,
+                        CREATE_NO_WINDOW | CREATE_SUSPENDED | EXTENDED_STARTUPINFO_PRESENT,
+                        NULL, NULL, &startup.StartupInfo, &process)) goto cleanup;
+    s->process = process.hProcess;
+    if (!AssignProcessToJobObject(s->job, s->process)) goto cleanup;
+    if (ResumeThread(process.hThread) == (DWORD)-1) goto cleanup;
+    result = 0;
+cleanup:
+    if (process.hThread) CloseHandle(process.hThread);
+    if (result && s->process) TerminateProcess(s->process, 1);
+    if (startup.lpAttributeList) {
+        if (attributes_ready) DeleteProcThreadAttributeList(startup.lpAttributeList);
+        g_free(startup.lpAttributeList);
+    }
+    if (child_input) CloseHandle(child_input);
+    if (child_output) CloseHandle(child_output);
+    if (errors != INVALID_HANDLE_VALUE) CloseHandle(errors);
+    return result;
+}
 
 static TPMVersion od_version(TPMBackend *tb) { return TPM_VERSION_2_0; }
 static size_t od_buffer_size(TPMBackend *tb) { return OD_TPM_BUFFER; }
@@ -34,16 +136,16 @@ static void od_cancel(TPMBackend *tb) {}
 static int od_startup(TPMBackend *tb, size_t size)
 {
     TPMOpenDock *s = TPM_OPENDOCK(tb);
-    return size > OD_TPM_BUFFER ? -1 : s->reset();
+    return size > OD_TPM_BUFFER ? -1 : od_call(s, 2, 0, NULL, 0, NULL, NULL);
 }
 static void od_request(TPMBackend *tb, TPMBackendCmd *cmd, Error **errp)
 {
     TPMOpenDock *s = TPM_OPENDOCK(tb);
     uint32_t size = cmd->out_len;
-    /* TIS aliases request and response buffers. The library copies the
-     * request before writing its response; never clear that input here. */
+    /* TIS aliases request and response buffers. The request is sent completely
+     * before reading the response; never clear that input here. */
     bool selftest = tpm_util_is_selftest(cmd->in, cmd->in_len);
-    if (s->execute(cmd->locty, cmd->in, cmd->in_len, cmd->out, &size) != 0) {
+    if (od_call(s, 3, cmd->locty, cmd->in, cmd->in_len, cmd->out, &size) != 0) {
         tpm_util_write_fatal_error_response(cmd->out, cmd->out_len);
         error_setg(errp, "OpenDock TPM command failed; state was not reset");
     } else if (selftest && tpm_cmd_get_errcode(cmd->out) == 0) {
@@ -62,8 +164,14 @@ static TpmTypeOptions *od_options(TPMBackend *tb)
 static void od_finalize(Object *object)
 {
     TPMOpenDock *s = TPM_OPENDOCK(object);
-    if (s->opened) s->close();
-    if (s->library) FreeLibrary(s->library);
+    if (s->opened) od_call(s, 4, 0, NULL, 0, NULL, NULL);
+    if (s->input) CloseHandle(s->input);
+    if (s->output) CloseHandle(s->output);
+    if (s->process) {
+        if (WaitForSingleObject(s->process, 5000) != WAIT_OBJECT_0) TerminateProcess(s->process, 1);
+        CloseHandle(s->process);
+    }
+    if (s->job) CloseHandle(s->job);
     migrate_del_blocker(&s->migration_blocker);
     g_free(s->state);
 }
@@ -76,25 +184,11 @@ static TPMBackend *od_create(QemuOpts *opts)
         error_report("OpenDock TPM requires an explicit per-VM state file");
         goto fail;
     }
-    /* Absolute sibling path, never the current directory or PATH. The app
-     * verifies this DLL and its dependencies against the runtime manifest. */
-    wchar_t path[32768] = {0};
-    DWORD len = GetModuleFileNameW(NULL, path, ARRAY_SIZE(path));
-    wchar_t *slash = wcsrchr(path, L'\\');
-    if (!len || len >= ARRAY_SIZE(path) || !slash || slash - path > 32700) goto fail;
-    wcscpy(slash + 1, L"opendock-tpm.dll");
-    s->library = LoadLibraryExW(path, NULL, LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_SYSTEM32);
-    if (!s->library) {
-        error_report("Cannot load the bundled OpenDock TPM library (%lu)", GetLastError());
+    if (strlen(s->state) > 32767 || od_spawn(s)) {
+        error_report("Cannot start the bundled OpenDock TPM worker (%lu)", GetLastError());
         goto fail;
     }
-    OdTpmVersion version = (OdTpmVersion)(void *)GetProcAddress(s->library, "od_tpm_version");
-    s->open = (OdTpmOpen)(void *)GetProcAddress(s->library, "od_tpm_open");
-    s->reset = (OdTpmReset)(void *)GetProcAddress(s->library, "od_tpm_reset");
-    s->execute = (OdTpmExecute)(void *)GetProcAddress(s->library, "od_tpm_execute");
-    s->close = (OdTpmClose)(void *)GetProcAddress(s->library, "od_tpm_close");
-    if (!version || version() != OD_TPM_ABI || !s->open || !s->reset || !s->execute || !s->close) goto fail;
-    if (s->open(s->state, qemu_opt_get_bool(opts, "create", false)) != 0) {
+    if (od_call(s, 1, qemu_opt_get_bool(opts, "create", false), s->state, strlen(s->state), NULL, NULL) != 0) {
         error_report("Cannot open TPM state (missing, locked, corrupt, or not writable). Existing identity was preserved.");
         goto fail;
     }

@@ -1,0 +1,19 @@
+{
+  "status": "approved",
+  "reviewer": "Codex engineering review",
+  "date": "2026-09-13",
+  "evidence": "docs/compliance-status.md; compliance/evidence; docs/rebuilding-third-party.md",
+  "scope": "Local preparation of the recorded Windows/appliance runtime and matching source materials. This is not publication authorization or a legal certification of past releases.",
+  "decisions": [
+    "Original Yougori code uses the owner's selected Apache-2.0 plus NOTICE; separately licensed components retain their licenses.",
+    "QEMU is built from the supplied pinned upstream source and GPL-compatible local modifications; the retired JACK/Berkeley DB import chain is absent.",
+    "QEMU exchanges TPM wire commands with a separate BSD helper; no QEMU internal objects or OpenSSL library are linked into QEMU through that helper.",
+    "GMP, Nettle and libunistring use their upstream GPL-2.0-or-later library option; original license declarations and full GPLv2 text are retained.",
+    "Bundled shared libraries have matching MSYS recipes/source inputs. Recipients may rebuild/replace them and update editable integrity manifests.",
+    "Linux/appliance packages have exact aports recipes and checked distfiles. Firmware source revisions, build configuration and unchanged shipped bytes are recorded.",
+    "Static OCI libraries have corresponding Debian source/patches and application sources/build procedures for relinking; the musl-linked local helper rebuilt byte-for-byte.",
+    "NoVNC and other copyleft source materials and third-party attribution are retained independently of Yougori's root license.",
+    "The recorded runtime tests passed. Exported QEMU source restoration, patch equivalence and configure/dependency-graph checks passed.",
+    "Public source access must be verified before distribution. Old installer source gaps remain separate and have not been declared resolved."
+  ]
+}

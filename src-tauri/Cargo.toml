@@ -3,7 +3,7 @@ name = "yougori"
 version = "1.0.0"
 description = "A local environment platform"
 authors = ["Yougori"]
-license-file = "../LICENSE"
+license = "Apache-2.0"
 publish = false
 edition = "2021"
 

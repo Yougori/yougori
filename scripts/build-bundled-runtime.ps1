@@ -18,10 +18,6 @@ if ($BuildSecureRuntime -and $runtimeRoot -ne (Join-Path $repositoryRoot 'src-ta
 $cacheRoot = Join-Path $repositoryRoot "build\runtime-cache"
 $qemuRoot = Join-Path $runtimeRoot "qemu"
 $applianceRoot = Join-Path $runtimeRoot "appliance"
-$qemuVersion = "20260811"
-$qemuInstallerName = "qemu-w64-setup-$qemuVersion.exe"
-$qemuUrl = "https://qemu.weilnetz.de/w64/2026/$qemuInstallerName"
-$qemuChecksumUrl = $qemuUrl -replace '\.exe$', '.sha512'
 
 function ConvertTo-WslPath([string]$WindowsPath) {
   $fullPath = [IO.Path]::GetFullPath($WindowsPath)
@@ -258,42 +254,26 @@ function Write-RuntimeChecksums([string]$Root) {
 New-Item -ItemType Directory -Force -Path $runtimeRoot, $cacheRoot | Out-Null
 
 if (-not $SkipQemu) {
-  $installerPath = Join-Path $cacheRoot $qemuInstallerName
-  $checksumPath = "$installerPath.sha512"
-  if (-not (Test-Path -LiteralPath $installerPath)) {
-    Invoke-WebRequest -Uri $qemuUrl -OutFile "$installerPath.part"
-    Move-Item -LiteralPath "$installerPath.part" -Destination $installerPath
+  $qemuBuild = Join-Path $repositoryRoot 'build/secure-runtime/qemu-build'
+  & "$PSScriptRoot/build-secure-runtime.ps1" -QemuOnly -WithTools -QemuBuildDirectory $qemuBuild
+  $staged = Join-Path $runtimeRoot ("qemu-staged-" + [guid]::NewGuid().ToString('N'))
+  & "$PSScriptRoot/stage-windows-qemu.ps1" -OutputDirectory $staged -QemuBuildDirectory $qemuBuild
+  Assert-QemuBuildStarts $staged
+  $mapped = Get-CimInstance Win32_Process | Where-Object {
+    $_.ExecutablePath -and $_.ExecutablePath.StartsWith($qemuRoot + '\', [StringComparison]::OrdinalIgnoreCase)
   }
-  Invoke-WebRequest -Uri $qemuChecksumUrl -OutFile $checksumPath
-  $expected = ((Get-Content -LiteralPath $checksumPath -Raw).Trim() -split "\s+")[0].ToUpperInvariant()
-  $actual = (Get-FileHash -LiteralPath $installerPath -Algorithm SHA512).Hash
-  if ($actual -ne $expected) {
-    throw "QEMU installer checksum mismatch"
-  }
-
-  if (Test-Path -LiteralPath $qemuRoot) {
-    $resolvedRuntime = (Resolve-Path -LiteralPath $runtimeRoot).Path
-    $resolvedQemu = (Resolve-Path -LiteralPath $qemuRoot).Path
-    if (-not $resolvedQemu.StartsWith($resolvedRuntime + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase)) {
-      throw "Refusing to replace QEMU outside the runtime directory"
+  if ($mapped) { throw "Close environments using this checkout's QEMU before replacing it. Tested build preserved at $staged" }
+  $preserved = Join-Path $cacheRoot ("previous-qemu-" + [guid]::NewGuid().ToString('N'))
+  $checkedStaged = Assert-ChildPath $repositoryRoot $staged
+  $checkedTarget = Assert-ChildPath $repositoryRoot $qemuRoot
+  $checkedPrevious = Assert-ChildPath $repositoryRoot $preserved
+  if (Test-Path -LiteralPath $checkedTarget) { Move-Item -LiteralPath $checkedTarget -Destination $checkedPrevious }
+  try { Move-Item -LiteralPath $checkedStaged -Destination $checkedTarget }
+  catch {
+    if ((Test-Path -LiteralPath $checkedPrevious) -and -not (Test-Path -LiteralPath $checkedTarget)) {
+      Move-Item -LiteralPath $checkedPrevious -Destination $checkedTarget
     }
-    Remove-Item -LiteralPath $resolvedQemu -Recurse -Force
-  }
-  New-Item -ItemType Directory -Force -Path $qemuRoot | Out-Null
-  $sevenZip = Get-Command 7z -ErrorAction SilentlyContinue
-  if (-not $sevenZip) {
-    throw "7-Zip is required to unpack the verified QEMU distribution during a source build"
-  }
-  & $sevenZip.Source x -y "-o$qemuRoot" $installerPath | Out-Null
-  if ($LASTEXITCODE -ne 0) {
-    throw "QEMU portable extraction failed with exit code $LASTEXITCODE"
-  }
-  Remove-Item -LiteralPath (Join-Path $qemuRoot '$PLUGINSDIR') -Recurse -Force -ErrorAction SilentlyContinue
-  if (-not (Test-Path -LiteralPath (Join-Path $qemuRoot "qemu-system-x86_64.exe"))) {
-    throw "QEMU x86_64 executable was not produced"
-  }
-  if (-not (Test-Path -LiteralPath (Join-Path $qemuRoot "qemu-img.exe"))) {
-    throw "QEMU image utility was not produced"
+    throw
   }
 }
 

@@ -50,7 +50,7 @@ No Developer Mode, administrator QEMU process, or global PATH change is needed.
 In that MSYS2 UCRT64 shell install the signed build packages:
 
 ```sh
-pacman -S --needed mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-meson mingw-w64-ucrt-x86_64-ninja mingw-w64-ucrt-x86_64-glib2 mingw-w64-ucrt-x86_64-pixman mingw-w64-ucrt-x86_64-libslirp mingw-w64-ucrt-x86_64-openssl mingw-w64-ucrt-x86_64-gnutls mingw-w64-ucrt-x86_64-zstd mingw-w64-ucrt-x86_64-virglrenderer mingw-w64-ucrt-x86_64-angleproject git make diffutils
+pacman -S --needed mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-meson mingw-w64-ucrt-x86_64-ninja mingw-w64-ucrt-x86_64-glib2 mingw-w64-ucrt-x86_64-pixman mingw-w64-ucrt-x86_64-libslirp mingw-w64-ucrt-x86_64-openssl mingw-w64-ucrt-x86_64-gnutls mingw-w64-ucrt-x86_64-zstd mingw-w64-ucrt-x86_64-virglrenderer mingw-w64-ucrt-x86_64-angleproject git make diffutils patch
 ```
 
 In WSL install `build-essential nasm uuid-dev acpica-tools python3-venv pesign`.
@@ -104,3 +104,8 @@ entropy, persistent NV, exclusive file locking, malformed command bounds,
 torn-write recovery and refusal to overwrite missing/corrupt identities.
 Compile it with UCRT64 GCC and run it against `opendock-tpm.dll` with a new
 disposable state filename. It never calls the developer computer's TPM.
+
+`python scripts/test-tpm-worker.py` tests the separate TPM worker's crypto,
+persisted NV, exclusive locking, malformed input and EOF cleanup. It also
+checks that the worker exits after both normal and forced QEMU termination.
+It uses new temporary state files and a loopback QMP connection.

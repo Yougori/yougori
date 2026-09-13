@@ -2,14 +2,21 @@
 
 Yougori distributes third-party runtime components, including a locally modified
 secure QEMU runtime. Copyright remains with each component's authors. The
-Yougori Internal-Use License applies only to the code it covers; its resale,
-redistribution, hosting, and modification restrictions do not override any
-component's own license. Existing OpenDock names in upstream or project notices
+Apache License, Version 2.0 applies to original Yougori code except where a
+separate license notice applies. It does not relicense third-party code or
+override any component's own license. Existing OpenDock names in upstream or project notices
 are retained as historical attribution.
 
 The links below identify upstream projects and source locations. They are not,
 by themselves, a complete corresponding-source distribution or a written source
 offer. They must not be represented as proof of GPL/LGPL release compliance.
+The repository's `compliance/release.json` and `docs/compliance-status.md` record
+collected sources, exact runtime identities and unresolved distribution work.
+Application dependency license texts are supplied in `APPLICATION_LICENSES.txt`.
+Additional guest and Windows library texts are supplied in `RUNTIME_LICENSES.txt`.
+The component list below is an overview. Exact package versions, license
+expressions and coverage findings are in `compliance/evidence/`; a package
+license expression may cover files with different terms.
 
 ## FAT filesystem support
 
@@ -40,9 +47,15 @@ SOFTWARE.
 
 - QEMU Windows distribution: GPL version 2 at the project level; individual files and libraries carry their own GPL, LGPL, or other compatible licenses. The bundled distribution includes `runtime/qemu/COPYING`, `runtime/qemu/COPYING.LIB`, and its upstream `README.rst`. Use the bundled manifests and source records to identify the exact shipped build.
 - EDK II UEFI firmware shipped by the QEMU distribution: BSD-2-Clause-Patent and component-specific compatible licenses.
-- Windows binary distribution source and build information: https://qemu.weilnetz.de/w64/
-- QEMU corresponding source: https://download.qemu.org/
+- Both Windows QEMU directories are now built from revision `84f07211cc5b4fc6a371559bf8a5de4fb068e648`, with the supplied local patches. `SOURCE_BUILD.json` and `SHA256SUMS` identify the build and payload.
+- QEMU upstream source: https://github.com/qemu/qemu
 - EDK II source: https://github.com/tianocore/edk2
+
+The previous stock runtime's JACK and Berkeley DB libraries are absent from
+this source-built runtime. Older installers require their own source records.
+QEMU and the EGL bridge use GPL-compatible component terms. GMP, Nettle and
+libunistring are supplied using their GPL-2.0-or-later library option; their
+original declarations and GPLv2 text appear in `RUNTIME_LICENSES.txt`.
 
 ### Modified Windows secure runtime
 
@@ -59,6 +72,9 @@ SOFTWARE.
 - These local patches and scripts are supplemental source material, not the
   complete upstream QEMU, firmware, library, or appliance source distributions.
   Their respective component-license rights remain intact.
+- The BSD TPM worker loads the reference TPM core and OpenSSL in a separate
+  process. QEMU exchanges TPM bytes and lifecycle requests over anonymous
+  pipes. The existing TPM NV format and guest identities are preserved.
 
 ## noVNC desktop client
 
@@ -92,6 +108,12 @@ SOFTWARE.
 - containerd 2.3.3: Apache-2.0. Source: https://github.com/containerd/containerd/tree/v2.3.3
 - runc 1.5.1: Apache-2.0. Source: https://github.com/opencontainers/runc/tree/v1.5.1
 - CNI plugins 1.9.1: Apache-2.0. A license copy is included at `/usr/local/libexec/cni/LICENSE` inside the appliance. Source: https://github.com/containernetworking/plugins/tree/v1.9.1
+- The static OCI build also uses Debian glibc 2.41-12+deb13u3, libseccomp
+  2.6.0-2 and libbtrfs from btrfs-progs 6.14-1. Their source packages, Debian
+  patches and build rules are included in the matching source bundle. Full
+  copyright notices are retained in `RUNTIME_LICENSES.txt`. The source bundle
+  supplies the application sources and build instructions needed to relink
+  modified libraries. libpathrs is disabled in this nerdctl build.
 
 ## Workspace terminals and folder sharing
 

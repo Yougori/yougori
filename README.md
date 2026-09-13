@@ -10,6 +10,12 @@
 
 Create and manage containers, microVMs and virtual machines from one desktop workspace.
 
+Yougori's original code is **open source under [Apache-2.0](LICENSE)**.
+You can use, modify and redistribute it, including commercially, while preserving
+the required license and [Yougori attribution notices](NOTICE). Third-party
+components retain their own licenses. See the [licensing guide](docs/licensing.md)
+and [source-distribution status](docs/compliance-status.md).
+
 Download Yougori from **[yougori.com](https://yougori.com/)**, use a direct download below, or [clone this GitHub repository](https://github.com/Yougori/yougori) and run it from source.
 
 | Windows x64 | Ubuntu 22.04+ x64 |

@@ -43,6 +43,13 @@ GEMINI.md
 # Downloaded appliance build dependencies
 build/appliance-cache/
 
+# Release-specific third-party source archives and inspection scratch files.
+build/compliance/
+build/source-review/
+build/source-review-2/
+__pycache__/
+*.pyc
+
 # Local documents and generated PDF previews
 *.[pP][dD][fF]
 /output/pdf/

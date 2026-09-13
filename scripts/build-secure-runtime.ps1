@@ -2,6 +2,9 @@
 param(
   [string]$WslDistribution = 'Ubuntu-22.04',
   [switch]$SkipFirmware,
+  [switch]$QemuOnly,
+  [switch]$WithTools,
+  [string]$QemuBuildDirectory = '',
   [switch]$Install
 )
 $ErrorActionPreference = 'Stop'
@@ -43,6 +46,24 @@ New-Item -ItemType Directory -Force -Path $cache | Out-Null
 Source 'qemu-secure-src' 'https://github.com/qemu/qemu' '84f07211cc5b4fc6a371559bf8a5de4fb068e648' 'qemu-windows-tpm.patch'
 Source 'qemu-secure-src' 'https://github.com/qemu/qemu' '84f07211cc5b4fc6a371559bf8a5de4fb068e648' 'qemu-whpx-tpm-ppi.patch'
 Source 'qemu-secure-src' 'https://github.com/qemu/qemu' '84f07211cc5b4fc6a371559bf8a5de4fb068e648' 'qemu-whpx-reboot.patch'
+if ($QemuOnly) {
+  Copy-Item -LiteralPath "$repo/runtime/security/tpm-qemu.c", "$repo/runtime/security/tpm-api.h" -Destination "$cache/qemu-secure-src/backends/tpm"
+  $savedEnvironment = @{}
+  foreach ($name in @('MSYSTEM', 'CHERE_INVOKING', 'YOUGORI_QEMU_BUILD_TOOLS', 'YOUGORI_QEMU_BUILD_DIRECTORY')) {
+    $savedEnvironment[$name] = [Environment]::GetEnvironmentVariable($name, 'Process')
+  }
+  try {
+    $env:MSYSTEM = 'UCRT64'
+    $env:CHERE_INVOKING = '1'
+    $env:YOUGORI_QEMU_BUILD_TOOLS = $(if ($WithTools) { '1' } else { '0' })
+    if ($QemuBuildDirectory) { $env:YOUGORI_QEMU_BUILD_DIRECTORY = [IO.Path]::GetFullPath($QemuBuildDirectory).Replace('\', '/') }
+    & $bash --login "$PSScriptRoot/build-secure-qemu.sh"; Check 'Build source-backed Windows QEMU'
+  } finally {
+    foreach ($name in $savedEnvironment.Keys) { [Environment]::SetEnvironmentVariable($name, $savedEnvironment[$name], 'Process') }
+  }
+  Write-Output 'Pinned Windows QEMU source build completed.'
+  return
+}
 Source 'ms-tpm-20-ref' 'https://github.com/microsoft/ms-tpm-20-ref' 'ee21db0a941decd3cac67925ea3310873af60ab3' 'ms-tpm-openssl3.patch'
 Source 'edk2-secure-src' 'https://github.com/tianocore/edk2' '2970e5699ba6267f3384ffab20f96647578aebc8' 'edk2-svsm-probe.patch'
 Source 'secureboot-objects' 'https://github.com/microsoft/secureboot_objects' '9a2bbf82e86b62694e44aba3a4068d8dd0c943d7'

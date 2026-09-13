@@ -16,6 +16,7 @@
     },
     "resources": {
       "../LICENSE": "LICENSE",
+      "../NOTICE": "NOTICE",
       "../node_modules/@novnc/novnc/": "third-party-sources/novnc/",
       "../runtime/security/": "third-party-sources/runtime/security/",
       "../runtime/gpu/": "third-party-sources/runtime/gpu/",
@@ -24,6 +25,8 @@
       "resources/cli/yougori-cli.exe": "cli/yougori-cli.exe",
       "resources/cli/opendock-cli.exe": "cli/opendock-cli.exe",
       "resources/THIRD_PARTY_NOTICES.md": "THIRD_PARTY_NOTICES.md",
+      "resources/APPLICATION_LICENSES.txt": "APPLICATION_LICENSES.txt",
+      "resources/RUNTIME_LICENSES.txt": "RUNTIME_LICENSES.txt",
       "resources/WORKSPACE_LICENSES.txt": "WORKSPACE_LICENSES.txt"
     }
   }

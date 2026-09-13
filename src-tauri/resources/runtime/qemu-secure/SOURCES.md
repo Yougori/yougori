@@ -22,7 +22,13 @@ to preserve explicit adapter selection; the complete upstream ANGLE DLL is
 kept separately as `libEGL_angle.dll`.
 
 The TPM glue replaces the reference test simulator's entropy and NV-storage
-platform, uses Windows BCryptGenRandom, and loads as a private QEMU DLL.
+platform and uses Windows BCryptGenRandom. A private BSD-licensed
+`opendock-tpm-worker.exe` loads the reference core and OpenSSL in its own process.
+The GPL QEMU backend sends TPM command bytes and lifecycle requests through
+inherited anonymous pipes. QEMU does not load or link the TPM/OpenSSL library.
+There are no TPM listener ports, shared QEMU objects, or host TPM calls.
+The worker belongs to a private Windows job and exits with its QEMU parent.
+The existing `tpm.nv` format and identities are unchanged.
 The guest uses the TPM 2.0 TIS interface. The QEMU patch page-aligns and zeros
 the PPI backing mapping for WHPX; its guest-visible ACPI interface is unchanged.
 CRB's sub-page command RAM is not used with WHPX.

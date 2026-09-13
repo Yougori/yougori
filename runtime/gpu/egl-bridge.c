@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0-or-later OR Apache-2.0
+// Copyright 2026 Yougori LLC
 // Yougori's Windows EGL bridge. All non-intercepted exports forward unchanged
 // to the bundled ANGLE library. No registry settings or host driver changes.
 #define COBJMACROS

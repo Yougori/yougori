@@ -3,7 +3,8 @@
 #define OPENDOCK_TPM_API_H
 #include <stdint.h>
 
-/* Private, in-process ABI. No TCP ports, host TPM, or simulator debug RPCs. */
+/* Private ABI inside the TPM worker and initialization/test tools. QEMU uses
+ * anonymous pipes to the worker, never this DLL ABI or the physical host TPM. */
 #define OD_TPM_ABI 1u
 #define OD_TPM_BUFFER 4096u
 typedef uint32_t (*OdTpmVersion)(void);

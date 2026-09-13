@@ -1,73 +1,123 @@
-# Yougori licensing and source distribution
+# Licensing and source distribution
 
-The original Yougori software is licensed by **Yougori LLC** under the root
-`LICENSE` (Yougori Internal-Use License, version 1.0). It is a restricted-use
-license. It does not relicense third-party code or revoke rights already granted
-for separately licensed project files.
+Original Yougori code in this source tree is licensed by **Yougori LLC** under
+[Apache-2.0](../LICENSE), except where a file or directory has a separate notice.
+[NOTICE](../NOTICE) carries the Yougori attribution.
 
-## What users may do
+## What this permits
 
-| Activity | Terms for original Yougori code |
-| --- | --- |
-| Personal use or internal use by a business | Permitted, including for-profit work |
-| Backups and private modifications of lawfully supplied source | Permitted |
-| Employees or contractors operating it for that internal use | Permitted |
-| Running, publishing, or selling the user's own applications | Permitted; customers may access those applications |
-| Selling or giving away Yougori or a modified Yougori | Requires separate written permission |
-| Providing customers access to Yougori's management UI, CLI, API, or a wrapper | Requires separate written permission |
+You may use, modify and redistribute the code, including commercially and as a
+hosted service. When redistributing, follow Apache-2.0 section 4: provide the
+license, retain applicable notices, identify modifications, and preserve NOTICE
+attribution in a permitted place. A public advertising credit is not required
+simply because someone uses Yougori to build or host an independent product.
+Apache-2.0 does not require proprietary forks to disclose their own source and
+does not grant general rights to Yougori trademarks.
 
-The license controls; this table is only a summary. Component licenses and
-mandatory rights under applicable law take precedence where applicable.
+The previous Internal-Use License remains in Git history. Existing installers may
+contain that older text; updating this repository does not rebuild those files.
+Review the license supplied with the particular version.
 
-## Packaging implemented here
+## Third-party components
 
-- `bundle.licenseFile` references the root license, and all three desktop
-  configurations also package it as `LICENSE` alongside third-party notices.
-- npm and the native/CLI/CUDA Rust package metadata identify that same file.
-- Every desktop package includes the installed noVNC package under
-  `third-party-sources/novnc/`, including its actual source and license notices.
-  Normal frontend preparation runs before packaging, so it is the source used
-  by that build. Do not replace it with an unrelated version.
-- Windows packages include the security source/patches, GPU helper source, and
-  build scripts under `third-party-sources/`, with their existing notices intact.
-- The rebuilt secure runtime includes the corrected EDK2 source/patch record
-  from the top-level notices, and its checksum manifest has been regenerated.
-  Third-party copyright and license notices are retained.
+The Apache license does not relicense third-party components or files with their
+own notices. QEMU patches and `runtime/security/tpm-qemu.c` retain their GPL terms;
+TPM platform glue under `runtime/security/LICENSE` remains BSD-2-Clause. Linux
+packages, firmware, DLLs, noVNC and other dependencies keep their own licenses.
 
-## Corresponding source is a separate release deliverable
+Original Yougori source/build material supplied as required corresponding source
+for a separately licensed component may additionally be used, modified and
+redistributed under that component's applicable license to the extent necessary
+to exercise its rights. This provision does not change third-party licenses.
 
-The license text and local patches do not complete a GPL/LGPL source release.
-This work has not assembled or verified the complete corresponding source for
-every shipped binary, nor established the legal classification of every
-integration. A source inventory alone is not a complete source distribution.
+See [third-party notices](../src-tauri/resources/THIRD_PARTY_NOTICES.md),
+`APPLICATION_LICENSES.txt`, `RUNTIME_LICENSES.txt` and `WORKSPACE_LICENSES.txt`. Package-level license
+fields can describe multiple files under different licenses; they do not establish
+compatibility of the actual linked binaries.
 
-For each installer version, collect and retain the exact applicable upstream
-source, local changes, required interface definitions, package recipes, and
-build/install scripts. Preserve submodule revisions and component licenses.
-Include LGPL relinking material or other required means where applicable.
-Associate those materials with the binary runtime manifests for that release.
+## Collecting and checking source materials
 
-Concrete source records currently available:
+`compliance/evidence/` records runtime file hashes, the embedded Alpine package
+database, Windows DLL provenance, and application/guest dependencies. Large
+archives live outside Git in `build/compliance/bundle/`. `compliance/release.json`
+ties those archives to input hashes and records unresolved items. See
+[current status](compliance-status.md).
 
-| Shipped component | Available records | Remaining source-distribution work |
-| --- | --- | --- |
-| Standard QEMU and its libraries/firmware | `runtime/qemu/` notices and upstream distribution records | Collect exact matching source/build material, not merely upstream homepages |
-| Modified secure QEMU, TPM glue, EDK2, and DLLs | `runtime/security/`, bundled `SOURCES.md` / `PACKAGES.txt`, build scripts, local source caches when present | Archive complete pinned upstream trees, submodules, modifications, and matching library source/build material |
-| Linux appliance and CUDA guest components | Build scripts, package databases in the actual images, storage notices, runtime manifests | Inventory the actual shipped image versions and collect their corresponding source and build material |
-| noVNC | Installed package source and licenses, included with desktop bundles | Verify that each released bundle contains the same source used in its frontend build |
-| Other JavaScript, Rust, and Go dependencies | Lockfiles, manifests, and existing component notices | Finish a release-specific dependency/license inventory and provide any additional required notices/source |
+The inventory reads the repository's immutable appliance base through a temporary
+sparse raw file. It removes that scratch file afterwards. It does not boot the
+appliance, inspect user container disks or change running environments.
 
-For downloadable GPL binaries, arrange a license-compliant source distribution
-for the same release. A private GitHub repository inaccessible to recipients
-does not provide that access. This project does not currently publish a source
-archive or make a written fulfillment offer; do not advertise one without
-actually establishing it. No release was uploaded as part of this change.
+From the repository root, with Python 3.12+, Git, GitHub CLI and 7-Zip available:
 
-QEMU is launched as a separate process by the Rust application, which is evidence
-relevant to separation but is not a legal determination. The GPL backend and
-patches incorporated into QEMU retain GPL terms. Have the actual combined release
-and applicable local law reviewed before representing it as fully compliant.
+The OCI collector uses the retained upstream release log and build-base
+attestations. Keep `oci-build-provenance.tar.gz` from the matching source bundle
+in `build/compliance/bundle/`, with its source index and checksums. Restore those
+public evidence files before running the collectors; do not substitute evidence
+from a different release if an upstream log has expired.
 
-References: [GNU GPL FAQ](https://www.gnu.org/licenses/gpl-faq.en.html),
-[GPLv2 distribution FAQ](https://www.gnu.org/licenses/old-licenses/gpl-2.0-faq.en.html),
+```powershell
+python -c "import tarfile; tarfile.open('build/compliance/bundle/oci-build-provenance.tar.gz').extractall('build/compliance', filter='data')"
+python scripts/collect-compliance.py inventory
+python scripts/collect-compliance.py alpine
+python scripts/collect-compliance.py local
+python scripts/collect-compliance.py msys
+python scripts/collect-compliance.py go
+python scripts/compliance-oci-sources.py
+python scripts/collect-compliance.py notices
+python scripts/compliance-runtime-notices.py
+node scripts/compliance-inspect-runtime.mjs
+python scripts/collect-compliance.py report
+npm run compliance:archives
+```
+
+Collectors do not execute downloaded APKBUILD or PKGBUILD scripts. Alpine recipes
+are selected by the exact revision in the shipped package database, and distfiles
+must match their SHA-512 checksums. MSYS recipes must match the PKGBUILD SHA-256
+in the matching binary package's BUILDINFO. Guest Go dependency ZIPs must match
+the `h1:` sums embedded in shipped binaries. Unverified entries remain blocked.
+Never substitute a nearby version or silently accept a changed upstream patch.
+
+QEMU/firmware archives contain committed upstream trees, with initialized
+submodules and QEMU subprojects archived separately. The local build-material
+archive contains the project's patches and build scripts. Preserve revisions and
+restore submodules at the recorded paths. These are source inputs, not a claim of
+reproducible builds or complete release coverage.
+
+`npm run compliance:check` verifies evidence without approving distribution.
+Text input hashes normalize line endings; runtime and archive hashes cover the
+original bytes. This lets the same source review survive ordinary Git newline
+conversion without accepting changes to runtime binaries.
+`npm run compliance:archives` also verifies every local source archive.
+`npm run release:package` rejects unresolved findings, changed inputs, missing
+archives and absent engineering-review records. Installer builds run this local
+check, including preview packaging. `npm run release:distribution` additionally
+requires verified public source access. This allows a concrete installer and
+source bundle to be prepared before publication. Development and ordinary tests
+remain available.
+
+See [rebuild instructions](rebuilding-third-party.md) for using the exported
+source trees without Git metadata, replacing libraries and relinking static
+components.
+
+## Publication and older copies
+
+The intended source-delivery method is downloadable matching source archives
+alongside the installers, with a source index and checksums. Upstream links,
+private caches or an inventory alone do not give recipients that access. Do not
+advertise a written source offer without a real fulfillment process.
+
+Retain materials for each distributed installer and check applicable retention
+obligations. New releases do not resolve missing materials for older copies.
+Review the actual combined binaries, LGPL replacement/relinking requirements,
+installation information where applicable and source completeness before recording
+readiness. Automated checks do not establish a legal conclusion.
+
+If actual incorporation or linking requires a different license for original
+Yougori code, review the compatible GPL version before changing it. Merely
+choosing GPL for the application does not supply missing corresponding source,
+relicense third-party GPL-2.0-only code, or cure incompatible library combinations.
+
+References: [Apache-2.0](https://www.apache.org/licenses/LICENSE-2.0),
+[GPLv2](https://opensource.org/license/gpl-2.0),
+[GNU license FAQ](https://www.gnu.org/licenses/gpl-faq.en.html),
 [Mozilla MPL FAQ](https://www.mozilla.org/en-US/MPL/2.0/FAQ/).

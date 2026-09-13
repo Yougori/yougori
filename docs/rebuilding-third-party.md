@@ -1,0 +1,138 @@
+# Rebuilding the bundled runtime
+
+The source bundle accompanies a particular runtime inventory. Start with its
+`SOURCE_INDEX.json` and `SHA256SUMS`. Do not replace a recorded version with a
+nearby upstream release. The index identifies each archive, checksum, recipe,
+upstream revision and submodule location. Binaries built with another compiler
+or build timestamp need not be byte-identical to exercise their license rights.
+
+## Restore the preferred source
+
+Obtain every archive listed in the source index. Extract the local build-material
+archive to read these instructions and the restore utility. With Python 3.12+:
+
+```powershell
+python scripts/restore-compliance-sources.py C:/sources/bundle C:/yougori-rebuild
+```
+
+The destination must be new. The utility verifies SHA-256 before extracting the
+upstream trees, local source/build scripts and submodules at their original
+paths. It does not use Git or download missing source. Unix preserves source
+symlinks directly; Windows may require Developer Mode for those links.
+Keep the untouched archives separately when making modifications.
+The unused EDK2 macOS emulator link to `/opt/X11/include` is recorded in the
+receipt and left uncreated. Its original entry remains in the source archive.
+
+## Windows QEMU, TPM and firmware
+
+Use an MSYS2 UCRT64 development shell, with the development packages listed in
+`runtime/security/README.md`. Exact package versions and their build dependencies
+are recorded in the source bundle's MSYS `.BUILDINFO` files and runtime
+`PACKAGES.txt`. The build tools are ordinary compiler/build prerequisites.
+
+From the restored directory in UCRT64, apply the supplied patches once:
+
+```sh
+repo="$PWD"
+cd build/runtime-cache/qemu-secure-src
+for patch_file in qemu-windows-tpm.patch qemu-whpx-tpm-ppi.patch qemu-whpx-reboot.patch; do
+  patch -p1 < "$repo/runtime/security/$patch_file"
+done
+cp "$repo/runtime/security/tpm-qemu.c" "$repo/runtime/security/tpm-api.h" backends/tpm/
+cd "$repo/build/runtime-cache/ms-tpm-20-ref"
+patch -p1 < "$repo/runtime/security/ms-tpm-openssl3.patch"
+cd "$repo/build/runtime-cache/edk2-secure-src"
+patch -p1 < "$repo/runtime/security/edk2-svsm-probe.patch"
+cd "$repo"
+YOUGORI_QEMU_BUILD_TOOLS=1 bash scripts/build-secure-qemu.sh
+bash scripts/build-tpm-library.sh
+```
+
+These low-level build scripts accept exported source trees without `.git`.
+The PowerShell source-fetching wrapper is for normal Git development checkouts.
+QEMU uses the recorded WHPX/TCG, VNC, OpenGL and GnuTLS profile; JACK and the
+unused remote-disk/UI backends are disabled. The TPM worker is a separate
+BSD-licensed process. It retains the same NV format and uses anonymous pipes.
+
+The stock PC firmware files are byte-matched to `pc-bios/` at the recorded QEMU
+revision. The EDK2 `.bz2` files are decompressed when staging. Their source trees
+are restored under `roms/`; use `roms/Makefile`, `config.seabios*`,
+`edk2-build.py` and `edk2-build.config` for the matching build configurations.
+
+The custom Secure Boot firmware uses the separate `edk2-secure-src` tree. In
+WSL/Linux, install the developer prerequisites from the security README, then:
+
+```sh
+bash scripts/build-secure-firmware.sh
+```
+
+`scripts/build-secure-vars.sh` documents how to generate a new public trust
+template using pinned virt-firmware tooling. The boot helper's complete source
+and MSVC build command are in `src-tauri/boot-helper/`. No host firmware key is
+needed. Public Microsoft trust objects retain their component license.
+
+## Linux packages and libraries
+
+Each `alpine-*.tar.gz` contains an exact aports recipe directory, configuration
+files, patches and SHA-512-verified distfiles for the packages in the appliance.
+This includes the Linux kernel, BusyBox and storage utilities. In an Alpine
+3.24 x86_64 build environment, use the provided APKBUILD with Alpine's `abuild`
+tools and place the supplied distfiles in the configured `SRCDEST`. Build
+dependencies are declared in the recipe. Aports package signing for your own
+builds uses your own key; it does not require Yougori's keys.
+
+The MSYS archives contain their original `.BUILDINFO`, `.PKGINFO`, recipe files
+and verified source inputs. They cover the shared libraries bundled beside
+QEMU. Use MSYS2's normal `makepkg-mingw` build procedure with those inputs and
+the recorded UCRT64 architecture. For a `git+...#commit=...` input, the supplied
+tar is the exact `git archive` content used by makepkg's source checksum.
+Unpack it at the recipe's named source location; use the recorded prepare/build
+steps when working without a Git clone. Generated-source steps remain in the
+recipe. Source signatures are supplementary; payload checksums are mandatory.
+
+For GMP, Nettle and libunistring, this QEMU distribution uses the libraries'
+GPL-2.0-or-later option. Their original license declarations and the GPLv2 text
+are retained in `RUNTIME_LICENSES.txt`; other files keep their own terms.
+The zlib PR patch is retained with the exact recipe checksum. GitHub's generated
+patch had changed only its abbreviated blob-ID width; the collector recovered
+the original bytes and verified the full original checksum.
+
+The OCI source archives match the VCS revisions embedded in containerd, nerdctl,
+runc and CNI. Their dependency ZIPs match the binaries' Go `h1:` checksums. Keep
+their own Makefiles, vendor/generated sources and license files. The local agent
+source is in `appliance/agent/`; its `go.mod`/`go.sum` and the build scripts specify
+its inputs. The static mount helper was rebuilt byte-for-byte with Ubuntu's
+musl 1.2.2-4; its complete musl copyright notice is also supplied.
+
+The Debian source archives cover glibc 2.41-12+deb13u3, libseccomp 2.6.0-2 and
+libbtrfs from btrfs-progs 6.14-1, used by the static OCI builds. Each contains
+the `.dsc`, original source, Debian patches and build rules. Use `dpkg-source
+-x` on the `.dsc` in a Debian 13 build environment, install the declared build
+dependencies, then `dpkg-buildpackage -us -uc -b`. The supplied runc/containerd
+source can be relinked against modified libraries using nerdctl's original
+Dockerfile build stages. `oci-build-provenance.tar.gz` retains the release log
+and the digest-checked build-base image attestations that identify these versions.
+
+`scripts/build-appliance.sh` assembles the guest filesystem. Its ordinary online
+package selection can change as Alpine updates; rebuilding this exact package
+set requires the versions in `compliance/evidence/alpine-packages.json` and the
+provided package recipes. Use a disposable build environment, not a user disk.
+
+## Installing modified components
+
+You may modify/rebuild the separately licensed components, replace their DLLs,
+and debug those modifications under their applicable licenses. Yougori's license
+adds no restriction on reverse engineering needed to debug an LGPL component.
+
+Close the affected VMs, retain their disks/security state, and put the replacement
+runtime in your own Yougori build's `src-tauri/resources/runtime/` directory.
+Recompute that directory's `SHA256SUMS` over its files, excluding the manifest
+itself. This is an editable integrity manifest, not a vendor signature lock.
+Build your Yougori copy with the source build commands in the repository README.
+
+Firmware hashes are also pinned in existing VM profiles to protect measured
+boot. Test modified firmware in a new disposable VM first. The complete profile
+format and runtime source are available for deliberate migration of existing
+VMs. Changing firmware can require a guest BitLocker recovery key. Existing
+identities must not be deleted or silently regenerated. No Yougori private
+signing key is required to build or run modified components.

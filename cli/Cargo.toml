@@ -3,7 +3,7 @@ name = "yougori-cli"
 version = "1.0.0"
 edition = "2021"
 description = "Local, same-user command line control for Yougori"
-license-file = "../LICENSE"
+license = "Apache-2.0"
 publish = false
 
 [dependencies]

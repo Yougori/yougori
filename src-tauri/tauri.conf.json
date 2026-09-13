@@ -6,7 +6,7 @@
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
-    "beforeBuildCommand": "npm run release:check && npm run build && npm run cli:bundle",
+    "beforeBuildCommand": "npm run release:package && npm run build && npm run cli:bundle",
     "frontendDist": "../dist"
   },
   "app": {
@@ -36,7 +36,7 @@
     "category": "DeveloperTool",
     "shortDescription": "Your local environment workspace",
     "longDescription": "Create and manage containers, microVMs and virtual machines from one desktop workspace.",
-    "license": "LicenseRef-Yougori-Internal-Use-1.0",
+    "license": "Apache-2.0",
     "licenseFile": "../LICENSE",
     "targets": "all",
     "windows": {

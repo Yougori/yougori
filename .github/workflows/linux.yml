@@ -40,6 +40,16 @@ jobs:
           npx vitest run src
           npm run build
           npm run release:check
+      - name: Fetch and verify matching third-party sources
+        env:
+          SOURCE_BUNDLE_URL: https://github.com/Yougori/yougori/releases/download/staging-sources-675208851bd7ee4f/Yougori-corresponding-source-675208851bd7ee4f.zip
+          SOURCE_BUNDLE_SHA256: bcf2dfdb3a05bd50884828b951eefa9d77d7c52671493ccacfd0a119247a219b
+        run: |
+          mkdir -p build/compliance
+          curl --fail --location --retry 3 "$SOURCE_BUNDLE_URL" --output build/compliance/corresponding-source.zip
+          printf '%s  %s\n' "$SOURCE_BUNDLE_SHA256" build/compliance/corresponding-source.zip | sha256sum --check --status
+          unzip -q build/compliance/corresponding-source.zip 'bundle/*' -d build/compliance
+          npm run compliance:archives
       - name: Linux native checks and unit tests
         run: |
           cargo +stable test --locked --manifest-path cli/Cargo.toml

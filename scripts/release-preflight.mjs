@@ -170,7 +170,7 @@ export async function preflight(root, env = process.env) {
   const totals = { files: 0, bytes: 0 }
   const required = {
     qemu: ["qemu-system-x86_64.exe", "qemu-img.exe", "share/edk2-x86_64-code.fd", "share/edk2-i386-vars.fd"],
-    "qemu-secure": ["qemu-system-x86_64.exe", "opendock-tpm.dll", "opendock-tpm-init.exe", "OVMF.qemuvars.fd", "secure-vars.json"],
+    "qemu-secure": ["qemu-system-x86_64.exe", "opendock-tpm.dll", "opendock-tpm-init.exe", "opendock-tpm-worker.exe", "OVMF.qemuvars.fd", "secure-vars.json"],
     appliance: ["appliance-base.qcow2", "vmlinuz-virt", "initramfs-virt"],
     cuda: ["opendock-agent", "opendock-mount-helper", "opendock-cuda-probe"],
   }
