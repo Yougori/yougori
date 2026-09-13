@@ -5,7 +5,7 @@
   &nbsp;&nbsp;
   <a href="https://discord.gg/Eqhf4Hq3AG"><img src="discord.webp" width="122" height="122" align="absmiddle" alt="Discord"></a>
   &nbsp;&nbsp;
-  <a href="https://x.com/withYougori"><img src="https://raw.githubusercontent.com/Yougori/yougori/faad3dc3973dd6d90a7ca304850ddfb76d22cf34/xcom.webp" width="112" height="112" align="absmiddle" alt="X"></a>
+  <a href="https://x.com/withYougori"><img src="https://raw.githubusercontent.com/Yougori/yougori/677bc5244d2f998e57bc3810b52a314135b88b59/xcom.webp" width="112" height="112" align="absmiddle" alt="X"></a>
 </p>
 
 Create and manage containers, microVMs and virtual machines from one desktop workspace.
