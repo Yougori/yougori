@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "sourceCommit": "111564d721258ff589f028f8a1867e6ef5fb854f",
+  "sourceCommit": "5be80b54a167c66940b771d51c13aced2ea1b8d2",
   "scope": "Current checkout runtime bytes; not a blanket certification of previous releases",
   "inputs": [
     {
@@ -2343,9 +2343,9 @@
     },
     {
       "path": "scripts/collect-compliance.py",
-      "sha256": "17e4efec7a9d95470aaa118322baf79fbff01cb2b4f0f134b161c1ade1de85d3",
+      "sha256": "b3d6d331cb9e47ea372c3d1f25a63c52e4c5c71fc68b7ea70036741b7dc7a468",
       "normalization": "lf",
-      "bytes": 61013
+      "bytes": 61212
     },
     {
       "path": "scripts/compliance-angle.py",
@@ -5237,8 +5237,8 @@
     },
     {
       "file": "yougori-runtime-build-material.tar.gz",
-      "sha256": "391ceaeff92e3298d58d6d960f904a939d0b5a08e4dd36fc91448d7c18dc504d",
-      "bytes": 1454376
+      "sha256": "8e214e1ff954a33cce82edc2ef110503a9e7c90e0af33e2afa88307988414203",
+      "bytes": 1454420
     }
   ],
   "components": [
@@ -5486,8 +5486,8 @@
       "id": "local-build-material",
       "status": "collected",
       "file": "yougori-runtime-build-material.tar.gz",
-      "sha256": "391ceaeff92e3298d58d6d960f904a939d0b5a08e4dd36fc91448d7c18dc504d",
-      "bytes": 1454376
+      "sha256": "8e214e1ff954a33cce82edc2ef110503a9e7c90e0af33e2afa88307988414203",
+      "bytes": 1454420
     },
     {
       "id": "alpine/alpine-baselayout/60a7585bbab2fa0f762504eb617dbca90216e31f",

@@ -538,7 +538,11 @@ def go_zip_hash(path):
             if name.endswith("/"):
                 continue
             with archive.open(name) as stream:
-                checksum = hashlib.file_digest(stream, "sha256").hexdigest()
+                # Ubuntu 22.04's Python 3.10 has no hashlib.file_digest.
+                hasher = hashlib.sha256()
+                for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+                    hasher.update(chunk)
+                checksum = hasher.hexdigest()
             lines.append(f"{checksum}  {name}\n")
     return "h1:" + base64.b64encode(hashlib.sha256("".join(lines).encode()).digest()).decode()
 
