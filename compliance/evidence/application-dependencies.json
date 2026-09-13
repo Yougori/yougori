@@ -8,7 +8,8 @@
     "texts": [
       {
         "path": "LICENSE",
-        "sha256": "117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76"
+        "sha256": "117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76",
+        "installedPath": "node_modules/@babel/runtime/LICENSE"
       }
     ]
   },
@@ -21,9 +22,11 @@
     "texts": [
       {
         "path": "LICENSE",
-        "sha256": "07fc1b39d69d14bc7d40482a628f47226258eb01265db68ae684944b916beb2a"
+        "sha256": "07fc1b39d69d14bc7d40482a628f47226258eb01265db68ae684944b916beb2a",
+        "installedPath": "node_modules/@base-ui/react/LICENSE"
       }
-    ]
+    ],
+    "shippedFrontend": true
   },
   {
     "ecosystem": "npm",
@@ -34,7 +37,8 @@
     "texts": [
       {
         "path": "LICENSE",
-        "sha256": "07fc1b39d69d14bc7d40482a628f47226258eb01265db68ae684944b916beb2a"
+        "sha256": "07fc1b39d69d14bc7d40482a628f47226258eb01265db68ae684944b916beb2a",
+        "installedPath": "node_modules/@base-ui/utils/LICENSE"
       }
     ]
   },
@@ -47,7 +51,8 @@
     "texts": [
       {
         "path": "LICENSE",
-        "sha256": "0e4c9a9b6c71019cbbea3bdc20b01223110a9035700f9c960c8fcbf78c2325ce"
+        "sha256": "0e4c9a9b6c71019cbbea3bdc20b01223110a9035700f9c960c8fcbf78c2325ce",
+        "installedPath": "node_modules/@floating-ui/core/LICENSE"
       }
     ]
   },
@@ -60,7 +65,8 @@
     "texts": [
       {
         "path": "LICENSE",
-        "sha256": "0e4c9a9b6c71019cbbea3bdc20b01223110a9035700f9c960c8fcbf78c2325ce"
+        "sha256": "0e4c9a9b6c71019cbbea3bdc20b01223110a9035700f9c960c8fcbf78c2325ce",
+        "installedPath": "node_modules/@floating-ui/dom/LICENSE"
       }
     ]
   },
@@ -73,7 +79,8 @@
     "texts": [
       {
         "path": "LICENSE",
-        "sha256": "0e4c9a9b6c71019cbbea3bdc20b01223110a9035700f9c960c8fcbf78c2325ce"
+        "sha256": "0e4c9a9b6c71019cbbea3bdc20b01223110a9035700f9c960c8fcbf78c2325ce",
+        "installedPath": "node_modules/@floating-ui/react-dom/LICENSE"
       }
     ]
   },
@@ -86,7 +93,8 @@
     "texts": [
       {
         "path": "LICENSE",
-        "sha256": "0e4c9a9b6c71019cbbea3bdc20b01223110a9035700f9c960c8fcbf78c2325ce"
+        "sha256": "0e4c9a9b6c71019cbbea3bdc20b01223110a9035700f9c960c8fcbf78c2325ce",
+        "installedPath": "node_modules/@floating-ui/utils/LICENSE"
       }
     ]
   },
@@ -99,29 +107,36 @@
     "texts": [
       {
         "path": "docs/LICENSE.BSD-2-Clause",
-        "sha256": "f4371b28457e3e9f2db1fc972eb5ba16353dc5f8d7f42b2d5c3c2e576e40dd05"
+        "sha256": "f4371b28457e3e9f2db1fc972eb5ba16353dc5f8d7f42b2d5c3c2e576e40dd05",
+        "installedPath": "node_modules/@novnc/novnc/docs/LICENSE.BSD-2-Clause"
       },
       {
         "path": "docs/LICENSE.BSD-3-Clause",
-        "sha256": "c08e5ef2e6d004c97f92d45eee4f3a0257b6c957a6c68c7b2053d013ec3725c2"
+        "sha256": "c08e5ef2e6d004c97f92d45eee4f3a0257b6c957a6c68c7b2053d013ec3725c2",
+        "installedPath": "node_modules/@novnc/novnc/docs/LICENSE.BSD-3-Clause"
       },
       {
         "path": "docs/LICENSE.MPL-2.0",
-        "sha256": "fab3dd6bdab226f1c08630b1dd917e11fcb4ec5e1e020e2c16f83a0a13863e85"
+        "sha256": "fab3dd6bdab226f1c08630b1dd917e11fcb4ec5e1e020e2c16f83a0a13863e85",
+        "installedPath": "node_modules/@novnc/novnc/docs/LICENSE.MPL-2.0"
       },
       {
         "path": "docs/LICENSE.OFL-1.1",
-        "sha256": "e564f06d018e7b95bc3594c96a17f1d41865af4038c375e7aa974dd69df38602"
+        "sha256": "e564f06d018e7b95bc3594c96a17f1d41865af4038c375e7aa974dd69df38602",
+        "installedPath": "node_modules/@novnc/novnc/docs/LICENSE.OFL-1.1"
       },
       {
         "path": "LICENSE.txt",
-        "sha256": "3ccd2242d7f5b6c5ae831a486f63cce1f18d8cd11c511f6a7a7251673763b2d1"
+        "sha256": "3ccd2242d7f5b6c5ae831a486f63cce1f18d8cd11c511f6a7a7251673763b2d1",
+        "installedPath": "node_modules/@novnc/novnc/LICENSE.txt"
       },
       {
         "path": "vendor/pako/LICENSE",
-        "sha256": "3bc404ffa7888053253eedcc5a667619aa08dc1be0bea400e5ff28c51602180f"
+        "sha256": "3bc404ffa7888053253eedcc5a667619aa08dc1be0bea400e5ff28c51602180f",
+        "installedPath": "node_modules/@novnc/novnc/vendor/pako/LICENSE"
       }
-    ]
+    ],
+    "shippedFrontend": true
   },
   {
     "ecosystem": "npm",
@@ -132,13 +147,16 @@
     "texts": [
       {
         "path": "LICENSE_APACHE-2.0",
-        "sha256": "0d542e0c8804e39aa7f37eb00da5a762149dc682d7829451287e11b938e94594"
+        "sha256": "0d542e0c8804e39aa7f37eb00da5a762149dc682d7829451287e11b938e94594",
+        "installedPath": "node_modules/@tauri-apps/api/LICENSE_APACHE-2.0"
       },
       {
         "path": "LICENSE_MIT",
-        "sha256": "9dd42ea92cff2ede5cd477cbfcce051b2d0115c0ac7f368ee88cb545055dff1d"
+        "sha256": "9dd42ea92cff2ede5cd477cbfcce051b2d0115c0ac7f368ee88cb545055dff1d",
+        "installedPath": "node_modules/@tauri-apps/api/LICENSE_MIT"
       }
-    ]
+    ],
+    "shippedFrontend": true
   },
   {
     "ecosystem": "npm",
@@ -149,9 +167,11 @@
     "texts": [
       {
         "path": "LICENSE.spdx",
-        "sha256": "eb8a6c84630461b352badcab1dbe5d0168c56d377358b2b8c86b51003272d5ef"
+        "sha256": "eb8a6c84630461b352badcab1dbe5d0168c56d377358b2b8c86b51003272d5ef",
+        "installedPath": "node_modules/@tauri-apps/plugin-clipboard-manager/LICENSE.spdx"
       }
-    ]
+    ],
+    "shippedFrontend": true
   },
   {
     "ecosystem": "npm",
@@ -162,9 +182,11 @@
     "texts": [
       {
         "path": "LICENSE.spdx",
-        "sha256": "eb8a6c84630461b352badcab1dbe5d0168c56d377358b2b8c86b51003272d5ef"
+        "sha256": "eb8a6c84630461b352badcab1dbe5d0168c56d377358b2b8c86b51003272d5ef",
+        "installedPath": "node_modules/@tauri-apps/plugin-dialog/LICENSE.spdx"
       }
-    ]
+    ],
+    "shippedFrontend": true
   },
   {
     "ecosystem": "npm",
@@ -175,7 +197,8 @@
     "texts": [
       {
         "path": "LICENSE",
-        "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
+        "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383",
+        "installedPath": "node_modules/@types/d3-color/LICENSE"
       }
     ]
   },
@@ -188,7 +211,8 @@
     "texts": [
       {
         "path": "LICENSE",
-        "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
+        "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383",
+        "installedPath": "node_modules/@types/d3-drag/LICENSE"
       }
     ]
   },
@@ -201,7 +225,8 @@
     "texts": [
       {
         "path": "LICENSE",
-        "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
+        "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383",
+        "installedPath": "node_modules/@types/d3-interpolate/LICENSE"
       }
     ]
   },
@@ -214,7 +239,8 @@
     "texts": [
       {
         "path": "LICENSE",
-        "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
+        "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383",
+        "installedPath": "node_modules/@types/d3-selection/LICENSE"
       }
     ]
   },
@@ -227,7 +253,8 @@
     "texts": [
       {
         "path": "LICENSE",
-        "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
+        "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383",
+        "installedPath": "node_modules/@types/d3-transition/LICENSE"
       }
     ]
   },
@@ -240,7 +267,8 @@
     "texts": [
       {
         "path": "LICENSE",
-        "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
+        "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383",
+        "installedPath": "node_modules/@types/d3-zoom/LICENSE"
       }
     ]
   },
@@ -253,7 +281,8 @@
     "texts": [
       {
         "path": "LICENSE",
-        "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
+        "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383",
+        "installedPath": "node_modules/@types/react/LICENSE"
       }
     ]
   },
@@ -266,7 +295,8 @@
     "texts": [
       {
         "path": "LICENSE",
-        "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
+        "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383",
+        "installedPath": "node_modules/@types/react-dom/LICENSE"
       }
     ]
   },
@@ -279,9 +309,11 @@
     "texts": [
       {
         "path": "LICENSE",
-        "sha256": "e256f01188af527e4d06d21d06fbf785ae9c50d4b328bf03cbe0ba7f0aa4228f"
+        "sha256": "e256f01188af527e4d06d21d06fbf785ae9c50d4b328bf03cbe0ba7f0aa4228f",
+        "installedPath": "node_modules/@xterm/addon-fit/LICENSE"
       }
-    ]
+    ],
+    "shippedFrontend": true
   },
   {
     "ecosystem": "npm",
@@ -292,9 +324,11 @@
     "texts": [
       {
         "path": "LICENSE",
-        "sha256": "b569f629d00f2626a8100df2a1798210535621e42164dfd426a6fe5aac7b0ccd"
+        "sha256": "b569f629d00f2626a8100df2a1798210535621e42164dfd426a6fe5aac7b0ccd",
+        "installedPath": "node_modules/@xterm/xterm/LICENSE"
       }
-    ]
+    ],
+    "shippedFrontend": true
   },
   {
     "ecosystem": "npm",
@@ -305,9 +339,11 @@
     "texts": [
       {
         "path": "LICENSE",
-        "sha256": "023119ac20fb1c8c9930abe0bcd196989a1960388529a96fc43cebf96f07c9ff"
+        "sha256": "023119ac20fb1c8c9930abe0bcd196989a1960388529a96fc43cebf96f07c9ff",
+        "installedPath": "node_modules/@xyflow/react/LICENSE"
       }
-    ]
+    ],
+    "shippedFrontend": true
   },
   {
     "ecosystem": "npm",
@@ -318,7 +354,8 @@
     "texts": [
       {
         "path": "LICENSE",
-        "sha256": "023119ac20fb1c8c9930abe0bcd196989a1960388529a96fc43cebf96f07c9ff"
+        "sha256": "023119ac20fb1c8c9930abe0bcd196989a1960388529a96fc43cebf96f07c9ff",
+        "installedPath": "node_modules/@xyflow/system/LICENSE"
       }
     ]
   },
@@ -331,9 +368,11 @@
     "texts": [
       {
         "path": "LICENSE",
-        "sha256": "0ccbf956cffc8dcf515809433cb5242ee67c94513d46e48c261d68d0880de406"
+        "sha256": "0ccbf956cffc8dcf515809433cb5242ee67c94513d46e48c261d68d0880de406",
+        "installedPath": "node_modules/class-variance-authority/LICENSE"
       }
-    ]
+    ],
+    "shippedFrontend": true
   },
   {
     "ecosystem": "npm",
@@ -344,7 +383,8 @@
     "texts": [
       {
         "path": "LICENSE.md",
-        "sha256": "f101c761d255d0dddc77dd8a9327733b03d381798ec54a1bb718367207b48a8e"
+        "sha256": "f101c761d255d0dddc77dd8a9327733b03d381798ec54a1bb718367207b48a8e",
+        "installedPath": "node_modules/classcat/LICENSE.md"
       }
     ]
   },
@@ -357,9 +397,11 @@
     "texts": [
       {
         "path": "license",
-        "sha256": "9a9edad7baae52622bddf3c15b2ef8a33d2c89f2d25408ad13e8a7481c6b0c97"
+        "sha256": "9a9edad7baae52622bddf3c15b2ef8a33d2c89f2d25408ad13e8a7481c6b0c97",
+        "installedPath": "node_modules/clsx/license"
       }
-    ]
+    ],
+    "shippedFrontend": true
   },
   {
     "ecosystem": "npm",
@@ -370,7 +412,8 @@
     "texts": [
       {
         "path": "LICENSE",
-        "sha256": "11d55bd4541c75ee7879547ac49089c489163dae49551389713c3d026cab383e"
+        "sha256": "11d55bd4541c75ee7879547ac49089c489163dae49551389713c3d026cab383e",
+        "installedPath": "node_modules/csstype/LICENSE"
       }
     ]
   },
@@ -383,7 +426,8 @@
     "texts": [
       {
         "path": "LICENSE",
-        "sha256": "faa682e3e430941f958d26180458f5934a62f58dac4d70ccdd15608c15d0f884"
+        "sha256": "faa682e3e430941f958d26180458f5934a62f58dac4d70ccdd15608c15d0f884",
+        "installedPath": "node_modules/d3-color/LICENSE"
       }
     ]
   },
@@ -396,7 +440,8 @@
     "texts": [
       {
         "path": "LICENSE",
-        "sha256": "e008c5e25a6be382593089c29bfabbc553c6378eee02895aec46ce396cc404ee"
+        "sha256": "e008c5e25a6be382593089c29bfabbc553c6378eee02895aec46ce396cc404ee",
+        "installedPath": "node_modules/d3-dispatch/LICENSE"
       }
     ]
   },
@@ -409,7 +454,8 @@
     "texts": [
       {
         "path": "LICENSE",
-        "sha256": "e008c5e25a6be382593089c29bfabbc553c6378eee02895aec46ce396cc404ee"
+        "sha256": "e008c5e25a6be382593089c29bfabbc553c6378eee02895aec46ce396cc404ee",
+        "installedPath": "node_modules/d3-drag/LICENSE"
       }
     ]
   },
@@ -422,7 +468,8 @@
     "texts": [
       {
         "path": "LICENSE",
-        "sha256": "b989d9085148d21ff64a75e14462aefa06b2589a55553b07b1460c70081c7d08"
+        "sha256": "b989d9085148d21ff64a75e14462aefa06b2589a55553b07b1460c70081c7d08",
+        "installedPath": "node_modules/d3-ease/LICENSE"
       }
     ]
   },
@@ -435,7 +482,8 @@
     "texts": [
       {
         "path": "LICENSE",
-        "sha256": "e008c5e25a6be382593089c29bfabbc553c6378eee02895aec46ce396cc404ee"
+        "sha256": "e008c5e25a6be382593089c29bfabbc553c6378eee02895aec46ce396cc404ee",
+        "installedPath": "node_modules/d3-interpolate/LICENSE"
       }
     ]
   },
@@ -448,7 +496,8 @@
     "texts": [
       {
         "path": "LICENSE",
-        "sha256": "e008c5e25a6be382593089c29bfabbc553c6378eee02895aec46ce396cc404ee"
+        "sha256": "e008c5e25a6be382593089c29bfabbc553c6378eee02895aec46ce396cc404ee",
+        "installedPath": "node_modules/d3-selection/LICENSE"
       }
     ]
   },
@@ -461,7 +510,8 @@
     "texts": [
       {
         "path": "LICENSE",
-        "sha256": "e008c5e25a6be382593089c29bfabbc553c6378eee02895aec46ce396cc404ee"
+        "sha256": "e008c5e25a6be382593089c29bfabbc553c6378eee02895aec46ce396cc404ee",
+        "installedPath": "node_modules/d3-timer/LICENSE"
       }
     ]
   },
@@ -474,7 +524,8 @@
     "texts": [
       {
         "path": "LICENSE",
-        "sha256": "e008c5e25a6be382593089c29bfabbc553c6378eee02895aec46ce396cc404ee"
+        "sha256": "e008c5e25a6be382593089c29bfabbc553c6378eee02895aec46ce396cc404ee",
+        "installedPath": "node_modules/d3-transition/LICENSE"
       }
     ]
   },
@@ -487,7 +538,8 @@
     "texts": [
       {
         "path": "LICENSE",
-        "sha256": "e008c5e25a6be382593089c29bfabbc553c6378eee02895aec46ce396cc404ee"
+        "sha256": "e008c5e25a6be382593089c29bfabbc553c6378eee02895aec46ce396cc404ee",
+        "installedPath": "node_modules/d3-zoom/LICENSE"
       }
     ]
   },
@@ -500,9 +552,11 @@
     "texts": [
       {
         "path": "LICENSE",
-        "sha256": "3c57143f22dac950efebf84002e360bba5458c7b90fe583b0667aaaef1a7256e"
+        "sha256": "3c57143f22dac950efebf84002e360bba5458c7b90fe583b0667aaaef1a7256e",
+        "installedPath": "node_modules/lucide-react/LICENSE"
       }
-    ]
+    ],
+    "shippedFrontend": true
   },
   {
     "ecosystem": "npm",
@@ -516,6 +570,7 @@
         "sha256": "3a850fa5f08101db6f40676c2786e10bd2cd5fff7b12ffdf1e0c434d4e49d90c"
       }
     ],
+    "shippedFrontend": true,
     "supplementaryNoticeOrigin": "https://github.com/kazuhikoarase/qrcode-generator/tree/83b7e8fe3fddd3b0368dbafd6ce56995bd25e3c8"
   },
   {
@@ -527,9 +582,11 @@
     "texts": [
       {
         "path": "LICENSE",
-        "sha256": "da6d3703ed11cbe42bd212c725957c98da23cbff1998c05fa4b3d976d1a58e93"
+        "sha256": "da6d3703ed11cbe42bd212c725957c98da23cbff1998c05fa4b3d976d1a58e93",
+        "installedPath": "node_modules/react/LICENSE"
       }
-    ]
+    ],
+    "shippedFrontend": true
   },
   {
     "ecosystem": "npm",
@@ -540,9 +597,11 @@
     "texts": [
       {
         "path": "LICENSE",
-        "sha256": "da6d3703ed11cbe42bd212c725957c98da23cbff1998c05fa4b3d976d1a58e93"
+        "sha256": "da6d3703ed11cbe42bd212c725957c98da23cbff1998c05fa4b3d976d1a58e93",
+        "installedPath": "node_modules/react-dom/LICENSE"
       }
-    ]
+    ],
+    "shippedFrontend": true
   },
   {
     "ecosystem": "npm",
@@ -553,7 +612,8 @@
     "texts": [
       {
         "path": "LICENSE",
-        "sha256": "e98047a5dee068b33f82e8c4b7a63037b5108c93393198efd4097753004af5dd"
+        "sha256": "e98047a5dee068b33f82e8c4b7a63037b5108c93393198efd4097753004af5dd",
+        "installedPath": "node_modules/reselect/LICENSE"
       }
     ]
   },
@@ -566,7 +626,8 @@
     "texts": [
       {
         "path": "LICENSE",
-        "sha256": "da6d3703ed11cbe42bd212c725957c98da23cbff1998c05fa4b3d976d1a58e93"
+        "sha256": "da6d3703ed11cbe42bd212c725957c98da23cbff1998c05fa4b3d976d1a58e93",
+        "installedPath": "node_modules/scheduler/LICENSE"
       }
     ]
   },
@@ -579,9 +640,26 @@
     "texts": [
       {
         "path": "LICENSE.md",
-        "sha256": "d4c70c7ce38cea8778f0aed3fc0bef0a9dbd27f13bd8b6773cbd6d37941971e5"
+        "sha256": "d4c70c7ce38cea8778f0aed3fc0bef0a9dbd27f13bd8b6773cbd6d37941971e5",
+        "installedPath": "node_modules/tailwind-merge/LICENSE.md"
       }
-    ]
+    ],
+    "shippedFrontend": true
+  },
+  {
+    "ecosystem": "npm",
+    "name": "tailwindcss",
+    "version": "4.3.3",
+    "license": "MIT",
+    "integrity": "sha512-gOhV3P7ufE62QDGg1zVaTgCR+EtPv92k2nIhVcVKcLmxT1sUBsQGhnZj175j+MqRt4zLF7ic+sCYjfhxMxj7YQ==",
+    "texts": [
+      {
+        "path": "LICENSE",
+        "sha256": "60e0b68c0f35c078eef3a5d29419d0b03ff84ec1df9c3f9d6e39a519a5ae7985",
+        "installedPath": "node_modules/tailwindcss/LICENSE"
+      }
+    ],
+    "shippedFrontend": true
   },
   {
     "ecosystem": "npm",
@@ -592,7 +670,8 @@
     "texts": [
       {
         "path": "LICENSE",
-        "sha256": "da6d3703ed11cbe42bd212c725957c98da23cbff1998c05fa4b3d976d1a58e93"
+        "sha256": "da6d3703ed11cbe42bd212c725957c98da23cbff1998c05fa4b3d976d1a58e93",
+        "installedPath": "node_modules/use-sync-external-store/LICENSE"
       }
     ]
   },
@@ -605,7 +684,56 @@
     "texts": [
       {
         "path": "LICENSE",
-        "sha256": "c1e6e266563517467b1bf874817d23e426f3149252bd7d42758cd697514b8417"
+        "sha256": "c1e6e266563517467b1bf874817d23e426f3149252bd7d42758cd697514b8417",
+        "installedPath": "node_modules/zustand/LICENSE"
+      }
+    ]
+  },
+  {
+    "ecosystem": "vendored",
+    "name": "coss-ui",
+    "version": "e937becd2d5ffb5c621eed6f8b1f223cbb6051e7",
+    "license": "MIT",
+    "upstream": "https://github.com/cosscom/coss/tree/e937becd2d5ffb5c621eed6f8b1f223cbb6051e7/apps/ui",
+    "files": [
+      "src/components/ui/alert-dialog.tsx",
+      "src/components/ui/badge.tsx",
+      "src/components/ui/button.tsx",
+      "src/components/ui/checkbox.tsx",
+      "src/components/ui/combobox.tsx",
+      "src/components/ui/dialog.tsx",
+      "src/components/ui/empty.tsx",
+      "src/components/ui/field.tsx",
+      "src/components/ui/form.tsx",
+      "src/components/ui/input.tsx",
+      "src/components/ui/label.tsx",
+      "src/components/ui/menu.tsx",
+      "src/components/ui/progress.tsx",
+      "src/components/ui/radio-group.tsx",
+      "src/components/ui/scroll-area.tsx",
+      "src/components/ui/select.tsx",
+      "src/components/ui/separator.tsx",
+      "src/components/ui/sheet.tsx",
+      "src/components/ui/slider.tsx",
+      "src/components/ui/spinner.tsx",
+      "src/components/ui/switch.tsx",
+      "src/components/ui/table.tsx",
+      "src/components/ui/tabs.tsx",
+      "src/components/ui/textarea.tsx",
+      "src/components/ui/toast.tsx",
+      "src/components/ui/tooltip.tsx",
+      "src/lib/utils.ts"
+    ],
+    "texts": [
+      {
+        "path": "src/components/ui/LICENSE.txt",
+        "sha256": "f75cc053f623a1585301f421014a7e0f2c723beea75ae3be28584653e36423a4",
+        "normalization": "lf"
+      },
+      {
+        "path": "compliance/notices/coss-ui-declaration.txt",
+        "sha256": "a993eab37408721309858dff0e9f13c65a32847d7b484c62dda7c61f49a8e760",
+        "normalization": "lf"
       }
     ]
   },

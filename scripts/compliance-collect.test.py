@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 import runpy
 import tempfile
+import tarfile
 import unittest
 import zipfile
 
@@ -12,6 +13,25 @@ M = runpy.run_path(str(Path(__file__).with_name("collect-compliance.py")))
 
 
 class CollectionTests(unittest.TestCase):
+    def test_local_source_archive_is_stable_across_line_endings_and_permissions(self):
+        with tempfile.TemporaryDirectory(prefix="yougori-source-archive-test-") as directory:
+            root = Path(directory)
+            source = root / "source"
+            source.mkdir()
+            script = source / "build.sh"
+            script.write_bytes(b"#!/bin/sh\r\nprintf source\r\n")
+            (source / "asset.bin").write_bytes(b"binary\0\r\n\xff")
+            first, second = root / "first.tar.gz", root / "second.tar.gz"
+            M["archive_directory"](source, first, canonical_source=True)
+            script.write_bytes(b"#!/bin/sh\nprintf source\n")
+            script.chmod(0o755)
+            M["archive_directory"](source, second, canonical_source=True)
+            self.assertEqual(first.read_bytes(), second.read_bytes())
+            with tarfile.open(first) as archive:
+                self.assertEqual(archive.extractfile("asset.bin").read(), b"binary\0\r\n\xff")
+                self.assertEqual(archive.getmember("build.sh").mode, 0o755)
+                self.assertEqual(archive.getmember("asset.bin").mode, 0o644)
+
     def test_cached_msys_records_are_all_written_to_the_final_inventory(self):
         collect = M["collect_msys"]
         globals_ = collect.__globals__

@@ -12,3 +12,9 @@
 
 # Inline-script CSP hashes must match the browser's normalized HTML text.
 /src-tauri/src/runtime/connection_files.html text eol=lf
+
+# Preserve the exact functional patch bytes recorded in QEMU build provenance.
+/runtime/security/*.patch text eol=lf
+/runtime/security/tpm-qemu.c text eol=lf
+/runtime/security/tpm-api.h text eol=lf
+/runtime/security/tpm-worker.c text eol=lf

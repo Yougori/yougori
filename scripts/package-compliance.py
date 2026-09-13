@@ -29,9 +29,10 @@ def main():
             archive.write(bundle / name, 'bundle/' + name, compress_type=zipfile.ZIP_DEFLATED)
         paths = ['LICENSE', 'NOTICE', 'docs/licensing.md', 'docs/rebuilding-third-party.md',
                  'docs/compliance-status.md', 'scripts/restore-compliance-sources.py',
-                 'compliance/release.json', 'compliance/engineering-review.json',
+                 'compliance/release.json', 'compliance/engineering-review.json', 'compliance/frontend.json',
                  'src-tauri/resources/THIRD_PARTY_NOTICES.md', 'src-tauri/resources/RUNTIME_LICENSES.txt',
-                 'src-tauri/resources/APPLICATION_LICENSES.txt']
+                 'src-tauri/resources/APPLICATION_LICENSES.txt', 'src-tauri/resources/WORKSPACE_LICENSES.txt']
+        paths += [path.relative_to(ROOT).as_posix() for path in (ROOT / 'compliance/notices').glob('*') if path.is_file()]
         paths += [path.relative_to(ROOT).as_posix() for path in (ROOT / 'compliance/evidence').glob('*') if path.is_file()]
         for name in sorted(set(paths)):
             archive.write(ROOT / name, name, compress_type=zipfile.ZIP_DEFLATED)

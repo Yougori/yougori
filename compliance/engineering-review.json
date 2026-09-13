@@ -3,7 +3,7 @@
   "reviewer": "Codex engineering review",
   "date": "2026-09-13",
   "evidence": "docs/compliance-status.md; compliance/evidence; docs/rebuilding-third-party.md",
-  "scope": "Local preparation of the recorded Windows/appliance runtime and matching source materials. This is not publication authorization or a legal certification of past releases.",
+  "scope": "Local preparation of the current frontend source/notices, recorded Windows/appliance runtime and matching source materials. Public source availability is checked separately.",
   "decisions": [
     "Original Yougori code uses the owner's selected Apache-2.0 plus NOTICE; separately licensed components retain their licenses.",
     "QEMU is built from the supplied pinned upstream source and GPL-compatible local modifications; the retired JACK/Berkeley DB import chain is absent.",
@@ -13,6 +13,10 @@
     "Linux/appliance packages have exact aports recipes and checked distfiles. Firmware source revisions, build configuration and unchanged shipped bytes are recorded.",
     "Static OCI libraries have corresponding Debian source/patches and application sources/build procedures for relinking; the musl-linked local helper rebuilt byte-for-byte.",
     "NoVNC and other copyleft source materials and third-party attribution are retained independently of Yougori's root license.",
+    "Copied Coss UI components and the shared class-name helper retain MIT, with explicit file mapping, upstream attribution and pinned MIT declarations. Original Yougori modifications retain Apache-2.0.",
+    "Tailwind 4.3.3 is included in shipped dependency notices despite its npm development flag because its generated CSS and Preflight form part of the application.",
+    "QEMU modification notices cover all ten changed upstream files. Applying the supplemental comment patch preserves all twelve original build-source hashes after removing only the new headers; existing build records are retained.",
+    "Frontend source/assets, copied-code notices and production CSS/module imports are checked. Source index/checksum mismatches and publication evidence for an older index are rejected.",
     "The recorded runtime tests passed. Exported QEMU source restoration, patch equivalence and configure/dependency-graph checks passed.",
     "Public source access must be verified before distribution. Old installer source gaps remain separate and have not been declared resolved."
   ]

@@ -1,3 +1,4 @@
+// Derived from Coss UI (MIT). Upstream attribution and terms: ../components/ui/LICENSE.txt
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 

@@ -46,6 +46,7 @@ New-Item -ItemType Directory -Force -Path $cache | Out-Null
 Source 'qemu-secure-src' 'https://github.com/qemu/qemu' '84f07211cc5b4fc6a371559bf8a5de4fb068e648' 'qemu-windows-tpm.patch'
 Source 'qemu-secure-src' 'https://github.com/qemu/qemu' '84f07211cc5b4fc6a371559bf8a5de4fb068e648' 'qemu-whpx-tpm-ppi.patch'
 Source 'qemu-secure-src' 'https://github.com/qemu/qemu' '84f07211cc5b4fc6a371559bf8a5de4fb068e648' 'qemu-whpx-reboot.patch'
+Source 'qemu-secure-src' 'https://github.com/qemu/qemu' '84f07211cc5b4fc6a371559bf8a5de4fb068e648' 'qemu-license-notices.patch'
 if ($QemuOnly) {
   Copy-Item -LiteralPath "$repo/runtime/security/tpm-qemu.c", "$repo/runtime/security/tpm-api.h" -Destination "$cache/qemu-secure-src/backends/tpm"
   $savedEnvironment = @{}

@@ -82,7 +82,7 @@ if ($LASTEXITCODE) { throw 'Cannot identify runtime packages.' }
 $packages = & $pacman -Qi @owners
 if ($LASTEXITCODE) { throw 'Cannot record runtime packages.' }
 [IO.File]::WriteAllLines("$output/PACKAGES.txt", $packages, [Text.UTF8Encoding]::new($false))
-$patches = @('qemu-windows-tpm.patch', 'qemu-whpx-tpm-ppi.patch', 'qemu-whpx-reboot.patch', 'tpm-qemu.c', 'tpm-api.h')
+$patches = @('qemu-windows-tpm.patch', 'qemu-whpx-tpm-ppi.patch', 'qemu-whpx-reboot.patch', 'qemu-license-notices.patch', 'tpm-qemu.c', 'tpm-api.h')
 $sourceRecord = [ordered]@{
   schemaVersion = 1
   source = 'https://github.com/qemu/qemu'

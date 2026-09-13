@@ -69,7 +69,7 @@ $sourceRecord = [ordered]@{
   buildScript = 'scripts/build-secure-qemu.sh'
   buildScriptSha256 = (Get-FileHash -LiteralPath "$repo/scripts/build-secure-qemu.sh" -Algorithm SHA256).Hash.ToLowerInvariant()
   tpmTransport = 'Private process with anonymous pipes; OpenSSL is loaded only inside the BSD TPM worker'
-  patches = @(@('qemu-windows-tpm.patch', 'qemu-whpx-tpm-ppi.patch', 'qemu-whpx-reboot.patch', 'tpm-qemu.c', 'tpm-api.h', 'tpm-worker.c') | ForEach-Object {
+  patches = @(@('qemu-windows-tpm.patch', 'qemu-whpx-tpm-ppi.patch', 'qemu-whpx-reboot.patch', 'qemu-license-notices.patch', 'tpm-qemu.c', 'tpm-api.h', 'tpm-worker.c') | ForEach-Object {
     [ordered]@{ path = "runtime/security/$_"; sha256 = (Get-FileHash -LiteralPath "$repo/runtime/security/$_" -Algorithm SHA256).Hash.ToLowerInvariant() }
   })
   dependencyProvenance = 'PACKAGES.txt; DLLs copied from the package-managed UCRT64 toolchain'

@@ -1,3 +1,4 @@
+// Derived from Coss UI (MIT). Upstream attribution and terms: LICENSE.txt
 "use client";
 
 import { Field as FieldPrimitive } from "@base-ui/react/field";

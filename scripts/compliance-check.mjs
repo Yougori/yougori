@@ -3,6 +3,7 @@ import { createReadStream } from "node:fs"
 import { lstat, readFile, realpath, readdir } from "node:fs/promises"
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
+import { checkFrontend } from "./compliance-frontend.mjs"
 
 async function hashFile(path, normalization) {
   const hash = createHash("sha256")
@@ -62,10 +63,21 @@ async function runtimeFiles(root) {
   return files.sort()
 }
 
-export async function checkCompliance(root, { distribution = false, packaging = false, sourceDirectory = join(root, "build/compliance/bundle") } = {}) {
+export async function checkSourceIndex(sourceDirectory, report) {
+  const index = JSON.parse(await readFile(await checkedFile(sourceDirectory, "SOURCE_INDEX.json"), "utf8"))
+  const expected = Object.fromEntries(["schemaVersion", "scope", "archives", "components", "blockers"].map(key => [key, report[key]]))
+  if (JSON.stringify(index) !== JSON.stringify(expected)) throw new Error("Source index does not match the reviewed release")
+  const sums = await readFile(await checkedFile(sourceDirectory, "SHA256SUMS"), "utf8")
+  if (sums.replace(/\r\n/g, "\n") !== report.archives.map(item => `${item.sha256}  ${item.file}\n`).join("")) {
+    throw new Error("Source checksums do not match the reviewed release")
+  }
+}
+
+export async function checkCompliance(root, { distribution = false, packaging = false, archives = false, sourceDirectory = join(root, "build/compliance/bundle") } = {}) {
   const report = JSON.parse(await readFile(join(root, "compliance/release.json"), "utf8"))
   if (report.schemaVersion !== 1 || !Array.isArray(report.blockers)) throw new Error("Invalid compliance report")
   await verifyFiles(root, report.inputs)
+  await checkFrontend(root, report, checkedFile)
   const expected = report.inputs.filter(item => item.path.startsWith("src-tauri/resources/runtime/")).map(item => item.path).sort()
   if (JSON.stringify(await runtimeFiles(root)) !== JSON.stringify(expected)) throw new Error("Runtime files were added or removed after the compliance inventory")
   if (!Array.isArray(report.archives) || !report.archives.length) throw new Error("Missing source archive inventory")
@@ -74,12 +86,18 @@ export async function checkCompliance(root, { distribution = false, packaging = 
       throw new Error(`Packaging blocked: ${report.blockers.length} unresolved compliance items; source/license review is ${report.review?.status ?? "missing"}. See docs/compliance-status.md. Development and tests remain available.`)
     }
     if (!report.review.reviewer || !report.review.date || !report.review.evidence) throw new Error("Distribution needs a recorded source/license review")
+  }
+  if (distribution || packaging || archives) {
     await verifyFiles(sourceDirectory, report.archives)
+    await checkSourceIndex(sourceDirectory, report)
   }
   if (distribution) {
     const publication = report.publication
     if (publication?.status !== "verified" || !publication.manifestUrl?.startsWith("https://")
       || !publication.verifiedAt || !publication.evidence) throw new Error("Source downloads have not been published and verified for this release")
+    if (publication.manifestSha256 !== await hashFile(await checkedFile(sourceDirectory, "SOURCE_INDEX.json"))) {
+      throw new Error("Published source manifest does not match the current source index")
+    }
   }
   return { blockers: report.blockers.length, archives: report.archives.length, packagingReady: packaging || distribution, distributionReady: distribution }
 }
@@ -89,11 +107,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
   try {
     const args = process.argv.slice(2)
     if (args.some(arg => !["--distribution", "--package", "--archives"].includes(arg))) throw new Error("Usage: node scripts/compliance-check.mjs [--distribution | --package] [--archives]")
-    const result = await checkCompliance(root, { distribution: args.includes("--distribution"), packaging: args.includes("--package") })
-    if (args.includes("--archives")) {
-      const report = JSON.parse(await readFile(join(root, "compliance/release.json"), "utf8"))
-      await verifyFiles(join(root, "build/compliance/bundle"), report.archives)
-    }
+    const result = await checkCompliance(root, { distribution: args.includes("--distribution"), packaging: args.includes("--package"), archives: args.includes("--archives") })
     console.log(`Compliance evidence verified: ${result.archives} source archives, ${result.blockers} unresolved items. ${result.distributionReady ? "Distribution checks passed." : result.packagingReady ? "Local packaging checks passed; publication is checked separately." : "This is not distribution approval."}`)
   } catch (error) {
     console.error(error.message)

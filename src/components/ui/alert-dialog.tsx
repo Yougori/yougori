@@ -1,3 +1,4 @@
+// Derived from Coss UI (MIT). Upstream attribution and terms: LICENSE.txt
 "use client";
 
 import { AlertDialog as AlertDialogPrimitive } from "@base-ui/react/alert-dialog";

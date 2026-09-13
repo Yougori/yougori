@@ -18,6 +18,21 @@ The component list below is an overview. Exact package versions, license
 expressions and coverage findings are in `compliance/evidence/`; a package
 license expression may cover files with different terms.
 
+## Copied UI components and generated CSS
+
+- The 26 components under `src/components/ui/` and `src/lib/utils.ts` derive
+  from Coss UI. Its `apps/ui/` subtree explicitly uses MIT. The upstream project
+  attribution, full MIT terms and pinned licensing declarations are retained in
+  `src/components/ui/LICENSE.txt`, `compliance/notices/coss-ui-declaration.txt`
+  and `APPLICATION_LICENSES.txt`. `compliance/frontend.json` identifies the files.
+- Tailwind CSS 4.3.3 contributes Preflight and generated utility styles to the
+  application. Its full MIT notice, including Copyright (c) Tailwind Labs, Inc.,
+  is included in `APPLICATION_LICENSES.txt`, even though npm classifies the
+  package as a development dependency.
+- Original Yougori modifications retain Apache-2.0; upstream portions keep
+  their own terms. Package imports, copied-source notices and source/assets are
+  covered by the frontend compliance inventory.
+
 ## FAT filesystem support
 
 The desktop uses fatfs 0.3.6 to create independent imported-files drives for VMs.
@@ -72,6 +87,10 @@ original declarations and GPLv2 text appear in `RUNTIME_LICENSES.txt`.
 - These local patches and scripts are supplemental source material, not the
   complete upstream QEMU, firmware, library, or appliance source distributions.
   Their respective component-license rights remain intact.
+- `qemu-license-notices.patch` adds dated modification notices to all ten changed
+  upstream files. It is applied after the functional patches and changes comments
+  only. The original binary build records are retained; supplementary source
+  equivalence is recorded in `compliance/evidence/qemu-modification-notices.json`.
 - The BSD TPM worker loads the reference TPM core and OpenSSL in a separate
   process. QEMU exchanges TPM bytes and lifecycle requests over anonymous
   pipes. The existing TPM NV format and guest identities are preserved.

@@ -25,6 +25,13 @@ own notices. QEMU patches and `runtime/security/tpm-qemu.c` retain their GPL ter
 TPM platform glue under `runtime/security/LICENSE` remains BSD-2-Clause. Linux
 packages, firmware, DLLs, noVNC and other dependencies keep their own licenses.
 
+The copied Coss UI components and shared class-name helper retain MIT for their
+upstream portions. See `src/components/ui/LICENSE.txt` and the exact file mapping
+in `compliance/frontend.json`. Coss's `apps/ui/` MIT exception and package
+declaration are retained at a pinned revision in `compliance/notices/`.
+Tailwind contributes production CSS even though it is an npm development
+dependency. Its full MIT notice is included in `APPLICATION_LICENSES.txt`.
+
 Original Yougori source/build material supplied as required corresponding source
 for a separately licensed component may additionally be used, modified and
 redistributed under that component's applicable license to the extent necessary
@@ -64,6 +71,7 @@ python scripts/collect-compliance.py msys
 python scripts/collect-compliance.py go
 python scripts/compliance-oci-sources.py
 python scripts/collect-compliance.py notices
+python scripts/compliance-qemu-notices.py
 python scripts/compliance-runtime-notices.py
 node scripts/compliance-inspect-runtime.mjs
 python scripts/collect-compliance.py report
@@ -84,10 +92,41 @@ restore submodules at the recorded paths. These are source inputs, not a claim o
 reproducible builds or complete release coverage.
 
 `npm run compliance:check` verifies evidence without approving distribution.
+It also inventories frontend source, images, fonts and build configuration,
+requires explicit provenance for copied UI files, and checks notices for packages
+imported by production code/CSS even when marked as development dependencies.
+List additional packages that contribute generated assets indirectly in
+`compliance/frontend.json`. New or removed source/assets and missing license
+texts require a fresh inventory and review. These checks detect changes and
+missing recorded notices; determining the origin of newly copied code still
+requires a source review.
 Text input hashes normalize line endings; runtime and archive hashes cover the
 original bytes. This lets the same source review survive ordinary Git newline
 conversion without accepting changes to runtime binaries.
 `npm run compliance:archives` also verifies every local source archive.
+It checks that `SOURCE_INDEX.json` and `SHA256SUMS` match the current release
+inventory. Previous publication verification cannot approve a changed index.
+
+For source-only notice/build-script changes with unchanged upstream archives,
+refresh notices and QEMU annotation evidence as above, then run:
+
+```powershell
+python scripts/collect-compliance.py material
+python scripts/collect-compliance.py report
+npm run test:compliance
+npm run compliance:archives
+python scripts/package-compliance.py
+```
+
+Regeneration clears the publication status. Publish and verify the resulting
+matching source bundle before distributing a new release.
+
+The Linux workflow can seed its cache from the pinned prior source ZIP, then
+run `python3 scripts/collect-compliance.py cache` (Python 3.10+ for this action).
+This recreates only the project's local source/build-material archive with
+canonical line endings and permissions. Every upstream archive must still match
+the current checked-in inventory. It fails if any required upstream input is
+missing or changed. A cache seed is not publication of the new source bundle.
 `npm run release:package` rejects unresolved findings, changed inputs, missing
 archives and absent engineering-review records. Installer builds run this local
 check, including preview packaging. `npm run release:distribution` additionally

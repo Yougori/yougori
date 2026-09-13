@@ -1,7 +1,7 @@
 # Third-party compliance work
 
-Engineering review date: 2026-09-13. This record covers the runtime bytes in
-`compliance/release.json`; it does not certify every historical installer.
+Engineering review date: 2026-09-13. This record covers the current source tree,
+frontend notices and runtime bytes in `compliance/release.json`.
 
 ## Changes completed
 
@@ -28,14 +28,40 @@ Engineering review date: 2026-09-13. This record covers the runtime bytes in
   log and digest-checked amd64 build-base SPDX identify these inputs.
 - The local mount helper rebuilt byte-for-byte using Ubuntu musl 1.2.2-4.
   Its complete libc copyright notice is included.
-- Application notices cover 755 production npm and Cargo lockfile entries,
-  conservatively including Cargo build-only/other-target entries. Runtime
+- Application notices cover 757 entries: 46 npm packages, 710 Cargo lockfile
+  entries and the copied Coss UI source component. This includes Tailwind 4.3.3
+  because its Preflight and utility CSS ship in the application, and conservatively
+  includes Cargo build-only/other-target entries. Runtime
   notices cover Alpine, Go, Windows libraries and static OCI dependencies.
+- All 26 copied Coss UI components and the shared class-name helper have explicit
+  attribution and MIT terms. The upstream `apps/ui/` MIT exception is recorded
+  at a pinned revision. Both declarations and license text are included in the
+  application notice collection; Yougori's original changes retain Apache-2.0.
+- A supplementary QEMU patch adds dated modification notices to all ten changed
+  upstream source files. It retains the original functional patch bytes and
+  binary build records. Verification against exported upstream sources confirms
+  that removing only the new comment headers reproduces all 12 original
+  build-source hashes.
+- Frontend source/assets and copied UI files are now inventoried. Production
+  CSS/module imports require notices even for npm development dependencies.
+  The checker rejects missing copied-code license text, newly unreviewed source
+  or assets, mismatched source indexes/checksums and stale publication evidence.
 - The final zlib source gap was recovered without relaxing verification:
   GitHub had increased the generated patch's abbreviated blob-ID width;
   restoring the original width produced the exact recipe-pinned SHA-256.
 
 ## Validation
+
+For the frontend/notice corrections, 15 JavaScript compliance tests and eight
+Python collector tests passed, including omitted MIT notices, new copied files,
+development-only CSS dependencies, changed source indexes and canonical source
+archive generation. ESLint and the TypeScript/Vite production build passed.
+The local source-material archive also matched byte-for-byte when regenerated
+with Linux Python 3.10 and Node 24, confirming the CI cache preparation works
+across Windows/Linux line endings and file permissions.
+The QEMU annotation check restored the affected upstream files and verified
+comment-only equivalence. No runtime rebuild was needed for these source notices.
+The runtime checks described below are retained evidence from the earlier build.
 
 The runtime passed disposable container/snapshot/network, full VM and microVM
 checks. After the TPM process change, it passed Secure Boot rejection, secure
@@ -69,8 +95,12 @@ The intended delivery is the matching source bundle alongside each new installer
 with source index, checksums and rebuild instructions. Publishing the repository
 alone would omit the large archives, which are deliberately ignored by Git.
 
-Staging uses a dedicated source-bundle prerelease. The Linux workflow pins its
-download URL and SHA-256, then verifies the individual archives before packaging.
+The refreshed source bundle is prepared locally; its publication status is reset
+until this exact source index has been published and verified.
+
+Staging uses a dedicated source-bundle prerelease. The Linux workflow pins the
+prior download URL and SHA-256 as a cache seed, recreates the current reviewed
+local source material, and verifies all archives against the current inventory.
 Windows, guest-agent and Linux checks run on staging pushes; main is promoted
 separately after review. The source prerelease does not include app installers.
 

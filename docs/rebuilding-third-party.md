@@ -35,7 +35,7 @@ From the restored directory in UCRT64, apply the supplied patches once:
 ```sh
 repo="$PWD"
 cd build/runtime-cache/qemu-secure-src
-for patch_file in qemu-windows-tpm.patch qemu-whpx-tpm-ppi.patch qemu-whpx-reboot.patch; do
+for patch_file in qemu-windows-tpm.patch qemu-whpx-tpm-ppi.patch qemu-whpx-reboot.patch qemu-license-notices.patch; do
   patch -p1 < "$repo/runtime/security/$patch_file"
 done
 cp "$repo/runtime/security/tpm-qemu.c" "$repo/runtime/security/tpm-api.h" backends/tpm/
@@ -49,6 +49,12 @@ bash scripts/build-tpm-library.sh
 ```
 
 These low-level build scripts accept exported source trees without `.git`.
+The final QEMU patch adds dated modification notices to the ten changed upstream
+files. It changes comments only. The earlier functional patch bytes and the
+existing binaries' `SOURCE_BUILD.json` records are retained as original build
+evidence; `compliance/evidence/qemu-modification-notices.json` records the
+supplementary source annotation and verifies equivalence after removing only
+those notices. New builds also record the notice patch in their build inputs.
 The PowerShell source-fetching wrapper is for normal Git development checkouts.
 QEMU uses the recorded WHPX/TCG, VNC, OpenGL and GnuTLS profile; JACK and the
 unused remote-disk/UI backends are disabled. The TPM worker is a separate

@@ -7,7 +7,7 @@ Pinned source revisions (the build script fetches and checks these exact commits
 
 | Component | Source | Revision | Local changes |
 | --- | --- | --- | --- |
-| QEMU 11.1 | https://github.com/qemu/qemu | 84f07211cc5b4fc6a371559bf8a5de4fb068e648 | `qemu-windows-tpm.patch`, `qemu-whpx-tpm-ppi.patch`, `qemu-whpx-reboot.patch`, `tpm-qemu.c`, `tpm-api.h` |
+| QEMU 11.1 | https://github.com/qemu/qemu | 84f07211cc5b4fc6a371559bf8a5de4fb068e648 | `qemu-windows-tpm.patch`, `qemu-whpx-tpm-ppi.patch`, `qemu-whpx-reboot.patch`, `qemu-license-notices.patch`, `tpm-qemu.c`, `tpm-api.h` |
 | Microsoft/TCG TPM 2.0 reference | https://github.com/microsoft/ms-tpm-20-ref | ee21db0a941decd3cac67925ea3310873af60ab3 | `ms-tpm-openssl3.patch`, private Windows platform/library glue |
 | EDK2 stable202608 | https://github.com/tianocore/edk2 | 2970e5699ba6267f3384ffab20f96647578aebc8 | `edk2-svsm-probe.patch`; QEMU_PV_VARS, Secure Boot and TPM2 build options |
 | Microsoft Secure Boot objects | https://github.com/microsoft/secureboot_objects | 9a2bbf82e86b62694e44aba3a4068d8dd0c943d7 | Public x64 DBX only |
@@ -15,6 +15,11 @@ Pinned source revisions (the build script fetches and checks these exact commits
 EDK2 submodules are fixed by that commit. `scripts/build-secure-runtime.ps1`
 and its referenced shell scripts are the build instructions. Patches are
 under `runtime/security/`. Preserve these sources with binary releases.
+`qemu-license-notices.patch` is applied last. It adds dated notices to all ten
+modified upstream files, identifying changes first recorded on 2026-09-09 and
+notices added on 2026-09-13. It changes no executable code. The original build
+records remain intact; supplementary annotation/equivalence evidence is in
+`compliance/evidence/qemu-modification-notices.json`.
 The firmware configuration disables the interactive shell and network boot,
 and uses QEMU's authenticated variable service without requiring SMM.
 The existing OpenDock `runtime/gpu/egl-bridge.c` is also built for this runtime

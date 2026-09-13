@@ -20,7 +20,6 @@ import subprocess
 import tempfile
 import tarfile
 import time
-import tomllib
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -41,13 +40,17 @@ def run(*args, cwd=ROOT):
 
 
 def digest(path, algorithm="sha256"):
+    checksum = hashlib.new(algorithm)
     with Path(path).open("rb") as stream:
-        return hashlib.file_digest(stream, algorithm).hexdigest()
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            checksum.update(chunk)
+    return checksum.hexdigest()
 
 
-def write_json(path, value):
+def write_json(path, value, canonical=False):
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(value, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    newline = "\r\n" if not canonical and path.exists() and b"\r\n" in path.read_bytes() else "\n"
+    path.write_text(json.dumps(value, indent=2, ensure_ascii=False) + "\n", encoding="utf-8", newline=newline)
 
 
 def safe_name(name):
@@ -130,20 +133,35 @@ def github_directory(repository, revision, directory, destination):
             raise ValueError(f"Unsupported recipe entry: {entry['type']} {entry['path']}")
 
 
-def archive_directory(directory, output):
+def archive_directory(directory, output, canonical_source=False):
     """Archive an allowlisted source tree, refusing links and inspection disks."""
     with output.with_suffix(output.suffix + ".part").open("wb") as raw:
         with gzip.GzipFile(fileobj=raw, mode="wb", mtime=0, filename="") as compressed:
             with tarfile.open(fileobj=compressed, mode="w|") as archive:
-                for path in sorted(directory.rglob("*")):
+                paths = directory.rglob("*")
+                paths = sorted(paths, key=lambda item: item.relative_to(directory).as_posix()) if canonical_source else sorted(paths)
+                for path in paths:
                     if path.is_symlink():
                         raise ValueError(f"Refusing source-tree symlink: {path}")
                     if path.is_file():
-                        entry = archive.gettarinfo(str(path), str(path.relative_to(directory)))
+                        entry = archive.gettarinfo(str(path), path.relative_to(directory).as_posix())
                         entry.uid = entry.gid = entry.mtime = 0
                         entry.uname = entry.gname = ""
-                        with path.open("rb") as stream:
-                            archive.addfile(entry, stream)
+                        if canonical_source:
+                            contents = path.read_bytes()
+                            try:
+                                text = contents.decode("utf-8")
+                            except UnicodeDecodeError:
+                                pass
+                            else:
+                                if "\0" not in text:
+                                    contents = text.replace("\r\n", "\n").replace("\r", "\n").encode()
+                            entry.mode = 0o755 if path.suffix == ".sh" else 0o644
+                            entry.size = len(contents)
+                            archive.addfile(entry, io.BytesIO(contents))
+                        else:
+                            with path.open("rb") as stream:
+                                archive.addfile(entry, stream)
     output.with_suffix(output.suffix + ".part").replace(output)
 
 
@@ -656,10 +674,12 @@ def collect_build_material():
     # generated runtime disks, signing keys or the whole working directory.
     output = BUNDLE / "yougori-runtime-build-material.tar.gz"
     candidates = run("git", "ls-files", "--cached", "--others", "--exclude-standard", "-z").decode().split("\0")
+    frontend_files = set(frontend_inventory()["files"])
     with tempfile.TemporaryDirectory(prefix="source-material-", dir=WORK) as temporary:
         material = Path(temporary)
         for relative in sorted(set(candidates)):
-            if not (relative in ("LICENSE", "NOTICE", "docs/licensing.md", "docs/rebuilding-third-party.md") or
+            if not (relative in frontend_files or relative in ("LICENSE", "NOTICE", "docs/licensing.md", "docs/rebuilding-third-party.md",
+                                                              "package.json", "package-lock.json") or
                     relative.startswith(("runtime/security/", "runtime/gpu/", "appliance/", "runtime/cuda/", "scripts/",
                                          "compliance/notices/", "src-tauri/boot-helper/"))):
                 continue
@@ -669,7 +689,7 @@ def collect_build_material():
             target = material / relative
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(path, target)
-        archive_directory(material, output)
+        archive_directory(material, output, canonical_source=True)
     return archive_record(output, id="local-build-material", status="collected")
 
 
@@ -683,23 +703,53 @@ def refresh_build_material():
     print("Updated local source/build material archive.", flush=True)
 
 
+def frontend_inventory():
+    return json.loads(run("node", "scripts/compliance-frontend.mjs"))
+
+
+def prepare_cache():
+    """Use verified upstream archives from a cache, recreating only local source.
+
+    The checked-in release inventory is authoritative. Never update its hashes
+    or silently accept a cache from another upstream/runtime revision.
+    """
+    release = json.loads((ROOT / "compliance/release.json").read_text(encoding="utf-8"))
+    expected = next(item for item in release["components"] if item["id"] == "local-build-material")
+    current = collect_build_material()
+    if current["sha256"] != expected["sha256"]:
+        raise ValueError("Local source material differs from its reviewed archive; regenerate and review release evidence")
+    for item in release["archives"]:
+        path = BUNDLE / safe_name(item["file"])
+        if path.is_symlink() or digest(path) != item["sha256"]:
+            raise ValueError("Cached source archive does not match this release: " + item["file"])
+    write_source_index(release)
+    print("Prepared matching sources from verified upstream cache and reviewed local material.", flush=True)
+
+
 def dependency_notices():
     """Conservative inventory: include all lockfile crates, not just one target.
 
     This deliberately over-includes build/target dependencies. Missing texts
     remain explicit findings instead of inventing a license from a package name.
     """
+    import tomllib  # Only TOML collection requires Python 3.11+; cache works on 3.10.
     records = []
     sections = []
+    frontend = frontend_inventory()
+    shipped_packages = {item["packagePath"] for item in frontend["npmImports"]}
     lock = json.loads((ROOT / "package-lock.json").read_text(encoding="utf-8"))
     for relative, metadata in lock["packages"].items():
-        if not relative or metadata.get("dev"):
+        if not relative or (metadata.get("dev") and relative not in shipped_packages):
             continue
         directory = ROOT / relative
         pkg = json.loads((directory / "package.json").read_text(encoding="utf-8")) if (directory / "package.json").exists() else {}
         record = {"ecosystem": "npm", "name": pkg.get("name", relative),
                   "version": metadata["version"], "license": pkg.get("license", metadata.get("license", "UNKNOWN")),
                   "integrity": metadata.get("integrity"), "texts": []}
+        if pkg.get("version") != metadata["version"]:
+            raise ValueError("Installed dependency differs from lockfile: " + relative)
+        if relative in shipped_packages:
+            record["shippedFrontend"] = True
         add_notices(directory, record, sections)
         if not record["texts"]:
             try:
@@ -713,6 +763,16 @@ def dependency_notices():
                                  registry.get("gitHead", ""), record, sections)
             except (OSError, ValueError, RuntimeError, KeyError) as error:
                 record["noticeIssue"] = str(error)
+        records.append(record)
+    for component in frontend["vendoredComponents"]:
+        record = {"ecosystem": "vendored", "name": component["id"], "version": component["reviewedRevision"],
+                  "license": component["license"], "upstream": component["upstream"],
+                  "files": component["files"], "texts": []}
+        for relative in component["noticeFiles"]:
+            text = (ROOT / relative).read_text(encoding="utf-8")
+            record["texts"].append({"path": relative, "sha256": hashlib.sha256(text.encode()).hexdigest(), "normalization": "lf"})
+            sections.append(f"{'=' * 72}\nvendored: {component['name']}\nDeclared license: {component['license']}\n"
+                            f"Source: {component['upstream']}\nFile: {relative}\n\n{text}\n")
         records.append(record)
     crates = {}
     for relative in ("src-tauri/Cargo.lock", "cli/Cargo.lock", "runtime/cuda/host/Cargo.lock"):
@@ -756,8 +816,10 @@ def dependency_notices():
                 record["source"] = archive_record(output)
         records.append(record)
     write_json(EVIDENCE / "application-dependencies.json", records)
+    write_json(EVIDENCE / "frontend-dependencies.json", frontend)
     header = ("YOUGORI APPLICATION DEPENDENCY NOTICES\n\n"
-              "Generated from installed production npm packages and Cargo lockfiles.\n"
+              "Generated from production npm packages, shipped CSS/assets, copied code and Cargo lockfiles.\n"
+              "Build dependencies contributing shipped frontend code or assets are included.\n"
               "Cargo entries conservatively include build-only and other-target packages.\n"
               "Each component keeps its own license. Yougori's license does not override it.\n"
               "Runtime package notices and sources are tracked separately.\n\n")
@@ -846,6 +908,8 @@ def add_notices(directory, record, sections):
         text = path.read_text(encoding="utf-8", errors="replace")
         relative = path.relative_to(directory).as_posix()
         record["texts"].append({"path": relative, "sha256": digest(path)})
+        if record["ecosystem"] == "npm" and path.is_relative_to(ROOT / "node_modules"):
+            record["texts"][-1]["installedPath"] = path.relative_to(ROOT).as_posix()
         sections.append(f"{'=' * 72}\n{record['ecosystem']}: {record['name']} {record['version']}\n"
                         f"Declared license: {record['license']}\nFile: {relative}\n\n{text}\n")
 
@@ -863,6 +927,8 @@ def report():
     selected += [path.relative_to(ROOT).as_posix() for path in EVIDENCE.glob("*") if path.is_file()]
     selected += [path.relative_to(ROOT).as_posix() for path in (ROOT / "compliance/notices").glob("*") if path.is_file()]
     selected += [path.relative_to(ROOT).as_posix() for path in (ROOT / "src-tauri").glob("tauri*.conf.json")]
+    selected += frontend_inventory()["files"]
+    selected += [".gitattributes", ".github/workflows/linux.yml"]
     if (ROOT / "src-tauri/resources/RUNTIME_LICENSES.txt").exists():
         selected.append("src-tauri/resources/RUNTIME_LICENSES.txt")
     for name in sorted(set(selected)):
@@ -887,6 +953,15 @@ def report():
         if item.get("source"):
             archives.append(item["source"])
     blockers = [{"id": item["id"], "reason": item["reason"]} for item in components if item.get("status") == "blocked"]
+    annotation_path = EVIDENCE / "qemu-modification-notices.json"
+    if not annotation_path.exists():
+        blockers.append({"id": "qemu-modification-notices", "reason": "Missing dated source modification notice verification."})
+    else:
+        annotation = json.loads(annotation_path.read_text(encoding="utf-8"))
+        patch = ROOT / annotation["patch"]["path"]
+        if (not patch.is_file() or digest(patch) != annotation["patch"]["sha256"]
+                or not annotation.get("results") or not all(item.get("matches") for item in annotation["results"])):
+            blockers.append({"id": "qemu-modification-notices", "reason": "Dated QEMU notice patch differs from its verified source evidence."})
     unresolved = [item for item in json.loads((EVIDENCE / "windows-dlls.json").read_text(encoding="utf-8"))
                   if item["provenance"] == "unresolved-exact-binary-source"]
     if unresolved:
@@ -931,23 +1006,27 @@ def report():
               "review": review, "publication": {"status": "not-published"},
               "historicalReleaseIssues": [{"id": "older-installer-coverage", "reason": "Older installer payloads, including the retired stock QEMU build, need their own source records. This new runtime does not retroactively establish their coverage. See compliance/history and docs/compliance-status.md."}]}
     write_json(ROOT / "compliance/release.json", result)
-    sums = "".join(f"{item['sha256']}  {item['file']}\n" for item in result["archives"])
-    (BUNDLE / "SHA256SUMS").write_text(sums, encoding="utf-8")
-    write_json(BUNDLE / "SOURCE_INDEX.json", {key: result[key] for key in ("schemaVersion", "scope", "archives", "components", "blockers")})
+    write_source_index(result)
     size = sum(item["bytes"] for item in archives)
     print(f"Recorded {len(archives)} source archives ({size / 1024**3:.2f} GiB); {len(blockers)} unresolved items.", flush=True)
 
 
+def write_source_index(result):
+    sums = "".join(f"{item['sha256']}  {item['file']}\n" for item in result["archives"])
+    (BUNDLE / "SHA256SUMS").write_text(sums, encoding="utf-8", newline="\n")
+    write_json(BUNDLE / "SOURCE_INDEX.json", {key: result[key] for key in ("schemaVersion", "scope", "archives", "components", "blockers")}, canonical=True)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("action", choices=("inventory", "alpine", "local", "notices", "msys", "go", "material", "report"))
+    parser.add_argument("action", choices=("inventory", "alpine", "local", "notices", "msys", "go", "material", "cache", "report"))
     parser.add_argument("--retry-blocked", action="store_true", help="For msys, reuse unchanged already collected archives")
     args = parser.parse_args()
     WORK.mkdir(parents=True, exist_ok=True)
     BUNDLE.mkdir(parents=True, exist_ok=True)
     {"inventory": inventory, "alpine": collect_alpine, "local": collect_local,
      "notices": dependency_notices, "msys": lambda: collect_msys(args.retry_blocked), "go": collect_go,
-     "material": refresh_build_material, "report": report}[args.action]()
+     "material": refresh_build_material, "cache": prepare_cache, "report": report}[args.action]()
 
 
 if __name__ == "__main__":

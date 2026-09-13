@@ -49,6 +49,8 @@ jobs:
           curl --fail --location --retry 3 "$SOURCE_BUNDLE_URL" --output build/compliance/corresponding-source.zip
           printf '%s  %s\n' "$SOURCE_BUNDLE_SHA256" build/compliance/corresponding-source.zip | sha256sum --check --status
           unzip -q build/compliance/corresponding-source.zip 'bundle/*' -d build/compliance
+          # Reuse pinned upstream archives; recreate only reviewed local sources.
+          python3 scripts/collect-compliance.py cache
           npm run compliance:archives
       - name: Linux native checks and unit tests
         run: |
