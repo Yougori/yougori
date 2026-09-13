@@ -59,6 +59,16 @@ jobs:
         run: npm run desktop:build
       - name: Disposable container, microVM and VM runtime tests
         run: |
+          # The hosted runner may have KVM without granting its user access.
+          # Use hardware virtualization when available; retain the TCG fallback.
+          if [ -c /dev/kvm ]; then
+            sudo chgrp "$(id -gn)" /dev/kvm
+            sudo chmod g+rw /dev/kvm
+            ls -l /dev/kvm
+          fi
+          qemu-system-x86_64 --version
+          free -h
+          df -h . /tmp
           for test in workspace_container_end_to_end workspace_microvm_end_to_end workspace_fullvm_forwarding_and_viewers; do
             timeout 300 cargo +stable test --locked --manifest-path src-tauri/Cargo.toml --lib "$test" -- --ignored --nocapture --test-threads=1
           done

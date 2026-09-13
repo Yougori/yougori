@@ -1,6 +1,26 @@
 use super::*;
 use base64::{engine::general_purpose::STANDARD, Engine};
 
+fn print_guest_logs(directory: &Path) {
+    use std::io::{Read, Seek, SeekFrom};
+
+    for name in ["qemu.log", "serial.log"] {
+        let Ok(mut file) = std::fs::File::open(directory.join(name)) else { continue };
+        let length = file.metadata().map(|metadata| metadata.len()).unwrap_or(0);
+        let _ = file.seek(SeekFrom::Start(length.saturating_sub(16 * 1024)));
+        let mut bytes = Vec::new();
+        let _ = file.take(16 * 1024).read_to_end(&mut bytes);
+        eprintln!("Guest {name} (last 16 KiB):");
+        for line in String::from_utf8_lossy(&bytes).lines() {
+            if line.contains("opendock.token=") {
+                eprintln!("[guest command line containing authentication token omitted]");
+            } else {
+                eprintln!("{line}");
+            }
+        }
+    }
+}
+
 fn fixture(id: &str, kind: &str) -> Environment {
     serde_json::from_value(json!({
         "id":id,"name":id,"kind":kind,"status":"running","runtime":"builtin:alpine",
@@ -23,6 +43,7 @@ async fn exercise_workspace(kind: &str) -> Result<(), String> {
         eprintln!("Booting isolated {kind} workspace fixture");
         if kind=="container" {
             runtime.provision_container(&env.id,"quay.io/libpod/alpine:latest","sleep 2147483647",&env.resource_policy,true,false).await?;
+            eprintln!("Container provisioned; starting its process and internet connection");
             runtime.container_action(&env.id,"start",true).await?;
         } else {
             let provisioned=runtime.provision_micro_vm(&env.id,"builtin:alpine").await?;
@@ -79,10 +100,12 @@ async fn exercise_workspace(kind: &str) -> Result<(), String> {
     }.await;
     if let Err(error) = &result {
         eprintln!("Workspace failed: {error}");
-        if kind == "microVm" {
-            let serial = data.path().join("runtime/environments").join(&env.id).join("serial.log");
-            if let Ok(log) = std::fs::read_to_string(serial) { eprintln!("Guest boot log: {}", log.chars().rev().take(6000).collect::<String>().chars().rev().collect::<String>()); }
-        }
+        let logs = if kind == "container" {
+            data.path().join("runtime/appliance")
+        } else {
+            data.path().join("runtime/environments").join(&env.id)
+        };
+        print_guest_logs(&logs);
     }
     manager.shutdown(&runtime).await;
     runtime.shutdown_all().await;

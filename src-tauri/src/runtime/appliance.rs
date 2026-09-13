@@ -715,7 +715,7 @@ impl RuntimeManager {
             .json(&body)
             .send()
             .await
-            .map_err(|error| format!("request Yougori appliance operation: {error}"))?;
+            .map_err(appliance_request_error)?;
         let response = successful_response(response).await?;
         response
             .json::<R>()
@@ -1096,6 +1096,18 @@ fn storage_preparation_in_progress(log: &str) -> bool {
     started.is_some() && started > ended
 }
 
+fn appliance_request_error(error: reqwest::Error) -> String {
+    use std::error::Error;
+
+    let mut message = format!("request Yougori appliance operation: {error}");
+    let mut source = error.source();
+    while let Some(cause) = source {
+        message.push_str(&format!(": {cause}"));
+        source = cause.source();
+    }
+    message
+}
+
 pub(super) async fn successful_response(response: Response) -> Result<Response, String> {
     if response.status().is_success() {
         return Ok(response);
@@ -1277,6 +1289,27 @@ fn appliance_base_changed(recorded_digest: Option<&str>, current_digest: &str) -
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[tokio::test]
+    async fn appliance_transport_failure_reports_the_connection_error() {
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let server = tokio::spawn(async move {
+            use tokio::io::AsyncReadExt;
+            let (mut stream, _) = listener.accept().await.unwrap();
+            let mut request = [0; 4096];
+            stream.read(&mut request).await.unwrap();
+            // Model a runtime disappearing after accepting an operation.
+        });
+        let error = reqwest::Client::builder().no_proxy()
+            .timeout(Duration::from_secs(5)).build().unwrap()
+            .post(format!("http://{address}/v1/containers/action"))
+            .send().await.unwrap_err();
+        server.await.unwrap();
+        let message = appliance_request_error(error);
+        assert!(message.contains("/v1/containers/action"), "{message}");
+        assert!(message.contains("closed") || message.contains("reset"), "{message}");
+    }
 
     #[test]
     fn converts_gibibytes_without_decimal_unit_confusion() {
