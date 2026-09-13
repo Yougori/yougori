@@ -28,4 +28,8 @@ Validation completed locally:
 
 [GPU initialization evidence](../../compliance/evidence/angle-gpu-smoke.json), [actual rendering log](../../compliance/evidence/angle-render-test.txt), [compiler commands](../../compliance/evidence/angle-commands.txt), [target closure](../../compliance/evidence/angle-targets.json), [rebuild procedure](../../docs/rebuilding-third-party.md#windows-angle-graphics).
 
-Commit, public source-download verification and staging workflow outcomes are recorded below after publication and CI finish. No main merge or new application installer publication is part of this work.
+The runtime correction was pushed in `5be80b54a167c66940b771d51c13aced2ea1b8d2`. The new Linux checks exposed an existing Python 3.10 incompatibility in the Go source hash helper; `46bc2677e0b4e5a85da3122750c760577d6bdc44` corrected it without changing hash semantics. All thirteen Python tests then passed on Ubuntu 22.04.
+
+The [matching source-only prerelease](https://github.com/Yougori/yougori/releases/tag/staging-sources-9b13340292f535bc) is public. An anonymous download of all 1,147,140,870 ZIP bytes matched SHA-256 `3d47cccfa14bf7b17a0b5d649f82aa4ac9ab94d45c44ee1e59352089fcbcc3a2`; public/embedded indexes, archive checksums and ZIP integrity also matched. [Verification evidence](source-publication.json) and the [verification script](verify-current-source-download.py) are retained. `npm run release:distribution` passed after this verification.
+
+[Draft PR #4](https://github.com/Yougori/yougori/pull/4) holds the changes for review. The [staging workflows](https://github.com/Yougori/yougori/actions?query=branch%3Astaging) record the checked commits. Their final result is attached to the source prerelease as `staging-validation.json` when verification finishes. No main merge or new application installer publication is part of this work.
