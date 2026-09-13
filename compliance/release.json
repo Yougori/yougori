@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "sourceCommit": "959ae46b2df53f965c1ddf33f57ec5ca17115c70",
+  "sourceCommit": "266ada88e363302ae1d31bb8defe8441ad3312c0",
   "scope": "Current checkout runtime bytes; not a blanket certification of previous releases",
   "inputs": [
     {
@@ -8228,7 +8228,18 @@
     ]
   },
   "publication": {
-    "status": "not-published"
+    "status": "verified",
+    "manifestUrl": "https://github.com/Yougori/yougori/releases/download/staging-sources-675208851bd7ee4f/SOURCE_INDEX.json",
+    "manifestSha256": "63f50785b3cbed984356f9811e4d0cc3bc753b0cb755968b032ed776e76d8182",
+    "verifiedAt": "2026-09-13T20:51:08.720271+00:00",
+    "evidence": "Anonymous HTTPS download of the full source ZIP matched its recorded SHA-256 and byte length; the public source index matched the local reviewed index.",
+    "releaseUrl": "https://github.com/Yougori/yougori/releases/tag/staging-sources-675208851bd7ee4f",
+    "sourceTag": "staging-sources-675208851bd7ee4f",
+    "sourceCommit": "266ada88e363302ae1d31bb8defe8441ad3312c0",
+    "bundleUrl": "https://github.com/Yougori/yougori/releases/download/staging-sources-675208851bd7ee4f/Yougori-corresponding-source-675208851bd7ee4f.zip",
+    "bundleSha256": "bcf2dfdb3a05bd50884828b951eefa9d77d7c52671493ccacfd0a119247a219b",
+    "bundleBytes": 1145718231,
+    "scope": "Source materials for staging runtime verification; no app installers were released."
   },
   "historicalReleaseIssues": [
     {
