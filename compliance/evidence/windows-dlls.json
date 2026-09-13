@@ -51,14 +51,11 @@
   },
   {
     "file": "src-tauri/resources/runtime/qemu/libEGL_angle.dll",
-    "sha256": "625af4e343a115422c906ecee1cc1c7cb9d9f1a5b3827620f80f30e6577f8a4a",
-    "package": "mingw-w64-ucrt-x86_64-angleproject",
-    "version": "2.1.r25748.890b5d8f-6",
-    "base": "mingw-w64-angleproject",
-    "license": "spdx:BSD-3-Clause",
-    "buildDate": "1788370524",
-    "url": "http://angleproject.org/",
-    "provenance": "matched-local-package-by-sha256"
+    "sha256": "06f40e31e81b93a9dca4ec9a6241449aa0a007873e7abd799337d480c9908ed2",
+    "provenance": "local-angle-d3d11-build",
+    "source": "compliance/evidence/angle-build.json",
+    "sourceComponent": "msys/mingw-w64-ucrt-x86_64-angleproject/2.1.r25748.890b5d8f-6",
+    "licenseReview": "compliance/native.json"
   },
   {
     "file": "src-tauri/resources/runtime/qemu/libepoxy-0.dll",
@@ -106,14 +103,11 @@
   },
   {
     "file": "src-tauri/resources/runtime/qemu/libGLESv2.dll",
-    "sha256": "710e246f405a6f63005c0d91f385a1b7e62fb1cfc566fd0fbde01b7319a0d6a4",
-    "package": "mingw-w64-ucrt-x86_64-angleproject",
-    "version": "2.1.r25748.890b5d8f-6",
-    "base": "mingw-w64-angleproject",
-    "license": "spdx:BSD-3-Clause",
-    "buildDate": "1788370524",
-    "url": "http://angleproject.org/",
-    "provenance": "matched-local-package-by-sha256"
+    "sha256": "f40b2c8eddf09fc52ba4701620776f8cbdde55d06d8c317c21e844936d758a8e",
+    "provenance": "local-angle-d3d11-build",
+    "source": "compliance/evidence/angle-build.json",
+    "sourceComponent": "msys/mingw-w64-ucrt-x86_64-angleproject/2.1.r25748.890b5d8f-6",
+    "licenseReview": "compliance/native.json"
   },
   {
     "file": "src-tauri/resources/runtime/qemu/libglib-2.0-0.dll",
@@ -431,14 +425,11 @@
   },
   {
     "file": "src-tauri/resources/runtime/qemu-secure/libEGL_angle.dll",
-    "sha256": "625af4e343a115422c906ecee1cc1c7cb9d9f1a5b3827620f80f30e6577f8a4a",
-    "package": "mingw-w64-ucrt-x86_64-angleproject",
-    "version": "2.1.r25748.890b5d8f-6",
-    "base": "mingw-w64-angleproject",
-    "license": "spdx:BSD-3-Clause",
-    "buildDate": "1788370524",
-    "url": "http://angleproject.org/",
-    "provenance": "matched-local-package-by-sha256"
+    "sha256": "06f40e31e81b93a9dca4ec9a6241449aa0a007873e7abd799337d480c9908ed2",
+    "provenance": "local-angle-d3d11-build",
+    "source": "compliance/evidence/angle-build.json",
+    "sourceComponent": "msys/mingw-w64-ucrt-x86_64-angleproject/2.1.r25748.890b5d8f-6",
+    "licenseReview": "compliance/native.json"
   },
   {
     "file": "src-tauri/resources/runtime/qemu-secure/libepoxy-0.dll",
@@ -486,14 +477,11 @@
   },
   {
     "file": "src-tauri/resources/runtime/qemu-secure/libGLESv2.dll",
-    "sha256": "710e246f405a6f63005c0d91f385a1b7e62fb1cfc566fd0fbde01b7319a0d6a4",
-    "package": "mingw-w64-ucrt-x86_64-angleproject",
-    "version": "2.1.r25748.890b5d8f-6",
-    "base": "mingw-w64-angleproject",
-    "license": "spdx:BSD-3-Clause",
-    "buildDate": "1788370524",
-    "url": "http://angleproject.org/",
-    "provenance": "matched-local-package-by-sha256"
+    "sha256": "f40b2c8eddf09fc52ba4701620776f8cbdde55d06d8c317c21e844936d758a8e",
+    "provenance": "local-angle-d3d11-build",
+    "source": "compliance/evidence/angle-build.json",
+    "sourceComponent": "msys/mingw-w64-ucrt-x86_64-angleproject/2.1.r25748.890b5d8f-6",
+    "licenseReview": "compliance/native.json"
   },
   {
     "file": "src-tauri/resources/runtime/qemu-secure/libglib-2.0-0.dll",

@@ -31,6 +31,6 @@
       "sha256": "7a71abceba25069550a11bc59a083c5e955c8ebdf7e7a0ec33f87564522569e2"
     }
   ],
-  "dependencyProvenance": "PACKAGES.txt; DLLs copied from the package-managed UCRT64 toolchain",
+  "dependencyProvenance": "PACKAGES.txt for package DLLs; ANGLE_BUILD.json and ANGLE-NOTICES.txt for source-built D3D11 ANGLE",
   "firmware": "SOURCES.md and retained content-addressed firmware; existing VM identities are preserved"
 }

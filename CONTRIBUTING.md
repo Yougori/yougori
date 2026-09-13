@@ -76,5 +76,9 @@ Original contributions are supplied under Apache-2.0 unless the affected files
 carry a separate license. Retain existing component notices and attribution.
 Read [licensing and source distribution](docs/licensing.md) before changing a
 bundled dependency. Run `npm run compliance:check` after updating the evidence.
-Installer builds additionally require `npm run release:distribution`; unresolved
-source or license findings block packaging, including preview installers.
+Local installer preparation additionally requires `npm run release:package`;
+unresolved source or license findings block packaging, including previews.
+Publishing binaries requires `npm run release:distribution`, which also checks
+matching public source availability. Native graphics changes require the
+embedded-component review in `compliance/native.json`, independently of a
+package's top-level license label.

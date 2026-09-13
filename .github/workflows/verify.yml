@@ -38,8 +38,12 @@ jobs:
           exit $LASTEXITCODE
       - name: Require test-only shell and Python prerequisites (do not silently skip)
         run: pwsh -NoProfile -File scripts/check-windows-test-prerequisites.ps1
-      - name: Source collector regression checks
-        run: python scripts/compliance-collect.test.py
+      - name: Source collector and native license regression checks
+        run: |
+          python scripts/compliance-collect.test.py
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          python scripts/compliance-angle.test.py
+          exit $LASTEXITCODE
       - name: Frontend lint, unit tests and build
         run: |
           npm run lint

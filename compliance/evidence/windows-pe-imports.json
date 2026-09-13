@@ -66,7 +66,7 @@
   },
   {
     "file": "src-tauri/resources/runtime/qemu/libEGL_angle.dll",
-    "sha256": "625af4e343a115422c906ecee1cc1c7cb9d9f1a5b3827620f80f30e6577f8a4a",
+    "sha256": "06f40e31e81b93a9dca4ec9a6241449aa0a007873e7abd799337d480c9908ed2",
     "imports": [
       "libgcc_s_seh-1.dll",
       "KERNEL32.dll",
@@ -158,14 +158,10 @@
   },
   {
     "file": "src-tauri/resources/runtime/qemu/libGLESv2.dll",
-    "sha256": "710e246f405a6f63005c0d91f385a1b7e62fb1cfc566fd0fbde01b7319a0d6a4",
+    "sha256": "f40b2c8eddf09fc52ba4701620776f8cbdde55d06d8c317c21e844936d758a8e",
     "imports": [
-      "ADVAPI32.dll",
-      "CFGMGR32.dll",
-      "d3d9.dll",
       "dxgi.dll",
       "libgcc_s_seh-1.dll",
-      "GDI32.dll",
       "KERNEL32.dll",
       "api-ms-win-crt-convert-l1-1-0.dll",
       "api-ms-win-crt-filesystem-l1-1-0.dll",
@@ -778,7 +774,7 @@
   },
   {
     "file": "src-tauri/resources/runtime/qemu-secure/libEGL_angle.dll",
-    "sha256": "625af4e343a115422c906ecee1cc1c7cb9d9f1a5b3827620f80f30e6577f8a4a",
+    "sha256": "06f40e31e81b93a9dca4ec9a6241449aa0a007873e7abd799337d480c9908ed2",
     "imports": [
       "libgcc_s_seh-1.dll",
       "KERNEL32.dll",
@@ -870,14 +866,10 @@
   },
   {
     "file": "src-tauri/resources/runtime/qemu-secure/libGLESv2.dll",
-    "sha256": "710e246f405a6f63005c0d91f385a1b7e62fb1cfc566fd0fbde01b7319a0d6a4",
+    "sha256": "f40b2c8eddf09fc52ba4701620776f8cbdde55d06d8c317c21e844936d758a8e",
     "imports": [
-      "ADVAPI32.dll",
-      "CFGMGR32.dll",
-      "d3d9.dll",
       "dxgi.dll",
       "libgcc_s_seh-1.dll",
-      "GDI32.dll",
       "KERNEL32.dll",
       "api-ms-win-crt-convert-l1-1-0.dll",
       "api-ms-win-crt-filesystem-l1-1-0.dll",

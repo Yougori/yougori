@@ -1,6 +1,6 @@
 # Third-party compliance work
 
-Engineering review date: 2026-09-13. This record covers the current source tree,
+Engineering review date: 2026-09-14. This record covers the current source tree,
 frontend notices and runtime bytes in `compliance/release.json`.
 
 ## Changes completed
@@ -13,8 +13,10 @@ frontend notices and runtime bytes in `compliance/release.json`.
 - The TPM core/OpenSSL library runs in a separate BSD helper process. QEMU
   exchanges standard TPM command bytes and small lifecycle messages over
   anonymous pipes. Existing NV identities and firmware are preserved.
-- All 70 DLL files have package or local-build provenance. The 26 third-party
+- All 70 DLL files have package or local-build provenance. The 25 remaining package DLL
   package/version pairs have collected source recipes, patches and distfiles.
+  ANGLE is a separately recorded local build from the retained 26th package
+  source archive; its top-level package label is not used as a complete license inventory.
   The local EGL bridge explicitly offers GPL-2.0-or-later or Apache-2.0; its
   QEMU distribution selects the GPL option.
 - All 60 Alpine packages map to 35 exact aports source revisions with checked
@@ -50,7 +52,53 @@ frontend notices and runtime bytes in `compliance/release.json`.
   GitHub had increased the generated patch's abbreviated blob-ID width;
   restoring the original width produced the exact recipe-pinned SHA-256.
 
+## Windows graphics correction on 14 September
+
+Both runtimes now use D3D11-only ANGLE built from revision
+`890b5d8fa2988e3719e0d80421bf3e927db9cd5c` with the retained MSYS2 portability
+patches. The requested DLL targets have 33 reachable build targets. Their 1,633
+compiler/source inputs exclude SPIRV-Tools, Vulkan Loader, VMA, SwiftShader and
+other disabled implementations. The preprocessed overlay font function returns
+`nullptr`; Apache Roboto glyph data is absent. The GL-to-D3D11 translator remains.
+
+The GLES DLL is 6,124,032 bytes, SHA-256
+`f40b2c8eddf09fc52ba4701620776f8cbdde55d06d8c317c21e844936d758a8e`.
+The EGL implementation is 252,928 bytes, SHA-256
+`06f40e31e81b93a9dca4ec9a6241449aa0a007873e7abd799337d480c9908ed2`.
+Both runtime copies match these exact builds.
+
+`compliance/native.json` records selected terms for ANGLE, Chromium helpers,
+xxHash, Khronos interface headers, generated Bison/Flex output and compiler
+support. The six Apache Khronos headers provide declarations, constants and
+platform types; the review is limited to interface use under Apache section 1,
+not incorporation of Apache implementation libraries. Full source/header terms
+and the applicable compiler/output exceptions are retained.
+
+`ANGLE-NOTICES.txt` accompanies each runtime and is included in
+`RUNTIME_LICENSES.txt`. The omitted AMD VMA MIT notice is retained for the retired
+package, even though VMA is absent from the new build. There are 207 runtime
+source/package notice entries with recognized texts.
+
+The compliance gate now pins all 77 Windows PE identities/imports and the
+reviewed ANGLE build. It verifies dynamic loads through libepoxy and the EGL
+bridge, checks each embedded component decision and its notice, and rejects
+changed binaries, excluded implementation paths or missing evidence. Both
+staging scripts require the inspected D3D11 build instead of copying the
+package's broader ANGLE DLLs.
+
 ## Validation
+
+The graphics correction passed 20 JavaScript compliance tests and 13 Python
+collector/native-source tests. Eight diskless checks passed across both QEMU
+runtimes, including automatic GPU selection, each physical adapter and rejection
+of an unavailable adapter. Non-root rendering workloads passed in Alpine and
+Ubuntu containers; the Alpine test also switched from Intel to NVIDIA without
+losing the hardware renderer. The retained logs identify the actual renderer.
+ESLint and the TypeScript/Vite production build passed. Exact-literal comparison against the old embedded implementations
+now finds zero SPIRV-Tools, Vulkan Loader and VMA matches. Two remaining ANGLE
+Vulkan-source literals are also used by shared validation/extension code; the
+build graph and compiler inputs, rather than shared strings, establish exclusion.
+
 
 For the frontend/notice corrections, 15 JavaScript compliance tests and eight
 Python collector tests passed, including omitted MIT notices, new copied files,
@@ -95,8 +143,9 @@ The intended delivery is the matching source bundle alongside each new installer
 with source index, checksums and rebuild instructions. Publishing the repository
 alone would omit the large archives, which are deliberately ignored by Git.
 
-The refreshed source bundle is prepared locally; its publication status is reset
-until this exact source index has been published and verified.
+Rebuilding a source bundle resets its publication status until the exact new
+source index has been published and verified. The current result is recorded in
+`compliance/release.json`; a prior download cannot approve a different index.
 
 Staging uses a dedicated source-bundle prerelease. The Linux workflow pins the
 prior download URL and SHA-256 as a cache seed, recreates the current reviewed
@@ -104,7 +153,11 @@ local source material, and verifies all archives against the current inventory.
 Windows, guest-agent and Linux checks run on staging pushes; main is promoted
 separately after review. The source prerelease does not include app installers.
 
-## Older releases still require follow-up
+## Main and older releases still require follow-up
+
+The owner requested staging-only work. The public default `main` branch still
+predates these corrections; promotion is a separate owner decision. This review
+does not describe the whole public Git history as cleared.
 
 The current website EXE/MSI/DEB files have not been replaced or declared covered
 by this new inventory. The retired stock QEMU identified itself as

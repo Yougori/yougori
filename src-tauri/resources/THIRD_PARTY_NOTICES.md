@@ -72,6 +72,15 @@ QEMU and the EGL bridge use GPL-compatible component terms. GMP, Nettle and
 libunistring are supplied using their GPL-2.0-or-later library option; their
 original declarations and GPLv2 text appear in `RUNTIME_LICENSES.txt`.
 
+The Windows ANGLE graphics libraries are rebuilt from revision
+`890b5d8fa2988e3719e0d80421bf3e927db9cd5c` with D3D11 only. Their
+`ANGLE_BUILD.json` files identify source inputs and the actual build; their
+`ANGLE-NOTICES.txt` files retain ANGLE, Chromium, xxHash, Khronos interface,
+generated-parser and compiler-support terms. These notices are also included
+in `RUNTIME_LICENSES.txt`. Optional Vulkan/SPIRV implementations, SwiftShader,
+Vulkan Memory Allocator and overlay font data are excluded from this build.
+The VMA notice is retained separately for the replaced package version.
+
 ### Modified Windows secure runtime
 
 - Exact source revisions, package inventory, and component licenses are recorded

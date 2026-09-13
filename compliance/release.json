@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "sourceCommit": "6b8155d1a936752f74be5b66665f397623d3b955",
+  "sourceCommit": "111564d721258ff589f028f8a1867e6ef5fb854f",
   "scope": "Current checkout runtime bytes; not a blanket certification of previous releases",
   "inputs": [
     {
@@ -64,6 +64,16 @@
       "bytes": 255
     },
     {
+      "path": "src-tauri/resources/runtime/qemu/ANGLE-NOTICES.txt",
+      "sha256": "b39d32a233d0ec1ed0d6f0bf168c7d27cc6f23571a435ec4f162d700ec93d87d",
+      "bytes": 102763
+    },
+    {
+      "path": "src-tauri/resources/runtime/qemu/ANGLE_BUILD.json",
+      "sha256": "12a40705a3bc5528daeb07868d64a3096458110113cc742263feef3eaf1abf9e",
+      "bytes": 320047
+    },
+    {
       "path": "src-tauri/resources/runtime/qemu/COPYING",
       "sha256": "dd3ce02338c3a48abb6ba59b48809f7108a8bd242cb0cc8be90daafa30707c28",
       "bytes": 17880
@@ -105,7 +115,7 @@
     },
     {
       "path": "src-tauri/resources/runtime/qemu/libEGL_angle.dll",
-      "sha256": "625af4e343a115422c906ecee1cc1c7cb9d9f1a5b3827620f80f30e6577f8a4a",
+      "sha256": "06f40e31e81b93a9dca4ec9a6241449aa0a007873e7abd799337d480c9908ed2",
       "bytes": 252928
     },
     {
@@ -130,8 +140,8 @@
     },
     {
       "path": "src-tauri/resources/runtime/qemu/libGLESv2.dll",
-      "sha256": "710e246f405a6f63005c0d91f385a1b7e62fb1cfc566fd0fbde01b7319a0d6a4",
-      "bytes": 11592704
+      "sha256": "f40b2c8eddf09fc52ba4701620776f8cbdde55d06d8c317c21e844936d758a8e",
+      "bytes": 6124032
     },
     {
       "path": "src-tauri/resources/runtime/qemu/libglib-2.0-0.dll",
@@ -620,8 +630,8 @@
     },
     {
       "path": "src-tauri/resources/runtime/qemu/PACKAGES.txt",
-      "sha256": "8061980762aca69c3e5557c636edb68846a9c2b4aa488826c992fee95b915902",
-      "bytes": 24194
+      "sha256": "0edd970215b6e6d314d2c5d773663ab856bb9bcfb0418e525c44a662cfb0f786",
+      "bytes": 23139
     },
     {
       "path": "src-tauri/resources/runtime/qemu/qemu-img.exe",
@@ -640,8 +650,8 @@
     },
     {
       "path": "src-tauri/resources/runtime/qemu/SHA256SUMS",
-      "sha256": "bc14cc67e2bf24d0a6c491f2e6ec5f96580b570af74d03d1751fe065c29e5fdb",
-      "bytes": 12291
+      "sha256": "f75fb53bc5cf5f486a473a470b44665196cb24a1722985cd68ca90ef9e055f41",
+      "bytes": 12460
     },
     {
       "path": "src-tauri/resources/runtime/qemu/share/bios-256k.bin",
@@ -735,13 +745,23 @@
     },
     {
       "path": "src-tauri/resources/runtime/qemu/SOURCE_BUILD.json",
-      "sha256": "cf149719fa87263047c80665eddbaa79a66497098ee2873d9ee1970e35222aa1",
-      "bytes": 1386
+      "sha256": "5b6718603ecf2cacca6ed5cd4faf9ba812300077a4386663a4454610b675b574",
+      "bytes": 1417
     },
     {
       "path": "src-tauri/resources/runtime/qemu/zlib1.dll",
       "sha256": "11cd91171765cd65f1c3362e3df67e5f5a618a6b88c8cdec899b802eaf1c7b0d",
       "bytes": 127291
+    },
+    {
+      "path": "src-tauri/resources/runtime/qemu-secure/ANGLE-NOTICES.txt",
+      "sha256": "b39d32a233d0ec1ed0d6f0bf168c7d27cc6f23571a435ec4f162d700ec93d87d",
+      "bytes": 102763
+    },
+    {
+      "path": "src-tauri/resources/runtime/qemu-secure/ANGLE_BUILD.json",
+      "sha256": "12a40705a3bc5528daeb07868d64a3096458110113cc742263feef3eaf1abf9e",
+      "bytes": 320047
     },
     {
       "path": "src-tauri/resources/runtime/qemu-secure/EDK2-LICENSE.txt",
@@ -795,7 +815,7 @@
     },
     {
       "path": "src-tauri/resources/runtime/qemu-secure/libEGL_angle.dll",
-      "sha256": "625af4e343a115422c906ecee1cc1c7cb9d9f1a5b3827620f80f30e6577f8a4a",
+      "sha256": "06f40e31e81b93a9dca4ec9a6241449aa0a007873e7abd799337d480c9908ed2",
       "bytes": 252928
     },
     {
@@ -820,8 +840,8 @@
     },
     {
       "path": "src-tauri/resources/runtime/qemu-secure/libGLESv2.dll",
-      "sha256": "710e246f405a6f63005c0d91f385a1b7e62fb1cfc566fd0fbde01b7319a0d6a4",
-      "bytes": 11592704
+      "sha256": "f40b2c8eddf09fc52ba4701620776f8cbdde55d06d8c317c21e844936d758a8e",
+      "bytes": 6124032
     },
     {
       "path": "src-tauri/resources/runtime/qemu-secure/libglib-2.0-0.dll",
@@ -1345,8 +1365,8 @@
     },
     {
       "path": "src-tauri/resources/runtime/qemu-secure/PACKAGES.txt",
-      "sha256": "8d4230fb56fa266126b043e8c9860eb4a3247d9bbb6e9ee83dd9c343ef956e0f",
-      "bytes": 25062
+      "sha256": "4aea522440dfc7a86de73713f21af817a5b91edd31d1788b2a2920eaed09e21e",
+      "bytes": 24007
     },
     {
       "path": "src-tauri/resources/runtime/qemu-secure/QEMU-LICENSE.txt",
@@ -1370,18 +1390,18 @@
     },
     {
       "path": "src-tauri/resources/runtime/qemu-secure/SHA256SUMS",
-      "sha256": "faff1bc8abe3cc180dec3ec61e6e05568df9729e9dcae3a61cd3e3b24514997f",
-      "bytes": 11915
+      "sha256": "baa1e78bcb9b459cb5c474769a3c304c5ee8781d00ab69942f40863301bb537a",
+      "bytes": 12084
     },
     {
       "path": "src-tauri/resources/runtime/qemu-secure/SOURCE_BUILD.json",
-      "sha256": "d4a06d1177ac2a24f56c840d0b31a78276cf0271f61675109b5663a2c76abe1c",
-      "bytes": 1516
+      "sha256": "711ab4d1887da7c343b48010520b170ba075b7168255d25e0926bb2bd0759c7f",
+      "bytes": 1547
     },
     {
       "path": "src-tauri/resources/runtime/qemu-secure/SOURCES.md",
-      "sha256": "11726d11c93879d2f17d9e2d26a5d3315de8b631834042ed0cc776a9366254f6",
-      "bytes": 4843
+      "sha256": "a178796c0f78bd3079ca75ac518fd9767b02539749bed57f5bf1a504cb5d2ebf",
+      "bytes": 5686
     },
     {
       "path": "src-tauri/resources/runtime/qemu-secure/TPM-LICENSE.txt",
@@ -1406,9 +1426,9 @@
     },
     {
       "path": ".github/workflows/linux.yml",
-      "sha256": "2a4e7b7b2f959f51dc0cef692b05c46ddf210c929858ff5a2e955ab648fa6640",
+      "sha256": "56d114dd8f7539ffe85e4d91f79e9bc1464560218d6417e2564f351606713ada",
       "normalization": "lf",
-      "bytes": 4377
+      "bytes": 4411
     },
     {
       "path": "LICENSE",
@@ -1724,9 +1744,9 @@
     },
     {
       "path": "compliance/engineering-review.json",
-      "sha256": "3fac7824c16911585543a23cf02f838c45698b967b75ee88b1aa75b8820923b1",
+      "sha256": "3ff60c1f6556203b243a9a178b72216a6e05f0d30275f46d65d8a4c99e537214",
       "normalization": "lf",
-      "bytes": 2703
+      "bytes": 4760
     },
     {
       "path": "compliance/evidence/all-guest-go-modules.json",
@@ -1739,6 +1759,36 @@
       "sha256": "71b89ad00de6aa869ee7b432ba6d48f70627a1692d5fdf1569c3638d53da0083",
       "normalization": "lf",
       "bytes": 17038
+    },
+    {
+      "path": "compliance/evidence/angle-build.json",
+      "sha256": "12a40705a3bc5528daeb07868d64a3096458110113cc742263feef3eaf1abf9e",
+      "normalization": "lf",
+      "bytes": 320047
+    },
+    {
+      "path": "compliance/evidence/angle-commands.txt",
+      "sha256": "53303ffe057dd64d760513998c92b4d8ac5bb73778710d463dd089cea6dc7457",
+      "normalization": "lf",
+      "bytes": 689641
+    },
+    {
+      "path": "compliance/evidence/angle-gpu-smoke.json",
+      "sha256": "f623d34b1574073d389b708cbd4f86a8cea15c8cce16a292c51413caa0257781",
+      "normalization": "lf",
+      "bytes": 4981
+    },
+    {
+      "path": "compliance/evidence/angle-render-test.txt",
+      "sha256": "c8bb16ce56974da800efa09829d5072c6700e2c33ea0e60dade37af37977a4d1",
+      "normalization": "lf",
+      "bytes": 1167
+    },
+    {
+      "path": "compliance/evidence/angle-targets.json",
+      "sha256": "a1fefdd93feccc3ea6122e8cf6796b902b71d3a24a930690c0599155fe89f89e",
+      "normalization": "lf",
+      "bytes": 74604
     },
     {
       "path": "compliance/evidence/appliance-apk-installed.txt",
@@ -1796,15 +1846,15 @@
     },
     {
       "path": "compliance/evidence/runtime-files.json",
-      "sha256": "7d25dbb2445723e13f118ea8395929f3c09911cdb16a5acbe2e0095d6ea27043",
+      "sha256": "0d123606eb7f35ae5a0d91005511caeecd3b1278828411ded334dbf4db6b9b13",
       "normalization": "lf",
-      "bytes": 51824
+      "bytes": 52542
     },
     {
       "path": "compliance/evidence/runtime-notices.json",
-      "sha256": "54fb86fcc4d646e70ef0ddf78e70762465b41deedb930852a982768a22d476f6",
+      "sha256": "a48df087f85367aa4716fa261e433ec3463ea177fcfc10dfe4a5206e8a98be2e",
       "normalization": "lf",
-      "bytes": 149630
+      "bytes": 149994
     },
     {
       "path": "compliance/evidence/runtime-validation.json",
@@ -1838,21 +1888,39 @@
     },
     {
       "path": "compliance/evidence/windows-dlls.json",
-      "sha256": "a8c7039a7a24201b97d91c1a087822bd2b6d79fc076ce4e12c501631072c127f",
+      "sha256": "8643c913d3b3ff1f636195f3c155824f75d170d3fb92a6f67d170e71ab942859",
       "normalization": "lf",
-      "bytes": 30315
+      "bytes": 30091
     },
     {
       "path": "compliance/evidence/windows-pe-imports.json",
-      "sha256": "7cfe5f3b40c141197773da0cd50e6488ab7c52f2d8bcd209fd7fa283a330ddb7",
+      "sha256": "67554323700f4423cc9ea27e7f363d92fe481eb4a3fede12a99495000ed63478",
       "normalization": "lf",
-      "bytes": 49113
+      "bytes": 48951
     },
     {
       "path": "compliance/frontend.json",
       "sha256": "a90830ef30b53d11be4920ccd51b944d8306ad7d3ddfc38325186d37ba850a9b",
       "normalization": "lf",
       "bytes": 1845
+    },
+    {
+      "path": "compliance/native.json",
+      "sha256": "550fd750a2ac150c565a1a364c0800e6eb6e63a820517308397ec69295e468e4",
+      "normalization": "lf",
+      "bytes": 5815
+    },
+    {
+      "path": "compliance/notices/angle-third-party.txt",
+      "sha256": "b39d32a233d0ec1ed0d6f0bf168c7d27cc6f23571a435ec4f162d700ec93d87d",
+      "normalization": "lf",
+      "bytes": 102763
+    },
+    {
+      "path": "compliance/notices/angle-vma-retired.txt",
+      "sha256": "c70ba3d45830ecc1c22ff4c16228ebb913740c60a8088f332fd0e2c1f656342f",
+      "normalization": "lf",
+      "bytes": 1383
     },
     {
       "path": "compliance/notices/coss-ui-declaration.txt",
@@ -1885,9 +1953,9 @@
     },
     {
       "path": "docs/compliance-status.md",
-      "sha256": "340d7cac9c3ed48444886012e8c8fea230ec9862894364971c3a69a51feea5e8",
+      "sha256": "d605b02768c9538a1fbe10b81a00c67a5816ff214ddfbcb842917dbf26213276",
       "normalization": "lf",
-      "bytes": 7665
+      "bytes": 10903
     },
     {
       "path": "docs/licensing.md",
@@ -1897,9 +1965,9 @@
     },
     {
       "path": "docs/rebuilding-third-party.md",
-      "sha256": "9f0b6b1679042f030bf72077cb642130f20f20f27432101c3f80480c33d9b4a8",
+      "sha256": "defe154c23f9d4e7d5b3a1089a06c0a45e94cd2c73af9dd4c9f658c755fa7c37",
       "normalization": "lf",
-      "bytes": 8164
+      "bytes": 11024
     },
     {
       "path": "index.html",
@@ -1921,9 +1989,9 @@
     },
     {
       "path": "package.json",
-      "sha256": "b2ba7e4b6c036e0da03c105eb90d35fec1c6e292787e2023b73891be933dd392",
+      "sha256": "3eef7f03f0f58c22902bc8e43533c67a60acce0cdb1ad177b5982afe1a9132ed",
       "normalization": "lf",
-      "bytes": 5946
+      "bytes": 6024
     },
     {
       "path": "runtime/cuda/README.md",
@@ -2023,9 +2091,15 @@
     },
     {
       "path": "runtime/gpu/README.md",
-      "sha256": "f5fba1d3ff880e5085dbaba5779595ee5fee1d7469b960f37caf016d2c847a2c",
+      "sha256": "f6ba8725768e3281ce3e3c522899ab0acecc13b280e721ab4caee56f93fa2def",
       "normalization": "lf",
-      "bytes": 2314
+      "bytes": 2755
+    },
+    {
+      "path": "runtime/gpu/angle-d3d11.gn",
+      "sha256": "fee05b2fd8651fc1eb4d57d01afc48b535c6d949dc185829085f800227e702a5",
+      "normalization": "lf",
+      "bytes": 980
     },
     {
       "path": "runtime/gpu/egl-bridge.c",
@@ -2053,9 +2127,9 @@
     },
     {
       "path": "runtime/security/SOURCES.md",
-      "sha256": "a933c46108936e1315b9b43aa1f098e9000308309406172a7c89574b66eeab95",
+      "sha256": "a178796c0f78bd3079ca75ac518fd9767b02539749bed57f5bf1a504cb5d2ebf",
       "normalization": "lf",
-      "bytes": 5238
+      "bytes": 5686
     },
     {
       "path": "runtime/security/edk2-svsm-probe.patch",
@@ -2160,6 +2234,12 @@
       "bytes": 4200
     },
     {
+      "path": "scripts/build-angle-runtime.py",
+      "sha256": "98d96802e41aad77da5fdb30e91356eee071d2c572b62f27d6cec5a66280a93b",
+      "normalization": "lf",
+      "bytes": 7698
+    },
+    {
       "path": "scripts/build-appliance.sh",
       "sha256": "59ca1410959c190329fb83c23a68d081a48f43385ca27eff01b358769591e451",
       "normalization": "lf",
@@ -2250,6 +2330,12 @@
       "bytes": 774
     },
     {
+      "path": "scripts/check-angle-build.ps1",
+      "sha256": "ed0dce4d48306115fae3a58f934775de7578e58aaf77f11fdb9e54e7ea2541ef",
+      "normalization": "lf",
+      "bytes": 1461
+    },
+    {
       "path": "scripts/check-windows-test-prerequisites.ps1",
       "sha256": "48fb3fb80d815ef9117515da5f1222c59ed6ef111f03f4b10cbe83e771175968",
       "normalization": "lf",
@@ -2257,21 +2343,33 @@
     },
     {
       "path": "scripts/collect-compliance.py",
-      "sha256": "6b633f9597a869d36acfdfee5354f3ac1f9c68838d5b30cebd608e6d2dedff3f",
+      "sha256": "17e4efec7a9d95470aaa118322baf79fbff01cb2b4f0f134b161c1ade1de85d3",
       "normalization": "lf",
-      "bytes": 60310
+      "bytes": 61013
+    },
+    {
+      "path": "scripts/compliance-angle.py",
+      "sha256": "f49704535f60ccf850c802793620c4b253a1ccd9d04a6bafac196a057ce6fdfd",
+      "normalization": "lf",
+      "bytes": 9814
+    },
+    {
+      "path": "scripts/compliance-angle.test.py",
+      "sha256": "4c65c7330f4d01b8bf58ddf756483f0bb250513b65d2c2c5220a5e02ab1c0ae3",
+      "normalization": "lf",
+      "bytes": 1733
     },
     {
       "path": "scripts/compliance-check.mjs",
-      "sha256": "2ad295dee586f12f4b6099b3f4b2c2e71a129f9a799a3446c6e697abfdb6863a",
+      "sha256": "e2219ec73deb03d10dbca29f89323137c509632290bba6b51e41519974493c8a",
       "normalization": "lf",
-      "bytes": 7091
+      "bytes": 7192
     },
     {
       "path": "scripts/compliance-check.test.mjs",
-      "sha256": "0485c5c0229280248d238f4465e4fcecf9523481a278cf76ebdbd095f8f34435",
+      "sha256": "6cbf77776026dd3ac81a05e1a966c773af3c7b4b8cb281b200d53b3ca3c761d0",
       "normalization": "lf",
-      "bytes": 12500
+      "bytes": 12560
     },
     {
       "path": "scripts/compliance-collect.test.py",
@@ -2296,6 +2394,18 @@
       "sha256": "b3604fa2503c0357d7cfdb57b8f9241b1d8bef1c7fe84c2bf3ebfe0d4534c0f8",
       "normalization": "lf",
       "bytes": 6248
+    },
+    {
+      "path": "scripts/compliance-native.mjs",
+      "sha256": "3ccce5fefa40c01ccd1b7f54ca5952b01a0ed6ad878acb72f5367ed7e0ca4a90",
+      "normalization": "lf",
+      "bytes": 6991
+    },
+    {
+      "path": "scripts/compliance-native.test.mjs",
+      "sha256": "41b05d451f6be24663502928140c672c188f9889085866f94994986a5be6f451",
+      "normalization": "lf",
+      "bytes": 2854
     },
     {
       "path": "scripts/compliance-oci-sources.py",
@@ -2365,9 +2475,9 @@
     },
     {
       "path": "scripts/package-compliance.py",
-      "sha256": "4888c3b1e93345a8a9b80d75eff5412fbdc753d466ec6ede6cf7ddbf62f968c3",
+      "sha256": "96206a3cc3f936c9b3adca51e820be0b0584b01053dc5084c85c6e7c68c72b48",
       "normalization": "lf",
-      "bytes": 3590
+      "bytes": 3616
     },
     {
       "path": "scripts/patch-novnc.mjs",
@@ -2401,21 +2511,27 @@
     },
     {
       "path": "scripts/stage-secure-runtime.ps1",
-      "sha256": "9454d7c21bbebb52e72b2e81d02adc37b10a1e7305404aec15608cccbaee1f45",
+      "sha256": "be61d56c895b9d2c60df84c50e8301047fe827d669be6751e949018c607892c6",
       "normalization": "lf",
-      "bytes": 6697
+      "bytes": 7051
     },
     {
       "path": "scripts/stage-windows-qemu.ps1",
-      "sha256": "b591d4159e90ca17ed4ae7f295ff22e7375efff608dffe142ca830235b0c2566",
+      "sha256": "5ef468a10b7adaa80d8463d74e5f8a4f885e5b7b311d9feebca6502fb73ac8b4",
       "normalization": "lf",
-      "bytes": 6152
+      "bytes": 6506
     },
     {
       "path": "scripts/start-desktop-dev-admin.ps1",
       "sha256": "7ce3faa08634d927d0ff3328059ec7dad7ea74218855ac1ba3d3a177545cf582",
       "normalization": "lf",
       "bytes": 1241
+    },
+    {
+      "path": "scripts/test-angle-runtime.py",
+      "sha256": "6a0648ab136c9e90420ceda858185e2646ce4cd170664718d19c15de104b14f2",
+      "normalization": "lf",
+      "bytes": 4518
     },
     {
       "path": "scripts/test-bounded-test-process.ps1",
@@ -2771,15 +2887,15 @@
     },
     {
       "path": "src-tauri/resources/RUNTIME_LICENSES.txt",
-      "sha256": "a3688a2baf2e9caf66f825092881b9375308c7724c765ccb2f1cce9747aa76fc",
+      "sha256": "d4740a67f719dc7ad07f664c15f01daa73ae811a1ec0d588a39249594b7c9030",
       "normalization": "lf",
-      "bytes": 5248892
+      "bytes": 5356408
     },
     {
       "path": "src-tauri/resources/THIRD_PARTY_NOTICES.md",
-      "sha256": "a7bfce34716a2c37334f31c27bda3365110f863406b69d07f6dd73d04c4b4e40",
+      "sha256": "6532cd4a080a8614dad754ae76d29fb58dd27ca6bdbdec3d8e37b3d7697a4568",
       "normalization": "lf",
-      "bytes": 10479
+      "bytes": 11066
     },
     {
       "path": "src-tauri/resources/WORKSPACE_LICENSES.txt",
@@ -5121,8 +5237,8 @@
     },
     {
       "file": "yougori-runtime-build-material.tar.gz",
-      "sha256": "86bdefff9e2f7118519183b812f0a0b77fd92c2c62debcb0162b279d90d558b1",
-      "bytes": 1412707
+      "sha256": "391ceaeff92e3298d58d6d960f904a939d0b5a08e4dd36fc91448d7c18dc504d",
+      "bytes": 1454376
     }
   ],
   "components": [
@@ -5370,8 +5486,8 @@
       "id": "local-build-material",
       "status": "collected",
       "file": "yougori-runtime-build-material.tar.gz",
-      "sha256": "86bdefff9e2f7118519183b812f0a0b77fd92c2c62debcb0162b279d90d558b1",
-      "bytes": 1412707
+      "sha256": "391ceaeff92e3298d58d6d960f904a939d0b5a08e4dd36fc91448d7c18dc504d",
+      "bytes": 1454376
     },
     {
       "id": "alpine/alpine-baselayout/60a7585bbab2fa0f762504eb617dbca90216e31f",
@@ -9682,15 +9798,15 @@
   "review": {
     "status": "approved",
     "reviewer": "Codex engineering review",
-    "date": "2026-09-13",
+    "date": "2026-09-14",
     "evidence": "docs/compliance-status.md; compliance/evidence; docs/rebuilding-third-party.md",
-    "scope": "Local preparation of the current frontend source/notices, recorded Windows/appliance runtime and matching source materials. Public source availability is checked separately.",
+    "scope": "Current staging source/notices and exact recorded Windows/appliance runtime, including the rebuilt D3D11-only ANGLE graphics closure. Matching public source availability is verified separately. Main and older installers are outside this staging approval.",
     "decisions": [
       "Original Yougori code uses the owner's selected Apache-2.0 plus NOTICE; separately licensed components retain their licenses.",
       "QEMU is built from the supplied pinned upstream source and GPL-compatible local modifications; the retired JACK/Berkeley DB import chain is absent.",
       "QEMU exchanges TPM wire commands with a separate BSD helper; no QEMU internal objects or OpenSSL library are linked into QEMU through that helper.",
       "GMP, Nettle and libunistring use their upstream GPL-2.0-or-later library option; original license declarations and full GPLv2 text are retained.",
-      "Bundled shared libraries have matching MSYS recipes/source inputs. Recipients may rebuild/replace them and update editable integrity manifests.",
+      "Package-built shared libraries have matching MSYS recipes/source inputs; ANGLE is rebuilt from the retained inputs using its separately reviewed D3D11-only profile. Recipients may rebuild/replace them and update editable integrity manifests.",
       "Linux/appliance packages have exact aports recipes and checked distfiles. Firmware source revisions, build configuration and unchanged shipped bytes are recorded.",
       "Static OCI libraries have corresponding Debian source/patches and application sources/build procedures for relinking; the musl-linked local helper rebuilt byte-for-byte.",
       "NoVNC and other copyleft source materials and third-party attribution are retained independently of Yougori's root license.",
@@ -9699,7 +9815,14 @@
       "QEMU modification notices cover all ten changed upstream files. Applying the supplemental comment patch preserves all twelve original build-source hashes after removing only the new headers; existing build records are retained.",
       "Frontend source/assets, copied-code notices and production CSS/module imports are checked. Source index/checksum mismatches and publication evidence for an older index are rejected.",
       "The recorded runtime tests passed. Exported QEMU source restoration, patch equivalence and configure/dependency-graph checks passed.",
-      "Public source access must be verified before distribution. Old installer source gaps remain separate and have not been declared resolved."
+      "Public source access must be verified before distribution. Old installer source gaps remain separate and have not been declared resolved.",
+      "The two ANGLE DLL implementations were rebuilt from revision 890b5d8fa2988e3719e0d80421bf3e927db9cd5c. Their 33 reachable targets and 1,633 compiler/source inputs exclude Vulkan/SPIRV-Tools/Vulkan Loader/VMA/SwiftShader code; preprocessing confirms that Apache Roboto glyph data is absent.",
+      "ANGLE embedded notices explicitly retain Chromium helpers, xxHash, Khronos interfaces, Bison/Flex output permissions and compiler support terms. The historical AMD VMA MIT notice is also retained for the replaced MSYS2 package.",
+      "Six Khronos Apache headers contain only API declarations/constants/platform types, with no executable implementation; Apache section 1 excludes mere interface binding from its derivative-work definition. Their source headers and Apache text remain available. This narrow review does not extend to Apache implementation-bearing libraries.",
+      "GCC Runtime Library Exception, LLVM exception and Bison output exception apply to the recorded compilation/output; full terms and supplementary MinGW/Boost/zlib notices are retained. The build uses the unmodified standard GCC toolchain.",
+      "All 77 Windows PE identities/imports are explicitly pinned for native license review. The checker includes libepoxy -> EGL bridge -> ANGLE EGL -> GLES dynamic loads, exact ANGLE build identity, per-component decisions and full embedded notices.",
+      "Eight diskless GPU initialization/selection checks passed for ordinary and secure QEMU. Alpine and Ubuntu non-root hardware rendering tests passed, including physical-adapter switching. The excluded native implementation literal matches fell to zero for SPIRV-Tools, Vulkan Loader and VMA.",
+      "Twenty JavaScript compliance regressions and thirteen Python collector/native-source regressions passed; source/archive, full payload and staging CI results are recorded with the remediation evidence."
     ]
   },
   "publication": {

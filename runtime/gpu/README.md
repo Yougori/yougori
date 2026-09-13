@@ -3,7 +3,12 @@
 The unmodified QEMU Windows EGL path opens the default display. Yougori's small
 `libEGL.dll` bridge redirects display creation to ANGLE's D3D11 backend using the
 selected adapter LUID. It forwards the complete upstream export table to the
-original, preserved `libEGL_angle.dll`; no QEMU or ANGLE source fork is required.
+source-built `libEGL_angle.dll`. ANGLE is built from its pinned upstream revision
+with the retained MSYS2 portability patches and the D3D11-only profile in
+`angle-d3d11.gn`. Optional Vulkan/SPIRV/SwiftShader implementations and overlay
+font data are excluded from the DLLs, rather than merely disabled at runtime.
+`ANGLE_BUILD.json` records compiler inputs and `ANGLE-NOTICES.txt` retains
+embedded-component terms. See [rebuild instructions](../../docs/rebuilding-third-party.md#windows-angle-graphics).
 
 After initialization, it queries the actual D3D11 device's DXGI adapter. A missing
 or mismatched explicit selection fails initialization. This is important because
@@ -29,7 +34,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-gpu-bridge.ps1
 ```
 
 Close Yougori before rebuilding DLLs used by an active runtime. The script
-preserves upstream ANGLE and updates the bundled checksums. Normal source users
+preserves the separate ANGLE implementation and updates the bundled checksums. Normal source users
 can use the checked-in binaries without rebuilding the bridge. GPU verification
 is local and does not publish services or open display windows.
 

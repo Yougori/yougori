@@ -2,13 +2,15 @@
 param(
   [Parameter(Mandatory)][string]$OutputDirectory,
   [string]$QemuBuildDirectory = "$PSScriptRoot/../build/secure-runtime/qemu-build",
-  [string]$SourceDirectory = "$PSScriptRoot/../build/runtime-cache/qemu-secure-src"
+  [string]$SourceDirectory = "$PSScriptRoot/../build/runtime-cache/qemu-secure-src",
+  [string]$AngleDirectory = "$PSScriptRoot/../build/angle-runtime/angle/out/Yougori-D3D11"
 )
 $ErrorActionPreference = 'Stop'
 $repo = (Resolve-Path -LiteralPath "$PSScriptRoot/..").Path
 $output = [IO.Path]::GetFullPath($OutputDirectory)
 $source = (Resolve-Path -LiteralPath $SourceDirectory).Path
 $build = (Resolve-Path -LiteralPath $QemuBuildDirectory).Path
+$angle = & "$PSScriptRoot/check-angle-build.ps1" -AngleDirectory $AngleDirectory
 if (-not $output.StartsWith($repo + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase)) {
   throw 'Stage runtime files inside this checkout.'
 }
@@ -18,7 +20,7 @@ if ($LASTEXITCODE -or $revision -ne '84f07211cc5b4fc6a371559bf8a5de4fb068e648') 
 New-Item -ItemType Directory -Path $output | Out-Null
 $ucrt = "$repo/build/secure-runtime/toolchain/msys64/ucrt64/bin"
 $queue = [Collections.Generic.Queue[string]]::new()
-foreach ($file in @("$build/qemu-system-x86_64.exe", "$build/qemu-img.exe", "$ucrt/libEGL.dll", "$ucrt/libGLESv2.dll")) {
+foreach ($file in @("$build/qemu-system-x86_64.exe", "$build/qemu-img.exe", "$angle/libEGL.dll", "$angle/libGLESv2.dll")) {
   $queue.Enqueue($file)
 }
 $seen = [Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
@@ -73,10 +75,11 @@ foreach ($name in @('COPYING', 'COPYING.LIB', 'LICENSE', 'README.rst')) {
   Copy-Item -LiteralPath "$source/$name" -Destination $output
 }
 & "$PSScriptRoot/build-gpu-bridge.ps1" -QemuDirectory $output
+Copy-Item -LiteralPath "$angle/ANGLE_BUILD.json", "$angle/ANGLE-NOTICES.txt" -Destination $output
 Copy-Item -LiteralPath "$ucrt/../share/licenses" -Destination "$output/licenses" -Recurse
 Copy-Item -LiteralPath "$repo/runtime/security/licenses" -Destination "$output/licenses/extra" -Recurse
 $pacman = "$repo/build/secure-runtime/toolchain/msys64/usr/bin/pacman.exe"
-$dlls = @($seen | Where-Object { Test-Path -LiteralPath "$ucrt/$_" } | ForEach-Object { "/ucrt64/bin/$_" })
+$dlls = @($seen | Where-Object { $_ -notin @('libEGL.dll', 'libGLESv2.dll') -and (Test-Path -LiteralPath "$ucrt/$_") } | ForEach-Object { "/ucrt64/bin/$_" })
 $owners = @(& $pacman -Qoq @dlls | Sort-Object -Unique)
 if ($LASTEXITCODE) { throw 'Cannot identify runtime packages.' }
 $packages = & $pacman -Qi @owners
@@ -92,7 +95,7 @@ $sourceRecord = [ordered]@{
   profile = 'Windows x86_64 WHPX/TCG, VNC, OpenGL; disk utility enabled; JACK/SDL/GTK/spice/remote disk backends disabled'
   patches = @($patches | ForEach-Object { [ordered]@{ path = "runtime/security/$_"; sha256 = (Get-FileHash -LiteralPath "$repo/runtime/security/$_" -Algorithm SHA256).Hash.ToLowerInvariant() } })
   firmware = 'Unmodified pc-bios files from the recorded QEMU revision, with bz2 firmware decompressed'
-  dependencyProvenance = 'PACKAGES.txt; DLLs copied from the package-managed UCRT64 toolchain'
+  dependencyProvenance = 'PACKAGES.txt for package DLLs; ANGLE_BUILD.json and ANGLE-NOTICES.txt for source-built D3D11 ANGLE'
 }
 [IO.File]::WriteAllText("$output/SOURCE_BUILD.json", ($sourceRecord | ConvertTo-Json -Depth 8) + "`n", [Text.UTF8Encoding]::new($false))
 $lines = Get-ChildItem -LiteralPath $output -Recurse -File | Where-Object Name -ne SHA256SUMS | Sort-Object FullName | ForEach-Object {

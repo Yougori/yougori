@@ -7,7 +7,7 @@ Pinned source revisions (the build script fetches and checks these exact commits
 
 | Component | Source | Revision | Local changes |
 | --- | --- | --- | --- |
-| QEMU 11.1 | https://github.com/qemu/qemu | 84f07211cc5b4fc6a371559bf8a5de4fb068e648 | `qemu-windows-tpm.patch`, `qemu-whpx-tpm-ppi.patch`, `qemu-whpx-reboot.patch`, `tpm-qemu.c`, `tpm-api.h` |
+| QEMU 11.1 | https://github.com/qemu/qemu | 84f07211cc5b4fc6a371559bf8a5de4fb068e648 | `qemu-windows-tpm.patch`, `qemu-whpx-tpm-ppi.patch`, `qemu-whpx-reboot.patch`, `qemu-license-notices.patch`, `tpm-qemu.c`, `tpm-api.h` |
 | Microsoft/TCG TPM 2.0 reference | https://github.com/microsoft/ms-tpm-20-ref | ee21db0a941decd3cac67925ea3310873af60ab3 | `ms-tpm-openssl3.patch`, private Windows platform/library glue |
 | EDK2 stable202608 | https://github.com/tianocore/edk2 | 2970e5699ba6267f3384ffab20f96647578aebc8 | `edk2-svsm-probe.patch`; QEMU_PV_VARS, Secure Boot and TPM2 build options |
 | Microsoft Secure Boot objects | https://github.com/microsoft/secureboot_objects | 9a2bbf82e86b62694e44aba3a4068d8dd0c943d7 | Public x64 DBX only |
@@ -15,11 +15,17 @@ Pinned source revisions (the build script fetches and checks these exact commits
 EDK2 submodules are fixed by that commit. `scripts/build-secure-runtime.ps1`
 and its referenced shell scripts are the build instructions. Patches are
 under `runtime/security/`. Preserve these sources with binary releases.
+`qemu-license-notices.patch` is applied last. It adds dated notices to all ten
+modified upstream files, identifying changes first recorded on 2026-09-09 and
+notices added on 2026-09-13. It changes no executable code. The original build
+records remain intact; supplementary annotation/equivalence evidence is in
+`compliance/evidence/qemu-modification-notices.json`.
 The firmware configuration disables the interactive shell and network boot,
 and uses QEMU's authenticated variable service without requiring SMM.
 The existing OpenDock `runtime/gpu/egl-bridge.c` is also built for this runtime
-to preserve explicit adapter selection; the complete upstream ANGLE DLL is
-kept separately as `libEGL_angle.dll`.
+to preserve explicit adapter selection; the source-built D3D11-only ANGLE DLL is
+kept separately as `libEGL_angle.dll`. `ANGLE_BUILD.json` and `ANGLE-NOTICES.txt`
+record its source revision, compiler inputs and embedded-component licenses.
 
 The TPM glue replaces the reference test simulator's entropy and NV-storage
 platform and uses Windows BCryptGenRandom. A private BSD-licensed
@@ -46,10 +52,14 @@ OpenSSL conversion uses public APIs rather than the upstream private BIGNUM
 layout. Unimplemented ACT timers are disabled. TPM live migration is blocked.
 This is a software TPM, not a certified or physically tamper-resistant module.
 
-Shared libraries are unmodified MSYS2 UCRT64 packages. `PACKAGES.txt` records
+Shared libraries other than ANGLE are unmodified MSYS2 UCRT64 packages. `PACKAGES.txt` records
 their exact versions, upstream URLs, licenses and package build jobs. Their
 packaging recipes and patches are at https://github.com/msys2/MINGW-packages;
 source/package archives are available through https://packages.msys2.org/.
+ANGLE uses the retained package source inputs with `scripts/build-angle-runtime.py`
+and `runtime/gpu/angle-d3d11.gn`; do not replace it with the Vulkan-enabled
+package DLLs. Its compiled implementation closure is reviewed separately in
+`compliance/native.json` and `compliance/evidence/angle-build.json`.
 `licenses/` includes the toolchain's upstream license notices (including some
 build-only tool notices) plus the missing p11-kit 0.26.5 notices obtained from
 https://github.com/p11-glue/p11-kit/tree/0.26.5 and GNU LGPL v3 from

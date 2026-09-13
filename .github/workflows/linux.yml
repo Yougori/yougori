@@ -36,6 +36,7 @@ jobs:
         run: |
           npm ci
           npm run lint
+          npm run test:compliance
           node --test scripts/release-preflight.test.mjs
           npx vitest run src
           npm run build

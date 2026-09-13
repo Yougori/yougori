@@ -28,5 +28,5 @@
     }
   ],
   "firmware": "Unmodified pc-bios files from the recorded QEMU revision, with bz2 firmware decompressed",
-  "dependencyProvenance": "PACKAGES.txt; DLLs copied from the package-managed UCRT64 toolchain"
+  "dependencyProvenance": "PACKAGES.txt for package DLLs; ANGLE_BUILD.json and ANGLE-NOTICES.txt for source-built D3D11 ANGLE"
 }

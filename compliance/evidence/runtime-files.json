@@ -60,6 +60,16 @@
     "bytes": 255
   },
   {
+    "path": "src-tauri/resources/runtime/qemu/ANGLE-NOTICES.txt",
+    "sha256": "b39d32a233d0ec1ed0d6f0bf168c7d27cc6f23571a435ec4f162d700ec93d87d",
+    "bytes": 102763
+  },
+  {
+    "path": "src-tauri/resources/runtime/qemu/ANGLE_BUILD.json",
+    "sha256": "12a40705a3bc5528daeb07868d64a3096458110113cc742263feef3eaf1abf9e",
+    "bytes": 320047
+  },
+  {
     "path": "src-tauri/resources/runtime/qemu/COPYING",
     "sha256": "dd3ce02338c3a48abb6ba59b48809f7108a8bd242cb0cc8be90daafa30707c28",
     "bytes": 17880
@@ -101,7 +111,7 @@
   },
   {
     "path": "src-tauri/resources/runtime/qemu/libEGL_angle.dll",
-    "sha256": "625af4e343a115422c906ecee1cc1c7cb9d9f1a5b3827620f80f30e6577f8a4a",
+    "sha256": "06f40e31e81b93a9dca4ec9a6241449aa0a007873e7abd799337d480c9908ed2",
     "bytes": 252928
   },
   {
@@ -126,8 +136,8 @@
   },
   {
     "path": "src-tauri/resources/runtime/qemu/libGLESv2.dll",
-    "sha256": "710e246f405a6f63005c0d91f385a1b7e62fb1cfc566fd0fbde01b7319a0d6a4",
-    "bytes": 11592704
+    "sha256": "f40b2c8eddf09fc52ba4701620776f8cbdde55d06d8c317c21e844936d758a8e",
+    "bytes": 6124032
   },
   {
     "path": "src-tauri/resources/runtime/qemu/libglib-2.0-0.dll",
@@ -616,8 +626,8 @@
   },
   {
     "path": "src-tauri/resources/runtime/qemu/PACKAGES.txt",
-    "sha256": "8061980762aca69c3e5557c636edb68846a9c2b4aa488826c992fee95b915902",
-    "bytes": 24194
+    "sha256": "0edd970215b6e6d314d2c5d773663ab856bb9bcfb0418e525c44a662cfb0f786",
+    "bytes": 23139
   },
   {
     "path": "src-tauri/resources/runtime/qemu/qemu-img.exe",
@@ -636,8 +646,8 @@
   },
   {
     "path": "src-tauri/resources/runtime/qemu/SHA256SUMS",
-    "sha256": "bc14cc67e2bf24d0a6c491f2e6ec5f96580b570af74d03d1751fe065c29e5fdb",
-    "bytes": 12291
+    "sha256": "f75fb53bc5cf5f486a473a470b44665196cb24a1722985cd68ca90ef9e055f41",
+    "bytes": 12460
   },
   {
     "path": "src-tauri/resources/runtime/qemu/share/bios-256k.bin",
@@ -731,13 +741,23 @@
   },
   {
     "path": "src-tauri/resources/runtime/qemu/SOURCE_BUILD.json",
-    "sha256": "cf149719fa87263047c80665eddbaa79a66497098ee2873d9ee1970e35222aa1",
-    "bytes": 1386
+    "sha256": "5b6718603ecf2cacca6ed5cd4faf9ba812300077a4386663a4454610b675b574",
+    "bytes": 1417
   },
   {
     "path": "src-tauri/resources/runtime/qemu/zlib1.dll",
     "sha256": "11cd91171765cd65f1c3362e3df67e5f5a618a6b88c8cdec899b802eaf1c7b0d",
     "bytes": 127291
+  },
+  {
+    "path": "src-tauri/resources/runtime/qemu-secure/ANGLE-NOTICES.txt",
+    "sha256": "b39d32a233d0ec1ed0d6f0bf168c7d27cc6f23571a435ec4f162d700ec93d87d",
+    "bytes": 102763
+  },
+  {
+    "path": "src-tauri/resources/runtime/qemu-secure/ANGLE_BUILD.json",
+    "sha256": "12a40705a3bc5528daeb07868d64a3096458110113cc742263feef3eaf1abf9e",
+    "bytes": 320047
   },
   {
     "path": "src-tauri/resources/runtime/qemu-secure/EDK2-LICENSE.txt",
@@ -791,7 +811,7 @@
   },
   {
     "path": "src-tauri/resources/runtime/qemu-secure/libEGL_angle.dll",
-    "sha256": "625af4e343a115422c906ecee1cc1c7cb9d9f1a5b3827620f80f30e6577f8a4a",
+    "sha256": "06f40e31e81b93a9dca4ec9a6241449aa0a007873e7abd799337d480c9908ed2",
     "bytes": 252928
   },
   {
@@ -816,8 +836,8 @@
   },
   {
     "path": "src-tauri/resources/runtime/qemu-secure/libGLESv2.dll",
-    "sha256": "710e246f405a6f63005c0d91f385a1b7e62fb1cfc566fd0fbde01b7319a0d6a4",
-    "bytes": 11592704
+    "sha256": "f40b2c8eddf09fc52ba4701620776f8cbdde55d06d8c317c21e844936d758a8e",
+    "bytes": 6124032
   },
   {
     "path": "src-tauri/resources/runtime/qemu-secure/libglib-2.0-0.dll",
@@ -1341,8 +1361,8 @@
   },
   {
     "path": "src-tauri/resources/runtime/qemu-secure/PACKAGES.txt",
-    "sha256": "8d4230fb56fa266126b043e8c9860eb4a3247d9bbb6e9ee83dd9c343ef956e0f",
-    "bytes": 25062
+    "sha256": "4aea522440dfc7a86de73713f21af817a5b91edd31d1788b2a2920eaed09e21e",
+    "bytes": 24007
   },
   {
     "path": "src-tauri/resources/runtime/qemu-secure/QEMU-LICENSE.txt",
@@ -1366,18 +1386,18 @@
   },
   {
     "path": "src-tauri/resources/runtime/qemu-secure/SHA256SUMS",
-    "sha256": "faff1bc8abe3cc180dec3ec61e6e05568df9729e9dcae3a61cd3e3b24514997f",
-    "bytes": 11915
+    "sha256": "baa1e78bcb9b459cb5c474769a3c304c5ee8781d00ab69942f40863301bb537a",
+    "bytes": 12084
   },
   {
     "path": "src-tauri/resources/runtime/qemu-secure/SOURCE_BUILD.json",
-    "sha256": "d4a06d1177ac2a24f56c840d0b31a78276cf0271f61675109b5663a2c76abe1c",
-    "bytes": 1516
+    "sha256": "711ab4d1887da7c343b48010520b170ba075b7168255d25e0926bb2bd0759c7f",
+    "bytes": 1547
   },
   {
     "path": "src-tauri/resources/runtime/qemu-secure/SOURCES.md",
-    "sha256": "11726d11c93879d2f17d9e2d26a5d3315de8b631834042ed0cc776a9366254f6",
-    "bytes": 4843
+    "sha256": "a178796c0f78bd3079ca75ac518fd9767b02539749bed57f5bf1a504cb5d2ebf",
+    "bytes": 5686
   },
   {
     "path": "src-tauri/resources/runtime/qemu-secure/TPM-LICENSE.txt",

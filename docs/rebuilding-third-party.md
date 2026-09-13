@@ -77,6 +77,51 @@ template using pinned virt-firmware tooling. The boot helper's complete source
 and MSVC build command are in `src-tauri/boot-helper/`. No host firmware key is
 needed. Public Microsoft trust objects retain their component license.
 
+## Windows ANGLE graphics
+
+The Windows runtimes use ANGLE revision
+`890b5d8fa2988e3719e0d80421bf3e927db9cd5c` with only D3D11 enabled.
+The original MSYS2 package DLLs also incorporate optional Vulkan/SPIRV
+implementations and are not substitutes for this profile.
+
+Restore `msys-mingw-w64-ucrt-x86_64-angleproject-2.1.r25748.890b5d8f-6.tar.gz`
+from the indexed source bundle. Its `recipe/` and `distfiles/` directories are
+the `--inputs` directory below. The build script is in the local source-material
+archive, alongside `runtime/gpu/angle-d3d11.gn` and the component notices.
+Use Windows, Python 3.12+ and an MSYS2 UCRT64 toolchain with GCC, GN, Ninja,
+Python, pkgconf, patch and zlib development files. The exact versions used for
+the shipped DLLs are recorded in `ANGLE_BUILD.json` under `toolchainPackages`.
+
+```powershell
+python scripts/build-angle-runtime.py --inputs C:/rebuild/angle-sources --source-index C:/rebuild/bundle/SOURCE_INDEX.json --msys C:/msys64
+python scripts/test-angle-runtime.py --angle build/angle-runtime/angle/out/Yougori-D3D11 --output build/angle-runtime/gpu-smoke.json
+```
+
+The default paths work with this project's compliance cache and local toolchain.
+Build work stays under `build/angle-runtime`; existing runtime files are preserved.
+All recipe input digests are checked before extraction. The script restores the
+ANGLE, Chromium build/clang/zlib and SPIRV header/tool source inputs and applies
+the retained portability patches. GN parses unused SPIRV targets, but the
+requested DLL targets do not compile or link them. Build arguments explicitly
+disable Vulkan, SwiftShader, OpenGL, D3D9, WGPU, ASTC encoding, frame capture and
+the overlay. D3D11 and HLSL translation remain available.
+
+The inspector follows the requested targets and records the compiler's actual
+header dependencies, source hashes and commands. It rejects excluded native
+implementations and unreviewed source license declarations, and preprocesses
+the font source to verify that glyph data is absent. API-only Khronos headers,
+Bison/Flex output permissions, Chromium helpers, xxHash and compiler runtime
+exceptions have explicit decisions and notice texts. This is not a blanket
+assumption that ANGLE's package-level BSD label covers everything it contains.
+
+The outputs are `libEGL.dll`, `libGLESv2.dll`, `ANGLE_BUILD.json` and
+`ANGLE-NOTICES.txt`. Both Windows staging scripts accept `-AngleDirectory` and
+verify those identities before copying. The graphics bridge keeps the rebuilt
+EGL library as `libEGL_angle.dll`. A new build requires inspection and review
+before updating the pinned build digest in `compliance/native.json`.
+Recipients may make their own changes and update editable manifests; these
+project release checks do not restrict the licenses' modification permissions.
+
 ## Linux packages and libraries
 
 Each `alpine-*.tar.gz` contains an exact aports recipe directory, configuration
@@ -89,7 +134,7 @@ builds uses your own key; it does not require Yougori's keys.
 
 The MSYS archives contain their original `.BUILDINFO`, `.PKGINFO`, recipe files
 and verified source inputs. They cover the shared libraries bundled beside
-QEMU. Use MSYS2's normal `makepkg-mingw` build procedure with those inputs and
+QEMU. ANGLE uses the specific profile above. For the other packages, use MSYS2's normal `makepkg-mingw` build procedure with those inputs and
 the recorded UCRT64 architecture. For a `git+...#commit=...` input, the supplied
 tar is the exact `git archive` content used by makepkg's source checksum.
 Unpack it at the recipe's named source location; use the recorded prepare/build

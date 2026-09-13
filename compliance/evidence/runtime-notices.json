@@ -3353,15 +3353,6 @@
     ]
   },
   {
-    "component": "mingw-w64-ucrt-x86_64-angleproject/2.1.r25748.890b5d8f-6",
-    "texts": [
-      {
-        "path": "ucrt64/share/licenses/angleproject/LICENSE",
-        "sha256": "bf4da21bd20bcfb5b60b7ecc67fa864a79be049e21d6178076887f178dd6c71a"
-      }
-    ]
-  },
-  {
     "component": "mingw-w64-ucrt-x86_64-brotli/1.2.0-1",
     "texts": [
       {
@@ -3742,6 +3733,33 @@
       {
         "path": "ucrt64/share/licenses/zstd/LICENSE",
         "sha256": "7055266497633c9025b777c78eb7235af13922117480ed5c674677adc381c9d8"
+      }
+    ]
+  },
+  {
+    "component": "angle-third-party",
+    "texts": [
+      {
+        "path": "angle-third-party.txt",
+        "sha256": "b39d32a233d0ec1ed0d6f0bf168c7d27cc6f23571a435ec4f162d700ec93d87d"
+      }
+    ]
+  },
+  {
+    "component": "angle-vma-retired",
+    "texts": [
+      {
+        "path": "angle-vma-retired.txt",
+        "sha256": "c70ba3d45830ecc1c22ff4c16228ebb913740c60a8088f332fd0e2c1f656342f"
+      }
+    ]
+  },
+  {
+    "component": "coss-ui-declaration",
+    "texts": [
+      {
+        "path": "coss-ui-declaration.txt",
+        "sha256": "a993eab37408721309858dff0e9f13c65a32847d7b484c62dda7c61f49a8e760"
       }
     ]
   },

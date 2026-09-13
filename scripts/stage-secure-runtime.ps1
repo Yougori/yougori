@@ -1,11 +1,13 @@
 [CmdletBinding()]
 param(
   [string]$OutputDirectory = "$PSScriptRoot/../build/secure-runtime/staged",
-  [string]$QemuBuildDirectory = "$PSScriptRoot/../build/secure-runtime/qemu-build"
+  [string]$QemuBuildDirectory = "$PSScriptRoot/../build/secure-runtime/qemu-build",
+  [string]$AngleDirectory = "$PSScriptRoot/../build/angle-runtime/angle/out/Yougori-D3D11"
 )
 $ErrorActionPreference = 'Stop'
 $repo = (Resolve-Path "$PSScriptRoot/..").Path
 $output = [IO.Path]::GetFullPath($OutputDirectory)
+$angle = & "$PSScriptRoot/check-angle-build.ps1" -AngleDirectory $AngleDirectory
 if (Test-Path -LiteralPath $output) { throw 'Use a new staging directory; never replace a mapped runtime.' }
 New-Item -ItemType Directory -Path $output | Out-Null
 $ucrt = "$repo/build/secure-runtime/toolchain/msys64/ucrt64/bin"
@@ -16,7 +18,7 @@ foreach ($file in @(
   "$repo/build/secure-runtime/tpm/opendock-tpm.dll",
   "$repo/build/secure-runtime/tpm/opendock-tpm-init.exe",
   "$repo/build/secure-runtime/tpm/opendock-tpm-worker.exe",
-  "$ucrt/libEGL.dll", "$ucrt/libGLESv2.dll"
+  "$angle/libEGL.dll", "$angle/libGLESv2.dll"
 )) { $queue.Enqueue($file) }
 $seen = [Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
 while ($queue.Count) {
@@ -59,6 +61,7 @@ Copy-Item -LiteralPath "$repo/build/runtime-cache/ms-tpm-20-ref/LICENSE" -Destin
 Copy-Item -LiteralPath "$repo/build/runtime-cache/edk2-secure-src/License.txt" -Destination "$output/EDK2-LICENSE.txt"
 # Preserve the app's explicit physical-GPU selection in the secure runtime too.
 & "$PSScriptRoot/build-gpu-bridge.ps1" -QemuDirectory $output
+Copy-Item -LiteralPath "$angle/ANGLE_BUILD.json", "$angle/ANGLE-NOTICES.txt" -Destination $output
 Copy-Item -LiteralPath "$repo/build/runtime-cache/secureboot-objects/License.txt" -Destination "$output/SECUREBOOT-OBJECTS-LICENSE.txt"
 Copy-Item -LiteralPath "$repo/runtime/security/SOURCES.md" -Destination $output
 Copy-Item -LiteralPath "$repo/runtime/security/LICENSE" -Destination "$output/OPENDOCK-TPM-LICENSE.txt"
@@ -72,7 +75,7 @@ $sourceRecord = [ordered]@{
   patches = @(@('qemu-windows-tpm.patch', 'qemu-whpx-tpm-ppi.patch', 'qemu-whpx-reboot.patch', 'qemu-license-notices.patch', 'tpm-qemu.c', 'tpm-api.h', 'tpm-worker.c') | ForEach-Object {
     [ordered]@{ path = "runtime/security/$_"; sha256 = (Get-FileHash -LiteralPath "$repo/runtime/security/$_" -Algorithm SHA256).Hash.ToLowerInvariant() }
   })
-  dependencyProvenance = 'PACKAGES.txt; DLLs copied from the package-managed UCRT64 toolchain'
+  dependencyProvenance = 'PACKAGES.txt for package DLLs; ANGLE_BUILD.json and ANGLE-NOTICES.txt for source-built D3D11 ANGLE'
   firmware = 'SOURCES.md and retained content-addressed firmware; existing VM identities are preserved'
 }
 [IO.File]::WriteAllText("$output/SOURCE_BUILD.json", ($sourceRecord | ConvertTo-Json -Depth 8) + "`n", [Text.UTF8Encoding]::new($false))
@@ -83,7 +86,7 @@ Copy-Item -LiteralPath "$repo/build/runtime-cache/qemu-secure-src/COPYING.LIB" -
 Copy-Item -LiteralPath "$repo/build/runtime-cache/edk2-secure-src/CryptoPkg/Library/OpensslLib/openssl/LICENSE.txt" -Destination "$licenses/firmware-openssl.txt"
 Copy-Item -LiteralPath "$repo/build/runtime-cache/edk2-secure-src/MdeModulePkg/Library/BrotliCustomDecompressLib/brotli/LICENSE" -Destination "$licenses/firmware-brotli.txt"
 $pacman = "$repo/build/secure-runtime/toolchain/msys64/usr/bin/pacman.exe"
-$dlls = @($seen | Where-Object { Test-Path -LiteralPath "$ucrt/$_" } | ForEach-Object { "/ucrt64/bin/$_" })
+$dlls = @($seen | Where-Object { $_ -notin @('libEGL.dll', 'libGLESv2.dll') -and (Test-Path -LiteralPath "$ucrt/$_") } | ForEach-Object { "/ucrt64/bin/$_" })
 $owners = @(& $pacman -Qoq @dlls | Sort-Object -Unique)
 if ($LASTEXITCODE) { throw 'Cannot identify runtime package provenance' }
 $packages = & $pacman -Qi @owners

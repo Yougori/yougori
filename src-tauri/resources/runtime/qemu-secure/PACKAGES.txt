@@ -1,25 +1,3 @@
-Name            : mingw-w64-ucrt-x86_64-angleproject
-Version         : 2.1.r25748.890b5d8f-6
-Description     : A conformant OpenGL ES implementation for Windows, Mac, Linux, iOS and Android (mingw-w64)
-Architecture    : any
-URL             : http://angleproject.org/
-Licenses        : spdx:BSD-3-Clause
-Groups          : None
-Provides        : None
-Depends On      : mingw-w64-ucrt-x86_64-egl-headers  mingw-w64-ucrt-x86_64-gles-headers  mingw-w64-ucrt-x86_64-jsoncpp  mingw-w64-ucrt-x86_64-libjpeg-turbo  mingw-w64-ucrt-x86_64-libpng  mingw-w64-ucrt-x86_64-rapidjson  mingw-w64-ucrt-x86_64-zlib
-Optional Deps   : None
-Required By     : None
-Optional For    : None
-Conflicts With  : None
-Replaces        : None
-Installed Size  : 86.70 MiB
-Packager        : CI (https://github.com/msys2/msys2-autobuild/actions/runs/33660834535/job/100350682545)
-Build Date      : Wed Sep  2 19:35:24 2026
-Install Date    : Sun Sep  6 22:42:25 2026
-Install Reason  : Explicitly installed
-Install Script  : No
-Validated By    : SHA-256 Sum  Signature
-
 Name            : mingw-w64-ucrt-x86_64-brotli
 Version         : 1.2.0-1
 Description     : Brotli compression library (mingw-w64)

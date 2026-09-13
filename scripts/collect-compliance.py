@@ -256,11 +256,19 @@ def inventory():
                 if name.startswith("ucrt64/bin/") and name.endswith(".dll"):
                     owners[Path(name).name.lower()] = (name, fields)
     dlls = []
+    angle_evidence = EVIDENCE / "angle-build.json"
+    angle_build = json.loads(angle_evidence.read_text(encoding="utf-8")) if angle_evidence.exists() else {}
+    angle_binaries = {("libEGL_angle.dll" if item["file"] == "libEGL.dll" else item["file"]): item["sha256"]
+                      for item in angle_build.get("binaries", [])}
     for part in ("qemu", "qemu-secure"):
         for dll in sorted((RUNTIME / part).glob("*.dll")):
             entry = {"file": dll.relative_to(ROOT).as_posix(), "sha256": digest(dll)}
             owned = owners.get(dll.name.lower())
-            if owned and (toolchain / owned[0]).exists() and digest(toolchain / owned[0]) == entry["sha256"]:
+            if angle_binaries.get(dll.name) == entry["sha256"]:
+                entry.update({"provenance": "local-angle-d3d11-build", "source": "compliance/evidence/angle-build.json",
+                              "sourceComponent": angle_build["sourceComponent"],
+                              "licenseReview": "compliance/native.json"})
+            elif owned and (toolchain / owned[0]).exists() and digest(toolchain / owned[0]) == entry["sha256"]:
                 fields = owned[1]
                 entry.update({"package": fields["NAME"], "version": fields["VERSION"],
                               "base": fields["BASE"], "license": fields["LICENSE"],
@@ -922,7 +930,7 @@ def report():
                 or name.startswith(("runtime/security/", "runtime/gpu/", "appliance/", "runtime/cuda/", "scripts/"))]
     selected += ["NOTICE", "docs/licensing.md", "docs/compliance-status.md", "docs/rebuilding-third-party.md", "compliance/engineering-review.json", "src-tauri/resources/APPLICATION_LICENSES.txt",
                  "src-tauri/resources/THIRD_PARTY_NOTICES.md", "src-tauri/resources/WORKSPACE_LICENSES.txt",
-                 "src-tauri/Cargo.toml", "cli/Cargo.toml"]
+                 "src-tauri/Cargo.toml", "cli/Cargo.toml", "compliance/native.json"]
     selected += [path.relative_to(ROOT).as_posix() for path in (ROOT / "scripts").glob("*compliance*") if path.is_file()]
     selected += [path.relative_to(ROOT).as_posix() for path in EVIDENCE.glob("*") if path.is_file()]
     selected += [path.relative_to(ROOT).as_posix() for path in (ROOT / "compliance/notices").glob("*") if path.is_file()]

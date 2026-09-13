@@ -57,6 +57,7 @@ async function fixture(t) {
     await save()
   }
   await put("compliance/frontend.json", { schemaVersion: 1, vendoredComponents: [], generatedAssets: [] })
+  await put("compliance/native.json", { schemaVersion: 1 })
   await put("package-lock.json", { packages: {} })
   await put("compliance/evidence/application-dependencies.json", [])
   await put("src-tauri/resources/APPLICATION_LICENSES.txt", "fixture notices")

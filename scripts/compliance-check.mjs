@@ -4,6 +4,7 @@ import { lstat, readFile, realpath, readdir } from "node:fs/promises"
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
 import { checkFrontend } from "./compliance-frontend.mjs"
+import { checkNative } from "./compliance-native.mjs"
 
 async function hashFile(path, normalization) {
   const hash = createHash("sha256")
@@ -80,6 +81,7 @@ export async function checkCompliance(root, { distribution = false, packaging = 
   await checkFrontend(root, report, checkedFile)
   const expected = report.inputs.filter(item => item.path.startsWith("src-tauri/resources/runtime/")).map(item => item.path).sort()
   if (JSON.stringify(await runtimeFiles(root)) !== JSON.stringify(expected)) throw new Error("Runtime files were added or removed after the compliance inventory")
+  await checkNative(root, report, checkedFile)
   if (!Array.isArray(report.archives) || !report.archives.length) throw new Error("Missing source archive inventory")
   if (distribution || packaging) {
     if (report.blockers.length || report.review?.status !== "approved") {

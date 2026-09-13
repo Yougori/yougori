@@ -13,6 +13,7 @@ test-results
 test-results-*
 playwright-report
 build/gpu-bridge/
+build/angle-runtime/
 build/secure-runtime/
 build/runtime-cache/
 build/cuda/
