@@ -36,8 +36,14 @@ def main():
         paths += [path.relative_to(ROOT).as_posix() for path in (ROOT / 'compliance/evidence').glob('*') if path.is_file()]
         for name in sorted(set(paths)):
             archive.write(ROOT / name, name, compress_type=zipfile.ZIP_DEFLATED)
-        archive.writestr('README.txt', 'Yougori matching third-party sources\n\n'
+        archive.writestr('README.txt', 'Yougori application and matching third-party sources\n\n'
             'This ZIP accompanies the runtime inventory in compliance/release.json.\n'
+            'Complete tracked application source is in bundle/yougori-application-source.tar.gz.\n'
+            'Its YOUGORI_SOURCE_MANIFEST.json identifies every included source file by SHA-256.\n'
+            'It includes frontend, Rust backend, CLI, Cargo/npm lockfiles, assets and build scripts.\n'
+            'Extract it into a new directory and follow docs/source-checkout.md.\n'
+            'Compiled runtime payloads are separate; rebuild using the matching component sources\n'
+            'and docs/rebuilding-third-party.md. Release evidence is supplied outside the application tar.\n'
             'Source archives, recipes and patches are in bundle/. Check bundle/SHA256SUMS.\n'
             'Read docs/rebuilding-third-party.md for restore/build/relink instructions.\n'
             'Example: python scripts/restore-compliance-sources.py bundle C:/yougori-rebuild\n'

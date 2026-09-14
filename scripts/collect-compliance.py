@@ -14,6 +14,7 @@ import json
 import os
 from pathlib import Path
 import re
+import runpy
 import shlex
 import shutil
 import subprocess
@@ -30,6 +31,7 @@ WORK = ROOT / "build/compliance"
 BUNDLE = WORK / "bundle"
 EVIDENCE = ROOT / "compliance/evidence"
 RUNTIME = ROOT / "src-tauri/resources/runtime"
+APPLICATION = runpy.run_path(str(ROOT / "scripts/compliance-application.py"))
 
 
 def run(*args, cwd=ROOT):
@@ -677,6 +679,7 @@ def collect_local():
     archive_directory(novnc, output)
     results.append(archive_record(output, id="novnc", version="1.7.0", status="collected"))
     write_json(WORK / "local-sources.json", results)
+    APPLICATION["collect"](ROOT, BUNDLE)
     return results
 
 
@@ -712,6 +715,7 @@ def refresh_build_material():
     records = [entry for entry in records if entry["id"] != "local-build-material"]
     records.append(record)
     write_json(path, records)
+    APPLICATION["collect"](ROOT, BUNDLE)
     print("Updated local source/build material archive.", flush=True)
 
 
@@ -730,6 +734,10 @@ def prepare_cache():
     current = collect_build_material()
     if current["sha256"] != expected["sha256"]:
         raise ValueError("Local source material differs from its reviewed archive; regenerate and review release evidence")
+    expected_application = next(item for item in release["components"] if item["id"] == "yougori-application-source")
+    current_application = APPLICATION["collect"](ROOT, BUNDLE)
+    if current_application != expected_application:
+        raise ValueError("Application source differs from its reviewed archive; regenerate and review release evidence")
     for item in release["archives"]:
         path = BUNDLE / safe_name(item["file"])
         if path.is_symlink() or digest(path) != item["sha256"]:
@@ -955,7 +963,7 @@ def report():
                 inputs.append({"path": name, "sha256": hashlib.sha256(normalized).hexdigest(),
                                "normalization": "lf", "bytes": len(normalized)})
     components = []
-    for name in ("local", "alpine", "msys", "go", "go-main", "debian"):
+    for name in ("local", "application", "alpine", "msys", "go", "go-main", "debian"):
         source = WORK / f"{name}-sources.json"
         if source.exists():
             components += json.loads(source.read_text(encoding="utf-8"))
@@ -965,6 +973,8 @@ def report():
         if item.get("source"):
             archives.append(item["source"])
     blockers = [{"id": item["id"], "reason": item["reason"]} for item in components if item.get("status") == "blocked"]
+    if not any(item.get("id") == "yougori-application-source" for item in components):
+        blockers.append({"id": "yougori-application-source", "reason": "Collect the complete application source archive with the material action."})
     annotation_path = EVIDENCE / "qemu-modification-notices.json"
     if not annotation_path.exists():
         blockers.append({"id": "qemu-modification-notices", "reason": "Missing dated source modification notice verification."})

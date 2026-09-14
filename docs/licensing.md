@@ -160,6 +160,35 @@ components.
 
 ## Publication and older copies
 
+The release ZIP includes `bundle/yougori-application-source.tar.gz`, containing
+the tracked frontend, Rust backend, CLI, CUDA code, assets, manifests, lockfiles,
+configuration and build scripts. Its `YOUGORI_SOURCE_MANIFEST.json` lists every
+included file and checksum. Runtime payload binaries are excluded from that tar;
+their corresponding sources are the other indexed archives in the same ZIP.
+The generated release report and application manifest are supplied separately
+to avoid a self-referential archive checksum.
+
+The application source checker compares the complete tracked file set against
+the manifest, then opens the tar and verifies its members and contents. Missing
+backend/CLI files, newly added source, changed bytes, and omissions hidden by
+updating an archive checksum are rejected. Run the `material` collector after
+staging source changes, then regenerate the report and source package. The cache
+workflow rebuilds this archive from the checkout and requires the reviewed hash.
+
+Each future installer download must link beside it to the matching complete
+source ZIP and exact application commit. Keep their checksums together in the
+release record. A link to a moving branch is not the version-specific source
+delivery record. Source-only prereleases do not approve an installer build.
+
+All platform configurations include `LICENSE`, `COPYING`, `NOTICE`, the commercial
+licensing document and component notices. `COPYING` is the installer's full
+license display file. After building, extract or install each artifact and run
+`node scripts/check-installed-licenses.mjs PLATFORM RESOURCE_DIRECTORY` against
+its actual resource directory (`windows`, `linux` or `macos`). This compares the
+packaged license and notice contents, including nested component licenses, with
+the reviewed checkout. Record the installer SHA-256 and inspection result before
+publishing it. Configuration checks alone do not verify a built installer.
+
 The intended source-delivery method is downloadable matching source archives
 alongside the installers, with a source index and checksums. Upstream links,
 private caches or an inventory alone do not give recipients that access. Do not

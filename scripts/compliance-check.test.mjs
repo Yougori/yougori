@@ -1,5 +1,7 @@
 import assert from "node:assert/strict"
 import { createHash } from "node:crypto"
+import { execFileSync } from "node:child_process"
+import { fileURLToPath } from "node:url"
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { dirname, join, resolve } from "node:path"
@@ -62,6 +64,22 @@ async function fixture(t) {
   await put("compliance/evidence/application-dependencies.json", [])
   await put("src-tauri/resources/APPLICATION_LICENSES.txt", "fixture notices")
   await refresh()
+  // Exercise the real application-source gate, using a tiny tracked source tree.
+  const applicationScript = fileURLToPath(new URL("./compliance-application.py", import.meta.url))
+  const python = process.platform === "win32" ? "python" : "python3"
+  const required = JSON.parse(execFileSync(python, ["-c",
+    "import json,runpy,sys; print(json.dumps(runpy.run_path(sys.argv[1])['REQUIRED']))", applicationScript], { encoding: "utf8" }))
+  for (const name of required) {
+    try { await readFile(join(root, name)) } catch { await put(name, "fixture source\n") }
+  }
+  await refresh()
+  execFileSync("git", ["init", "-q", root])
+  execFileSync("git", ["-C", root, "add", "--", ...required])
+  const application = JSON.parse(execFileSync(python, [applicationScript, "collect", "--root", root], { encoding: "utf8" }))
+  report.components.push(application)
+  report.archives.push(Object.fromEntries(["file", "sha256", "bytes"].map(key => [key, application[key]])))
+  report.publication.manifestSha256 = undefined
+  await save()
   return { root, report, save, put, refresh }
 }
 
@@ -220,6 +238,7 @@ test("all installer configurations carry the AGPL license, commercial option and
   assert.equal((await json("package-lock.json")).packages[""].license, "AGPL-3.0-only")
   const base = await json("src-tauri/tauri.conf.json")
   assert.equal(base.bundle.license, "AGPL-3.0-only")
+  assert.equal(base.bundle.licenseFile, "../COPYING")
   assert.match(base.build.beforeBuildCommand, /release:package/)
   for (const platform of ["windows", "linux", "macos"]) {
     const { resources } = (await json(`src-tauri/tauri.${platform}.conf.json`)).bundle

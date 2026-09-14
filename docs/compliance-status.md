@@ -132,6 +132,24 @@ manifests are editable integrity checks, not a vendor signature requirement.
 
 ## Preparing and distributing
 
+The source package now includes `yougori-application-source.tar.gz` with the
+tracked application source, including the Rust backend and CLI previously
+omitted from the runtime build-material archive. An embedded file manifest and
+archive-content verification cover source additions, changes and omissions.
+The older runtime build-material tar remains separately available for its
+existing restore workflow. All 238 indexed archives belong to the same source
+delivery ZIP. The release record identifies the verified download and checksum.
+
+README no longer advertises the unresolved September 10 installer downloads.
+This removes those links from this branch; it neither removes website files nor
+resolves obligations to their past recipients. The historical issue below remains.
+
+Installer configurations include the full AGPL text and notices, and the license
+display points to `COPYING`. `scripts/check-installed-licenses.mjs` can verify
+the actual extracted/installed notices. New installers have not been built or
+inspected during this source-packaging correction; that check remains required
+for each future installer before public distribution.
+
 The source archives are local in `build/compliance/bundle/`. The source index and
 checksums select the archives for this runtime; unrelated old cache files are not
 part of that bundle. The release report records the exact inventory and scope.

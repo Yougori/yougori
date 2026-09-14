@@ -9,6 +9,18 @@ dependencies; source links in third-party notices are attribution, not commands.
 
 ## Windows desktop prerequisites
 
+### Starting from a source release archive
+
+The source-only release ZIP includes `bundle/yougori-application-source.tar.gz`.
+Extract that tar into a new directory for the frontend, native backend, CLI,
+lockfiles, assets and scripts. `YOUGORI_SOURCE_MANIFEST.json` records the exact
+file contents. Unlike a Git checkout, this tar excludes compiled runtime payloads.
+Use the accompanying component archives and [rebuild instructions](rebuilding-third-party.md)
+to build those payloads before following the desktop commands below. The release
+ZIP separately supplies `compliance/release.json` and the evidence records.
+Keep those original records as provenance; locally modified builds need fresh
+source collection and evidence rather than claiming the old binary identities.
+
 Install Node.js 24.19.0 with npm 11.17.0, the stable Rust MSVC toolchain, Visual
 Studio C++/Windows SDK, and WebView2 as described in the main README. Then run:
 

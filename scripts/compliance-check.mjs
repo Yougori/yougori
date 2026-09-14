@@ -1,4 +1,6 @@
 import { createHash } from "node:crypto"
+import { execFile } from "node:child_process"
+import { promisify } from "node:util"
 import { createReadStream } from "node:fs"
 import { lstat, readFile, realpath, readdir } from "node:fs/promises"
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path"
@@ -92,6 +94,14 @@ export async function checkCompliance(root, { distribution = false, packaging = 
   if (distribution || packaging || archives) {
     await verifyFiles(sourceDirectory, report.archives)
     await checkSourceIndex(sourceDirectory, report)
+    try {
+      await promisify(execFile)(process.platform === "win32" ? "python" : "python3", [
+        fileURLToPath(new URL("./compliance-application.py", import.meta.url)),
+        "check", "--root", root, "--bundle", sourceDirectory,
+      ])
+    } catch (error) {
+      throw new Error(`Application source verification failed: ${error.stderr || error.message}`)
+    }
   }
   if (distribution) {
     const publication = report.publication
