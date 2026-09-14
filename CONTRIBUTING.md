@@ -1,0 +1,99 @@
+# Development and releases
+
+Publish work to `staging` first. Test it there, then merge a reviewed pull request
+from `staging` into `main` when that version is ready. Keep `main` as the stable
+source branch. Merging source does not publish installers or update the website.
+
+## Work on staging
+
+```sh
+git switch staging
+git pull --ff-only origin staging
+```
+
+Make the changes, review `git diff`, and commit only the files you intend to
+publish. Push those commits with:
+
+```sh
+git push origin staging
+```
+
+For a new checkout, use `git clone --branch staging https://github.com/Yougori/yougori.git`.
+See the [source setup guide](docs/source-checkout.md) for build prerequisites.
+
+## Test before promoting
+
+Run the checks relevant to the changes on the latest `staging` commit. For the
+Windows desktop, the core local checks are:
+
+```sh
+npm ci
+npm run verify
+npm run test:e2e
+npm run release:check
+```
+
+Every push to `staging` automatically runs Windows verification, guest-agent
+checks and Linux desktop preview checks. Wait for all three to pass before
+promoting that commit. macOS checks run manually when needed. These workflows
+have no automatic trigger for pushes to other branches or for pull requests.
+
+All workflows can be started manually. For a Windows run,
+select **Actions > Verify > Run workflow** and choose `staging`, or use:
+
+```sh
+gh workflow run verify.yml --ref staging
+```
+
+Run the macOS workflow separately when needed. Record the tested commit and
+results in the pull request. New commits need all three automatic checks to
+pass before promotion. Complete the relevant packaged and real-machine
+checks in [release readiness](docs/release-readiness.md) before publishing a release.
+
+## Promote tested changes
+
+Keep a draft pull request with `main` as the base and `staging` as the head while
+testing. Mark it ready once the tested version is approved, then use **Create a
+merge commit** to preserve the shared history of these long-lived branches.
+Keep `staging` after merging. Update the local branches before the next batch:
+
+```sh
+git switch main
+git pull --ff-only origin main
+git switch staging
+git merge --ff-only main
+git push origin staging
+```
+
+If `main` has diverged, merge `origin/main` into `staging`, resolve any conflicts
+there, and test the result before promotion. Do not force-push either branch.
+Building installers and publishing a GitHub release or website download remain
+separate release steps.
+
+## Licenses and source materials
+
+Original contributions are supplied under AGPL-3.0-only unless the affected
+files carry a separate license. Retain existing component notices and attribution.
+Acceptance of original contributions requires a separate signed copyright
+assignment to Yougori LLC covering the contributed work and allowing Yougori LLC
+to modify, distribute and license it under both AGPL and proprietary commercial
+terms. This requirement applies to outside contributors, contractors and
+freelancers. Maintainers must verify the executed assignment before merging
+their original contributions. Contractors and freelancers must sign the
+applicable agreement before starting work.
+
+This policy and submission of a pull request do not themselves transfer
+copyright. Previously contributed work requires a separate assignment if one
+is not already in place. Contributors must identify any third-party or
+pre-existing material and its applicable license; they must not assign rights
+they do not hold. Third-party components retain their ownership and licenses.
+Existing license grants remain valid. See
+[commercial licensing](COMMERCIAL_LICENSE.md).
+Read [licensing and source distribution](docs/licensing.md) before changing a
+bundled dependency. Run `npm run compliance:check` after updating the evidence.
+Local installer preparation additionally requires `npm run release:package`;
+unresolved source or license findings block packaging, including previews.
+Publishing binaries requires `npm run release:distribution`, which also checks
+matching public source availability. Native graphics changes require the
+embedded-component review in `compliance/native.json`, independently of a
+package's top-level license label.

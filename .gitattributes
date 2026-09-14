@@ -1,0 +1,20 @@
+# Runtime manifests cover the exact bytes, including license and metadata files.
+# Do not let checkout line-ending conversion invalidate those checksums.
+/src-tauri/resources/runtime/** -text
+/src-tauri/boot-helper/*.efi binary
+
+# Compiled native-installer artwork is checked by its exact bytes.
+/src-tauri/installer/*.bmp binary
+/src-tauri/installer/*.png binary
+
+# This Markdown template is imported verbatim by the frontend and native app.
+/src/lib/connection-skill-template.md text eol=lf
+
+# Inline-script CSP hashes must match the browser's normalized HTML text.
+/src-tauri/src/runtime/connection_files.html text eol=lf
+
+# Preserve the exact functional patch bytes recorded in QEMU build provenance.
+/runtime/security/*.patch text eol=lf
+/runtime/security/tpm-qemu.c text eol=lf
+/runtime/security/tpm-api.h text eol=lf
+/runtime/security/tpm-worker.c text eol=lf
