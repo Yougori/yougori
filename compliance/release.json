@@ -9845,7 +9845,19 @@
     ]
   },
   "publication": {
-    "status": "not-published"
+    "status": "verified",
+    "manifestUrl": "https://github.com/Yougori/yougori/releases/download/staging-sources-a7782e4af97c97dd/SOURCE_INDEX.json",
+    "manifestSha256": "861dda116b89f07ac576f8ea9c43e51243bbeed0509ba7d886bdfbb5b31c1b91",
+    "verifiedAt": "2026-09-14T11:57:29.444638+00:00",
+    "evidence": "GitHub's uploaded-asset SHA-256 matches the locally verified complete ZIP. Anonymous source-index and checksum downloads match local records. Anonymous bounded ZIP range reads verified the packaged LICENSE, COPYING, COMMERCIAL_LICENSE.md, source index and checksum list. The full remote ZIP was not re-downloaded.",
+    "releaseUrl": "https://github.com/Yougori/yougori/releases/tag/staging-sources-a7782e4af97c97dd",
+    "sourceTag": "staging-sources-a7782e4af97c97dd",
+    "sourceCommit": "1d935fb62dffdf360dacf173e59dfbe2b4babcd5",
+    "bundleUrl": "https://github.com/Yougori/yougori/releases/download/staging-sources-a7782e4af97c97dd/Yougori-corresponding-source-a7782e4af97c97dd.zip",
+    "bundleSha256": "4e83f904470b1dc3ce7273968fe3c2596718a722a43ec5c09c005081004b490d",
+    "bundleBytes": 1147166056,
+    "anonymousZipBytesRead": 286056,
+    "scope": "Staging completed Yougori notice, verbatim AGPL in COPYING, and matching license resources. Full CI intentionally skipped for licensing metadata."
   },
   "historicalReleaseIssues": [
     {
