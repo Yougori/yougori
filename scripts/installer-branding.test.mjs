@@ -84,7 +84,7 @@ test("all desktop packages retain the logo, identity and license", () => {
   assert.equal(config.productName, "Yougori")
   assert.equal(config.identifier, "com.opendock.desktop", "Preserve installed app/data compatibility")
   assert.equal(config.bundle.publisher, "Yougori LLC")
-  assert.equal(config.bundle.licenseFile, "../LICENSE")
+  assert.equal(config.bundle.licenseFile, "../COPYING")
   assert.equal(config.bundle.windows.allowDowngrades, false)
   for (const icon of ["icons/icon.ico", "icons/icon.icns", "icons/128x128.png"]) {
     assert.ok(config.bundle.icon.includes(icon))
