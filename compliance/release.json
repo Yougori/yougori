@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "sourceCommit": "45f640344e68ceb91cc4285d2cc417de31195128",
+  "sourceCommit": "93ce35c857d265707980e89515f8c6b9adbddb1a",
   "scope": "Current checkout runtime bytes; not a blanket certification of previous releases",
   "inputs": [
     {
@@ -650,7 +650,7 @@
     },
     {
       "path": "src-tauri/resources/runtime/qemu/SHA256SUMS",
-      "sha256": "e8d6694471dd03eac1e8501abb729bcb97500606b051de5f9e71b8f2cbf6129a",
+      "sha256": "61259ae08543a222a257ea4bac53cb92d3b45283d9b92dbd80e1b8cbda644bcb",
       "bytes": 12460
     },
     {
@@ -1390,7 +1390,7 @@
     },
     {
       "path": "src-tauri/resources/runtime/qemu-secure/SHA256SUMS",
-      "sha256": "b1c482d65cd56fcecdc9906e33204072d935992866016ae83f82a8c6bc2e8223",
+      "sha256": "28ebd4a3f7919f5010517c6ae87cec3b71148e05955c7a8eaf1784430af51d49",
       "bytes": 12084
     },
     {
@@ -1415,8 +1415,8 @@
     },
     {
       "path": "src-tauri/resources/runtime/SHA256SUMS",
-      "sha256": "710e68415c4b3ff329ec35449f07b13e21f29f45b6eb8301ee58c3954a8f6b89",
-      "bytes": 26307
+      "sha256": "9ee1b1febafac495667b3d3558f362167bba10426949d9b1b52ac6f9fbf1e578",
+      "bytes": 28140
     },
     {
       "path": ".gitattributes",
@@ -1426,9 +1426,9 @@
     },
     {
       "path": ".github/workflows/linux.yml",
-      "sha256": "e5c7a042dea7d7921986175456727a7a79a0347c70773ec26c27af31180b6ee8",
+      "sha256": "411160ad33525843765c3975e24b5bc1e6f9bda3d2769a975fdfba14c0cd76a8",
       "normalization": "lf",
-      "bytes": 4492
+      "bytes": 3921
     },
     {
       "path": "COMMERCIAL_LICENSE.md",
@@ -1816,9 +1816,9 @@
     },
     {
       "path": "compliance/evidence/application-source.json",
-      "sha256": "7d6fe15779b8157812c88519434c9a7b6e5729b9bc5405c76a196b59a755b5ad",
+      "sha256": "d10554360432125f07eba880395279a033b4192008a1cf31225ebdb12e2f57a3",
       "normalization": "lf",
-      "bytes": 124081
+      "bytes": 124462
     },
     {
       "path": "compliance/evidence/firmware-provenance.json",
@@ -1864,7 +1864,7 @@
     },
     {
       "path": "compliance/evidence/runtime-files.json",
-      "sha256": "36e5d1b1c6b01b17fe0128c3eac63eace485622f094568af6c3c351fd9dad607",
+      "sha256": "559a3d85144655bc79f443ddf69efe903cb2af912aa241172dac5e9a7b26c16c",
       "normalization": "lf",
       "bytes": 52542
     },
@@ -2013,9 +2013,9 @@
     },
     {
       "path": "package.json",
-      "sha256": "7eed438b541010ca3eb453009da21c26dc7b8e0077c68b386f9991f0fa7513fe",
+      "sha256": "ab5457f4d7699946e195c4055f040638a30f6cac3b1ad98318d2e5be6ddfcb00",
       "normalization": "lf",
-      "bytes": 6118
+      "bytes": 6168
     },
     {
       "path": "runtime/cuda/README.md",
@@ -2492,6 +2492,18 @@
       "bytes": 3575
     },
     {
+      "path": "scripts/fetch-compliance-bundle.py",
+      "sha256": "736be51b74e6f39634294e543c39a24c43d9a6353daeda2c16cd2988d340409a",
+      "normalization": "lf",
+      "bytes": 3538
+    },
+    {
+      "path": "scripts/fetch-compliance-bundle.test.py",
+      "sha256": "3e6bd3418c594225212dc412746f732ed16faf9ecc6b358feed692434f8248a7",
+      "normalization": "lf",
+      "bytes": 3423
+    },
+    {
       "path": "scripts/generate-installer-branding.mjs",
       "sha256": "b5136283f97297cc0398880e4b6e3ed46f58e619878a0fe95a3e850a3857a6c6",
       "normalization": "lf",
@@ -2499,7 +2511,7 @@
     },
     {
       "path": "scripts/installer-branding.test.mjs",
-      "sha256": "847a00739aa10b9a3d7f615da25b214685bc11ceb6890553b1cc44b0d21e59c3",
+      "sha256": "c31b55b5194a0a95484f044e76946d224f9ab589389fa71efd19f0e5c373b10c",
       "normalization": "lf",
       "bytes": 5367
     },
@@ -5285,13 +5297,13 @@
     },
     {
       "file": "yougori-application-source.tar.gz",
-      "sha256": "88f8ae8e4f1432a6342a1c236acd064ab820eca4a99a32fe2b261998db1fa033",
-      "bytes": 3568339
+      "sha256": "c99ea3a2b9100b968bf0e9a55e8961b6c67508800dd409ad34c1c73ba5f4f440",
+      "bytes": 3570487
     },
     {
       "file": "yougori-runtime-build-material.tar.gz",
-      "sha256": "6eec5e467746f35c1293efbbcf9719e7ee3c4522b867f3d8164a94edaf39c48e",
-      "bytes": 1469918
+      "sha256": "e39de185b2441f68745d1d01bca22b3bfe5f14f91d85b65e83798ab0079952c9",
+      "bytes": 1471735
     }
   ],
   "components": [
@@ -5539,18 +5551,18 @@
       "id": "local-build-material",
       "status": "collected",
       "file": "yougori-runtime-build-material.tar.gz",
-      "sha256": "6eec5e467746f35c1293efbbcf9719e7ee3c4522b867f3d8164a94edaf39c48e",
-      "bytes": 1469918
+      "sha256": "e39de185b2441f68745d1d01bca22b3bfe5f14f91d85b65e83798ab0079952c9",
+      "bytes": 1471735
     },
     {
       "id": "yougori-application-source",
       "status": "collected",
       "file": "yougori-application-source.tar.gz",
-      "sha256": "88f8ae8e4f1432a6342a1c236acd064ab820eca4a99a32fe2b261998db1fa033",
-      "bytes": 3568339,
+      "sha256": "c99ea3a2b9100b968bf0e9a55e8961b6c67508800dd409ad34c1c73ba5f4f440",
+      "bytes": 3570487,
       "manifest": "compliance/evidence/application-source.json",
-      "manifestSha256": "7d6fe15779b8157812c88519434c9a7b6e5729b9bc5405c76a196b59a755b5ad",
-      "fileCount": 656
+      "manifestSha256": "d10554360432125f07eba880395279a033b4192008a1cf31225ebdb12e2f57a3",
+      "fileCount": 658
     },
     {
       "id": "alpine/alpine-baselayout/60a7585bbab2fa0f762504eb617dbca90216e31f",
@@ -9892,22 +9904,7 @@
     ]
   },
   "publication": {
-    "status": "verified",
-    "manifestUrl": "https://github.com/Yougori/yougori/releases/download/sources-20260914/SOURCE_INDEX.json",
-    "manifestSha256": "6b0c1a326f4bb1af255dff02e03c7a7aba1c12930608efee31d7ab1436bb7b01",
-    "verifiedAt": "2026-09-14T14:35:52.553529+00:00",
-    "evidence": "All seven release assets were downloaded in full over anonymous HTTPS and matched local SHA-256 checksums, byte lengths and GitHub uploaded-asset digests. The complete ZIP passed its local integrity check. Every third-party archive in the seven superseded source releases is preserved byte-for-byte in the new indexed delivery; their earlier build-source implementations are retained in the supplementary archive with refreshed project licensing files.",
-    "releaseUrl": "https://github.com/Yougori/yougori/releases/tag/sources-20260914",
-    "sourceTag": "sources-20260914",
-    "sourceCommit": "45f640344e68ceb91cc4285d2cc417de31195128",
-    "bundleUrl": "https://github.com/Yougori/yougori/releases/download/sources-20260914/Yougori-corresponding-source-805410650ff918eb.zip",
-    "bundleSha256": "9c35455925736fab0fe68523d283a7a5e61025601cd2dfb982fa95ad5483a6ce",
-    "bundleBytes": 1150779449,
-    "applicationSourceUrl": "https://github.com/Yougori/yougori/releases/download/sources-20260914/yougori-application-source.tar.gz",
-    "applicationSourceSha256": "88f8ae8e4f1432a6342a1c236acd064ab820eca4a99a32fe2b261998db1fa033",
-    "applicationSourceFileCount": 656,
-    "retainedBuildSourcesUrl": "https://github.com/Yougori/yougori/releases/download/sources-20260914/retained-runtime-build-sources.zip",
-    "scope": "Current application and component sources, plus retained runtime build-source revisions. No new installers were built; historical installer source gaps remain documented."
+    "status": "not-published"
   },
   "historicalReleaseIssues": [
     {

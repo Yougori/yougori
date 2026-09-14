@@ -43,13 +43,7 @@ jobs:
           npm run release:check
       - name: Fetch and verify matching third-party sources
         run: |
-          SOURCE_BUNDLE_URL="$(node -p "require('./compliance/release.json').publication.bundleUrl")"
-          SOURCE_BUNDLE_SHA256="$(node -p "require('./compliance/release.json').publication.bundleSha256")"
-          test "$(node -p "require('./compliance/release.json').publication.status")" = verified
-          test "${#SOURCE_BUNDLE_SHA256}" -eq 64
-          mkdir -p build/compliance
-          curl --fail --location --retry 3 "$SOURCE_BUNDLE_URL" --output build/compliance/corresponding-source.zip
-          printf '%s  %s\n' "$SOURCE_BUNDLE_SHA256" build/compliance/corresponding-source.zip | sha256sum --check --status
+          python3 scripts/fetch-compliance-bundle.py
           unzip -q build/compliance/corresponding-source.zip 'bundle/*' -d build/compliance
           # Reuse pinned upstream archives; recreate only reviewed local sources.
           python3 scripts/collect-compliance.py cache

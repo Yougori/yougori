@@ -18,14 +18,14 @@
     },
     {
       "path": ".github/workflows/guest-agent.yml",
-      "sha256": "27daf948a51ac1da4109ebf90a1a846c4212a0692a51ffc8b9f62a1fb85ea88c",
-      "bytes": 848,
+      "sha256": "322875a2e9bf3628ed231bac065ff22a657242283ffbca4708d7c02f5e02177e",
+      "bytes": 854,
       "mode": 420
     },
     {
       "path": ".github/workflows/linux.yml",
-      "sha256": "e5c7a042dea7d7921986175456727a7a79a0347c70773ec26c27af31180b6ee8",
-      "bytes": 4492,
+      "sha256": "411160ad33525843765c3975e24b5bc1e6f9bda3d2769a975fdfba14c0cd76a8",
+      "bytes": 3921,
       "mode": 420
     },
     {
@@ -36,8 +36,8 @@
     },
     {
       "path": ".github/workflows/verify.yml",
-      "sha256": "f327c272b3fb80d182905bae2f3ddbd168e47abb1cdf249d89804ae360093af8",
-      "bytes": 2785,
+      "sha256": "013af82c72e9e5c19958e44d235c611e6ff07d60260c166a12f692f4274f9728",
+      "bytes": 2791,
       "mode": 420
     },
     {
@@ -78,8 +78,8 @@
     },
     {
       "path": "README.md",
-      "sha256": "dc2cfedfa3f966c15cac0602d9a78ef4770ec6f731424de23f6f9c56c67e5233",
-      "bytes": 3262,
+      "sha256": "206786b4b30a87c5ba5c1816d4a90830c5ca2cb40ebb8d244711ed03a236b3f8",
+      "bytes": 3651,
       "mode": 420
     },
     {
@@ -540,7 +540,7 @@
     },
     {
       "path": "compliance/evidence/runtime-files.json",
-      "sha256": "36e5d1b1c6b01b17fe0128c3eac63eace485622f094568af6c3c351fd9dad607",
+      "sha256": "559a3d85144655bc79f443ddf69efe903cb2af912aa241172dac5e9a7b26c16c",
       "bytes": 52542,
       "mode": 420
     },
@@ -1170,8 +1170,8 @@
     },
     {
       "path": "package.json",
-      "sha256": "7eed438b541010ca3eb453009da21c26dc7b8e0077c68b386f9991f0fa7513fe",
-      "bytes": 6118,
+      "sha256": "ab5457f4d7699946e195c4055f040638a30f6cac3b1ad98318d2e5be6ddfcb00",
+      "bytes": 6168,
       "mode": 420
     },
     {
@@ -1679,6 +1679,18 @@
       "mode": 420
     },
     {
+      "path": "scripts/fetch-compliance-bundle.py",
+      "sha256": "736be51b74e6f39634294e543c39a24c43d9a6353daeda2c16cd2988d340409a",
+      "bytes": 3538,
+      "mode": 420
+    },
+    {
+      "path": "scripts/fetch-compliance-bundle.test.py",
+      "sha256": "3e6bd3418c594225212dc412746f732ed16faf9ecc6b358feed692434f8248a7",
+      "bytes": 3423,
+      "mode": 420
+    },
+    {
       "path": "scripts/generate-installer-branding.mjs",
       "sha256": "b5136283f97297cc0398880e4b6e3ed46f58e619878a0fe95a3e850a3857a6c6",
       "bytes": 6780,
@@ -1686,7 +1698,7 @@
     },
     {
       "path": "scripts/installer-branding.test.mjs",
-      "sha256": "847a00739aa10b9a3d7f615da25b214685bc11ceb6890553b1cc44b0d21e59c3",
+      "sha256": "c31b55b5194a0a95484f044e76946d224f9ab589389fa71efd19f0e5c373b10c",
       "bytes": 5367,
       "mode": 420
     },

@@ -646,7 +646,7 @@
   },
   {
     "path": "src-tauri/resources/runtime/qemu/SHA256SUMS",
-    "sha256": "e8d6694471dd03eac1e8501abb729bcb97500606b051de5f9e71b8f2cbf6129a",
+    "sha256": "61259ae08543a222a257ea4bac53cb92d3b45283d9b92dbd80e1b8cbda644bcb",
     "bytes": 12460
   },
   {
@@ -1386,7 +1386,7 @@
   },
   {
     "path": "src-tauri/resources/runtime/qemu-secure/SHA256SUMS",
-    "sha256": "b1c482d65cd56fcecdc9906e33204072d935992866016ae83f82a8c6bc2e8223",
+    "sha256": "28ebd4a3f7919f5010517c6ae87cec3b71148e05955c7a8eaf1784430af51d49",
     "bytes": 12084
   },
   {
@@ -1411,7 +1411,7 @@
   },
   {
     "path": "src-tauri/resources/runtime/SHA256SUMS",
-    "sha256": "710e68415c4b3ff329ec35449f07b13e21f29f45b6eb8301ee58c3954a8f6b89",
-    "bytes": 26307
+    "sha256": "9ee1b1febafac495667b3d3558f362167bba10426949d9b1b52ac6f9fbf1e578",
+    "bytes": 28140
   }
 ]

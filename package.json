@@ -48,7 +48,7 @@
     "compliance:inventory": "python scripts/collect-compliance.py inventory",
     "compliance:check": "node scripts/compliance-check.mjs",
     "compliance:archives": "node scripts/compliance-check.mjs --archives",
-    "test:compliance": "node --test scripts/compliance-check.test.mjs scripts/compliance-native.test.mjs scripts/check-installed-licenses.test.mjs && python scripts/compliance-collect.test.py && python scripts/compliance-angle.test.py && python scripts/compliance-application.test.py",
+    "test:compliance": "node --test scripts/compliance-check.test.mjs scripts/compliance-native.test.mjs scripts/check-installed-licenses.test.mjs && python scripts/compliance-collect.test.py && python scripts/compliance-angle.test.py && python scripts/compliance-application.test.py && python scripts/fetch-compliance-bundle.test.py",
     "release:package": "npm run release:check && node scripts/compliance-check.mjs --package",
     "release:distribution": "npm run release:check && node scripts/compliance-check.mjs --distribution",
     "macos:doctor": "node scripts/macos-setup.mjs",
