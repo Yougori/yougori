@@ -2,9 +2,10 @@
 
 Yougori distributes third-party runtime components, including a locally modified
 secure QEMU runtime. Copyright remains with each component's authors. The
-Apache License, Version 2.0 applies to original Yougori code except where a
-separate license notice applies. It does not relicense third-party code or
-override any component's own license. Existing OpenDock names in upstream or project notices
+AGPL-3.0-only license applies to original Yougori code except where a
+separate license notice applies. Yougori LLC separately offers paid commercial
+licenses for rights it can grant. Neither route relicenses third-party code or
+overrides any component's own license. Earlier Apache grants remain valid. Existing OpenDock names in upstream or project notices
 are retained as historical attribution.
 
 The links below identify upstream projects and source locations. They are not,
@@ -29,8 +30,8 @@ license expression may cover files with different terms.
   application. Its full MIT notice, including Copyright (c) Tailwind Labs, Inc.,
   is included in `APPLICATION_LICENSES.txt`, even though npm classifies the
   package as a development dependency.
-- Original Yougori modifications retain Apache-2.0; upstream portions keep
-  their own terms. Package imports, copied-source notices and source/assets are
+- Original Yougori modifications in this version are offered under AGPL-3.0-only;
+  earlier Apache grants remain valid, and upstream portions keep their own terms. Package imports, copied-source notices and source/assets are
   covered by the frontend compliance inventory.
 
 ## FAT filesystem support

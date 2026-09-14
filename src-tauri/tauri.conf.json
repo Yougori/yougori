@@ -36,7 +36,7 @@
     "category": "DeveloperTool",
     "shortDescription": "Your local environment workspace",
     "longDescription": "Create and manage containers, microVMs and virtual machines from one desktop workspace.",
-    "license": "Apache-2.0",
+    "license": "AGPL-3.0-only",
     "licenseFile": "../LICENSE",
     "targets": "all",
     "windows": {

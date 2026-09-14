@@ -27,7 +27,7 @@ def main():
             archive.write(bundle / item['file'], 'bundle/' + item['file'])
         for name in ('SOURCE_INDEX.json', 'SHA256SUMS'):
             archive.write(bundle / name, 'bundle/' + name, compress_type=zipfile.ZIP_DEFLATED)
-        paths = ['LICENSE', 'NOTICE', 'docs/licensing.md', 'docs/rebuilding-third-party.md',
+        paths = ['LICENSE', 'NOTICE', 'COMMERCIAL_LICENSE.md', 'docs/licensing.md', 'docs/rebuilding-third-party.md',
                  'docs/compliance-status.md', 'scripts/restore-compliance-sources.py',
                  'compliance/release.json', 'compliance/engineering-review.json', 'compliance/frontend.json', 'compliance/native.json',
                  'src-tauri/resources/THIRD_PARTY_NOTICES.md', 'src-tauri/resources/RUNTIME_LICENSES.txt',

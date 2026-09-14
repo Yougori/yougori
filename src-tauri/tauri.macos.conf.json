@@ -4,6 +4,7 @@
     "targets": ["app", "dmg"],
     "resources": {
       "../LICENSE": "LICENSE",
+      "../COMMERCIAL_LICENSE.md": "COMMERCIAL_LICENSE.md",
       "../NOTICE": "NOTICE",
       "../node_modules/@novnc/novnc/": "third-party-sources/novnc/",
       "resources/runtime/appliance/": "runtime/appliance/",

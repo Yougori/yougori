@@ -5,8 +5,10 @@ Developed by Yougori LLC.
 https://yougori.com/
 https://github.com/Yougori/yougori
 
-Original Yougori code is licensed under the Apache License, Version 2.0,
-except where a file or directory carries a separate license notice.
+Original Yougori code is licensed under AGPL-3.0-only, except where a file
+or directory carries a separate license notice. Yougori LLC also offers a
+separate paid commercial licensing option; see COMMERCIAL_LICENSE.md.
+Earlier Apache-2.0 permissions are not withdrawn.
 
 This distribution includes third-party software. Its authors retain their
 copyrights and its component licenses remain applicable. See
@@ -14,5 +16,5 @@ THIRD_PARTY_NOTICES.md, APPLICATION_LICENSES.txt, RUNTIME_LICENSES.txt, WORKSPAC
 and the license notices and source records supplied with each component.
 
 This NOTICE provides attribution and does not add restrictions to the
-Apache License or to any third-party license. It does not grant trademark
+AGPL or to any third-party license. It does not grant trademark
 rights beyond those provided by the applicable license.

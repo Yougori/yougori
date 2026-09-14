@@ -72,8 +72,14 @@ separate release steps.
 
 ## Licenses and source materials
 
-Original contributions are supplied under Apache-2.0 unless the affected files
-carry a separate license. Retain existing component notices and attribution.
+Original contributions are supplied under AGPL-3.0-only unless the affected
+files carry a separate license. Retain existing component notices and attribution.
+Contributors keep ownership of their work. Because Yougori LLC also offers paid
+commercial licenses, contributions intended for that offering need a separate
+written grant allowing the necessary commercial licensing. Do not include
+third-party contributions in a commercial offering without documenting those
+rights. Submitting a pull request alone does not assign copyright or supply
+additional commercial permissions. See [commercial licensing](COMMERCIAL_LICENSE.md).
 Read [licensing and source distribution](docs/licensing.md) before changing a
 bundled dependency. Run `npm run compliance:check` after updating the evidence.
 Local installer preparation additionally requires `npm run release:package`;

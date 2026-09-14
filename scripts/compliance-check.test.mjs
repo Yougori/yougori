@@ -214,16 +214,17 @@ test("previous publication verification cannot approve a different source index"
   await assert.rejects(checkCompliance(root, { distribution: true }), /Published source manifest does not match/)
 })
 
-test("all installer configurations carry Apache attribution and dependency notices", async () => {
+test("all installer configurations carry the AGPL license, commercial option and dependency notices", async () => {
   const json = async name => JSON.parse(await readFile(new URL(`../${name}`, import.meta.url), "utf8"))
-  assert.equal((await json("package.json")).license, "Apache-2.0")
-  assert.equal((await json("package-lock.json")).packages[""].license, "Apache-2.0")
+  assert.equal((await json("package.json")).license, "AGPL-3.0-only")
+  assert.equal((await json("package-lock.json")).packages[""].license, "AGPL-3.0-only")
   const base = await json("src-tauri/tauri.conf.json")
-  assert.equal(base.bundle.license, "Apache-2.0")
+  assert.equal(base.bundle.license, "AGPL-3.0-only")
   assert.match(base.build.beforeBuildCommand, /release:package/)
   for (const platform of ["windows", "linux", "macos"]) {
     const { resources } = (await json(`src-tauri/tauri.${platform}.conf.json`)).bundle
     assert.equal(resources["../LICENSE"], "LICENSE")
+    assert.equal(resources["../COMMERCIAL_LICENSE.md"], "COMMERCIAL_LICENSE.md")
     assert.equal(resources["../NOTICE"], "NOTICE")
     for (const file of ["APPLICATION_LICENSES.txt", "RUNTIME_LICENSES.txt", "WORKSPACE_LICENSES.txt"]) {
       assert.equal(resources[`resources/${file}`], file)

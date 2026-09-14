@@ -2219,8 +2219,12 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-Original Yougori modifications retain the root Apache-2.0 license. That license
-does not replace the MIT terms for upstream portions of these files.
+Original Yougori modifications in this version are offered under AGPL-3.0-only,
+with a separate commercial option where Yougori LLC has the necessary rights.
+Earlier Apache-2.0 grants remain valid. Neither option replaces the MIT terms
+for the upstream portions of these files. See the root LICENSE and
+COMMERCIAL_LICENSE.md; the earlier Apache text is retained in
+compliance/notices/apache-2.0.txt.
 
 
 ========================================================================

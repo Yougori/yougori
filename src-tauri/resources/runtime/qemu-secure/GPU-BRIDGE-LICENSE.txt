@@ -7,7 +7,8 @@ Version 2.0. SPDX-License-Identifier: GPL-2.0-or-later OR Apache-2.0
 
 The QEMU runtime distribution selects GPL version 2 or later for this bridge.
 The full GPL version 2 text accompanies QEMU in COPYING or QEMU-LICENSE.txt.
-The Apache License 2.0 text is in Yougori's root LICENSE.
+The Apache License 2.0 text is retained in RUNTIME_LICENSES.txt
+and in compliance/notices/apache-2.0.txt in the source tree.
 
 This grant does not relicense ANGLE. The unmodified ANGLE library and its
 third-party notices retain their own licenses.

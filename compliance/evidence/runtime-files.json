@@ -81,8 +81,8 @@
   },
   {
     "path": "src-tauri/resources/runtime/qemu/GPU-BRIDGE-LICENSE.txt",
-    "sha256": "c0d5495db7a1914af289c00a465cdaf2825a8aca2827bb839d8ec8e9dde149ae",
-    "bytes": 628
+    "sha256": "db60e34776adba3ec4ac20b5de3201affeb4806038665399f94d39904262d644",
+    "bytes": 695
   },
   {
     "path": "src-tauri/resources/runtime/qemu/libbrotlicommon.dll",
@@ -646,7 +646,7 @@
   },
   {
     "path": "src-tauri/resources/runtime/qemu/SHA256SUMS",
-    "sha256": "f75fb53bc5cf5f486a473a470b44665196cb24a1722985cd68ca90ef9e055f41",
+    "sha256": "e8d6694471dd03eac1e8501abb729bcb97500606b051de5f9e71b8f2cbf6129a",
     "bytes": 12460
   },
   {
@@ -776,8 +776,8 @@
   },
   {
     "path": "src-tauri/resources/runtime/qemu-secure/GPU-BRIDGE-LICENSE.txt",
-    "sha256": "c0d5495db7a1914af289c00a465cdaf2825a8aca2827bb839d8ec8e9dde149ae",
-    "bytes": 628
+    "sha256": "db60e34776adba3ec4ac20b5de3201affeb4806038665399f94d39904262d644",
+    "bytes": 695
   },
   {
     "path": "src-tauri/resources/runtime/qemu-secure/libbrotlicommon.dll",
@@ -1386,7 +1386,7 @@
   },
   {
     "path": "src-tauri/resources/runtime/qemu-secure/SHA256SUMS",
-    "sha256": "baa1e78bcb9b459cb5c474769a3c304c5ee8781d00ab69942f40863301bb537a",
+    "sha256": "b1c482d65cd56fcecdc9906e33204072d935992866016ae83f82a8c6bc2e8223",
     "bytes": 12084
   },
   {

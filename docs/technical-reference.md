@@ -360,15 +360,14 @@ Persistent application state and runtime data live in the operating-system appli
 
 ## License
 
-Yougori's original code is licensed by Yougori LLC under the
-[Apache License, Version 2.0](../LICENSE), except where separate notices apply.
-Use, modification and redistribution, including commercial use, are permitted
-under that license. Preserve the required license and [attribution notices](../NOTICE)
-when redistributing. Merely using Yougori to build or host an independent
-application does not require public attribution on that application.
+Yougori's original code is available under [AGPL-3.0-only](../LICENSE),
+with a [separate paid commercial licensing option](../COMMERCIAL_LICENSE.md)
+from Yougori LLC. Commercial use is permitted under AGPL when its conditions
+are met. Distribution and modified network deployments have applicable source
+and notice obligations. Earlier Apache grants remain valid.
 
 Separately licensed components retain their own permissions and obligations;
-the Apache license does not replace those licenses. Third-party runtime
+neither licensing route replaces those licenses. Third-party runtime
 attribution is included in [THIRD_PARTY_NOTICES.md](../src-tauri/resources/THIRD_PARTY_NOTICES.md).
 See [licensing and source distribution](../docs/licensing.md) for release details.
 # Linux desktop preview

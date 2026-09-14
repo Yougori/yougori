@@ -690,7 +690,7 @@ def collect_build_material():
     with tempfile.TemporaryDirectory(prefix="source-material-", dir=WORK) as temporary:
         material = Path(temporary)
         for relative in sorted(set(candidates)):
-            if not (relative in frontend_files or relative in ("LICENSE", "NOTICE", "docs/licensing.md", "docs/rebuilding-third-party.md",
+            if not (relative in frontend_files or relative in ("LICENSE", "NOTICE", "COMMERCIAL_LICENSE.md", "docs/licensing.md", "docs/rebuilding-third-party.md",
                                                               "package.json", "package-lock.json") or
                     relative.startswith(("runtime/security/", "runtime/gpu/", "appliance/", "runtime/cuda/", "scripts/",
                                          "compliance/notices/", "src-tauri/boot-helper/"))):
@@ -929,7 +929,7 @@ def add_notices(directory, record, sections):
 def report():
     inputs = json.loads((EVIDENCE / "runtime-files.json").read_text(encoding="utf-8"))
     tracked = run("git", "ls-files", "--cached", "--others", "--exclude-standard", "-z").decode().split("\0")
-    selected = [name for name in tracked if name in ("LICENSE", "NOTICE", "docs/licensing.md", "package.json", "package-lock.json",
+    selected = [name for name in tracked if name in ("LICENSE", "NOTICE", "COMMERCIAL_LICENSE.md", "docs/licensing.md", "package.json", "package-lock.json",
                 "src-tauri/Cargo.lock", "cli/Cargo.lock", "runtime/cuda/host/Cargo.lock")
                 or name.startswith(("runtime/security/", "runtime/gpu/", "appliance/", "runtime/cuda/", "scripts/"))]
     selected += ["NOTICE", "docs/licensing.md", "docs/compliance-status.md", "docs/rebuilding-third-party.md", "compliance/engineering-review.json", "src-tauri/resources/APPLICATION_LICENSES.txt",

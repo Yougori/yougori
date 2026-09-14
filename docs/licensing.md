@@ -1,26 +1,40 @@
 # Licensing and source distribution
 
-Original Yougori code in this source tree is licensed by **Yougori LLC** under
-[Apache-2.0](../LICENSE), except where a file or directory has a separate notice.
+Original Yougori code is offered by **Yougori LLC** under
+[AGPL-3.0-only](../LICENSE), except where a file or directory has a separate
+notice. A [separate paid commercial license](../COMMERCIAL_LICENSE.md) is
+available by written agreement for material Yougori LLC has authority to cover.
 [NOTICE](../NOTICE) carries the Yougori attribution.
 
-## What this permits
+## Choosing a license
 
-You may use, modify and redistribute the code, including commercially and as a
-hosted service. When redistributing, follow Apache-2.0 section 4: provide the
-license, retain applicable notices, identify modifications, and preserve NOTICE
-attribution in a permitted place. A public advertising credit is not required
-simply because someone uses Yougori to build or host an independent product.
-Apache-2.0 does not require proprietary forks to disclose their own source and
-does not grant general rights to Yougori trademarks.
+The AGPL route allows use, modification and redistribution, including commercial
+use. It is not an internal-use-only or non-commercial license. Users do not have
+to buy a commercial license merely because they run a business.
 
-The previous Internal-Use License remains in Git history. Existing installers may
-contain that older text; updating this repository does not rebuild those files.
-Review the license supplied with the particular version.
+When conveying covered source or binaries, follow AGPL sections 4 through 6,
+including applicable notices, licensing and corresponding-source requirements.
+Section 13 requires a modified version to prominently offer its corresponding
+source to users interacting with it remotely over a computer network, as that
+section specifies. Running Yougori does not by itself put independent user data,
+container workloads, VM images or applications under AGPL.
+
+Customers needing different rights for Yougori-owned code can request a paid
+commercial agreement. The agreement must identify its actual scope; the public
+commercial-licensing page grants no automatic exception to AGPL. It does not
+waive third-party copyleft obligations or provide rights Yougori LLC does not own.
+Project metadata identifies AGPL-3.0-only as the public license; any commercial
+permission is supplied separately to the customer.
+
+Earlier Apache-2.0 releases retain the permissions already granted for their
+material. The previous Internal-Use License also remains in Git history. This
+change does not rewrite those grants, relicense third-party contributions
+without authority, or rebuild existing installers. Use the license supplied
+with the particular version. No general Yougori trademark rights are granted.
 
 ## Third-party components
 
-The Apache license does not relicense third-party components or files with their
+Neither licensing route relicenses third-party components or files with their
 own notices. QEMU patches and `runtime/security/tpm-qemu.c` retain their GPL terms;
 TPM platform glue under `runtime/security/LICENSE` remains BSD-2-Clause. Linux
 packages, firmware, DLLs, noVNC and other dependencies keep their own licenses.
@@ -156,7 +170,8 @@ Yougori code, review the compatible GPL version before changing it. Merely
 choosing GPL for the application does not supply missing corresponding source,
 relicense third-party GPL-2.0-only code, or cure incompatible library combinations.
 
-References: [Apache-2.0](https://www.apache.org/licenses/LICENSE-2.0),
+References: [AGPL-3.0](https://www.gnu.org/licenses/agpl-3.0.html),
+[Apache-2.0](https://www.apache.org/licenses/LICENSE-2.0),
 [GPLv2](https://opensource.org/license/gpl-2.0),
 [GNU license FAQ](https://www.gnu.org/licenses/gpl-faq.en.html),
 [Mozilla MPL FAQ](https://www.mozilla.org/en-US/MPL/2.0/FAQ/).

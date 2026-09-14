@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "sourceCommit": "d16624bb9fc6ebe56690691684b4ea802cabc622",
+  "sourceCommit": "3b4791c6dff0c374ef1fd38e13512825501f598e",
   "scope": "Current checkout runtime bytes; not a blanket certification of previous releases",
   "inputs": [
     {
@@ -85,8 +85,8 @@
     },
     {
       "path": "src-tauri/resources/runtime/qemu/GPU-BRIDGE-LICENSE.txt",
-      "sha256": "c0d5495db7a1914af289c00a465cdaf2825a8aca2827bb839d8ec8e9dde149ae",
-      "bytes": 628
+      "sha256": "db60e34776adba3ec4ac20b5de3201affeb4806038665399f94d39904262d644",
+      "bytes": 695
     },
     {
       "path": "src-tauri/resources/runtime/qemu/libbrotlicommon.dll",
@@ -650,7 +650,7 @@
     },
     {
       "path": "src-tauri/resources/runtime/qemu/SHA256SUMS",
-      "sha256": "f75fb53bc5cf5f486a473a470b44665196cb24a1722985cd68ca90ef9e055f41",
+      "sha256": "e8d6694471dd03eac1e8501abb729bcb97500606b051de5f9e71b8f2cbf6129a",
       "bytes": 12460
     },
     {
@@ -780,8 +780,8 @@
     },
     {
       "path": "src-tauri/resources/runtime/qemu-secure/GPU-BRIDGE-LICENSE.txt",
-      "sha256": "c0d5495db7a1914af289c00a465cdaf2825a8aca2827bb839d8ec8e9dde149ae",
-      "bytes": 628
+      "sha256": "db60e34776adba3ec4ac20b5de3201affeb4806038665399f94d39904262d644",
+      "bytes": 695
     },
     {
       "path": "src-tauri/resources/runtime/qemu-secure/libbrotlicommon.dll",
@@ -1390,7 +1390,7 @@
     },
     {
       "path": "src-tauri/resources/runtime/qemu-secure/SHA256SUMS",
-      "sha256": "baa1e78bcb9b459cb5c474769a3c304c5ee8781d00ab69942f40863301bb537a",
+      "sha256": "b1c482d65cd56fcecdc9906e33204072d935992866016ae83f82a8c6bc2e8223",
       "bytes": 12084
     },
     {
@@ -1431,16 +1431,22 @@
       "bytes": 4411
     },
     {
-      "path": "LICENSE",
-      "sha256": "95889e89cdb08d5fd858fc1d8e0dc9030be8549ce84f35b969f88633c5e02e16",
+      "path": "COMMERCIAL_LICENSE.md",
+      "sha256": "7ae493f1148db1a69ed60b0af8f9288d4fb297215d9733be72cf830c311f5aba",
       "normalization": "lf",
-      "bytes": 11338
+      "bytes": 2264
+    },
+    {
+      "path": "LICENSE",
+      "sha256": "54fc636d04b1238b32a80dd972849c3a71047b784f2c64095ab2d8850df57f59",
+      "normalization": "lf",
+      "bytes": 34901
     },
     {
       "path": "NOTICE",
-      "sha256": "d8b98e85581a1c053672231d94f6d1efd1f8f5e39338f0435cd0e8f835784f56",
+      "sha256": "229cbf5e08173253767c308c30aec0035f572f5218cc8bb5d306bfa1d31ee518",
       "normalization": "lf",
-      "bytes": 766
+      "bytes": 884
     },
     {
       "path": "appliance/agent/apps.go",
@@ -1738,15 +1744,15 @@
     },
     {
       "path": "cli/Cargo.toml",
-      "sha256": "229f3807bd61e3d01b575cbda4f056a0e98e51fe103eb9bade38245b21c27528",
+      "sha256": "a9147fd397b95dc0cd738532838f51e65dff75870630fef83ed4cacbe54e51b3",
       "normalization": "lf",
-      "bytes": 666
+      "bytes": 669
     },
     {
       "path": "compliance/engineering-review.json",
-      "sha256": "3ff60c1f6556203b243a9a178b72216a6e05f0d30275f46d65d8a4c99e537214",
+      "sha256": "22c9978a964510545386aacca254785da7bcca8c70bc0b36f051fb43649d716d",
       "normalization": "lf",
-      "bytes": 4760
+      "bytes": 5331
     },
     {
       "path": "compliance/evidence/all-guest-go-modules.json",
@@ -1798,7 +1804,7 @@
     },
     {
       "path": "compliance/evidence/application-dependencies.json",
-      "sha256": "c904aa8864f8bd54b56858f441cc7d9d08300c3af8b9f25b423ef0084de6e7a7",
+      "sha256": "6b12fd2f64f336aad9243382d6a99219213635fe75aa98c2758a3d352d0e15cf",
       "normalization": "lf",
       "bytes": 414815
     },
@@ -1846,15 +1852,15 @@
     },
     {
       "path": "compliance/evidence/runtime-files.json",
-      "sha256": "0d123606eb7f35ae5a0d91005511caeecd3b1278828411ded334dbf4db6b9b13",
+      "sha256": "05b70ce134841a9b24d0003bec5e58717def2a914b9a96a064ae228e31273aba",
       "normalization": "lf",
       "bytes": 52542
     },
     {
       "path": "compliance/evidence/runtime-notices.json",
-      "sha256": "a48df087f85367aa4716fa261e433ec3463ea177fcfc10dfe4a5206e8a98be2e",
+      "sha256": "0bd53e8835ba77684d67bcc59a16d2e07d60889ca0f1b90432fce9cdc39f47d1",
       "normalization": "lf",
-      "bytes": 149994
+      "bytes": 150190
     },
     {
       "path": "compliance/evidence/runtime-validation.json",
@@ -1923,6 +1929,12 @@
       "bytes": 1383
     },
     {
+      "path": "compliance/notices/apache-2.0.txt",
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "normalization": "lf",
+      "bytes": 11358
+    },
+    {
       "path": "compliance/notices/coss-ui-declaration.txt",
       "sha256": "a993eab37408721309858dff0e9f13c65a32847d7b484c62dda7c61f49a8e760",
       "normalization": "lf",
@@ -1953,15 +1965,15 @@
     },
     {
       "path": "docs/compliance-status.md",
-      "sha256": "d605b02768c9538a1fbe10b81a00c67a5816ff214ddfbcb842917dbf26213276",
+      "sha256": "6897117203284238f542a0a0b5e79141c9d80dcc0ed53eb986de11de5dcf7671",
       "normalization": "lf",
-      "bytes": 10903
+      "bytes": 11142
     },
     {
       "path": "docs/licensing.md",
-      "sha256": "936a7b869afdd2cc39a24b6c0bbf8c4c8c21cb9df29bc28518ac7a7a67f748dc",
+      "sha256": "be39e8f10aded1fb8d5f12f6168f1e14e53f21194813974865a5f6f2035ae2dd",
       "normalization": "lf",
-      "bytes": 8946
+      "bytes": 9895
     },
     {
       "path": "docs/rebuilding-third-party.md",
@@ -1983,15 +1995,15 @@
     },
     {
       "path": "package-lock.json",
-      "sha256": "75586299ffc6cb76911ef554b3372479382ab0f66ef985a22ef7cc42874fb900",
+      "sha256": "6b57879d7c6a88c399c59ae6f9656d6b912cc9ab725334e4500ea6de644c7a89",
       "normalization": "lf",
-      "bytes": 201080
+      "bytes": 201083
     },
     {
       "path": "package.json",
-      "sha256": "3eef7f03f0f58c22902bc8e43533c67a60acce0cdb1ad177b5982afe1a9132ed",
+      "sha256": "cdea74c2bb762b21674461032a9ec1fb8e8bc4a5902d2b2fe18335d706cc3f8a",
       "normalization": "lf",
-      "bytes": 6024
+      "bytes": 6027
     },
     {
       "path": "runtime/cuda/README.md",
@@ -2007,9 +2019,9 @@
     },
     {
       "path": "runtime/cuda/host/Cargo.toml",
-      "sha256": "2a06145e73400a3152ee9cb878ab21d930e2dc22181df14af74fb2901258a62e",
+      "sha256": "b69a7ddd5c7b8559f367cc704f73850b3fc8d7ddea1ce27d77ac9408ea92087d",
       "normalization": "lf",
-      "bytes": 647
+      "bytes": 650
     },
     {
       "path": "runtime/cuda/host/src/compatibility.rs",
@@ -2085,9 +2097,9 @@
     },
     {
       "path": "runtime/gpu/LICENSE",
-      "sha256": "c0d5495db7a1914af289c00a465cdaf2825a8aca2827bb839d8ec8e9dde149ae",
+      "sha256": "db60e34776adba3ec4ac20b5de3201affeb4806038665399f94d39904262d644",
       "normalization": "lf",
-      "bytes": 628
+      "bytes": 695
     },
     {
       "path": "runtime/gpu/README.md",
@@ -2343,9 +2355,9 @@
     },
     {
       "path": "scripts/collect-compliance.py",
-      "sha256": "b3d6d331cb9e47ea372c3d1f25a63c52e4c5c71fc68b7ea70036741b7dc7a468",
+      "sha256": "c611a4b9d14c0567eb2cc0450f453e4164390d95e137795dae04a02c8b4c55af",
       "normalization": "lf",
-      "bytes": 61212
+      "bytes": 61262
     },
     {
       "path": "scripts/compliance-angle.py",
@@ -2367,9 +2379,9 @@
     },
     {
       "path": "scripts/compliance-check.test.mjs",
-      "sha256": "6cbf77776026dd3ac81a05e1a966c773af3c7b4b8cb281b200d53b3ca3c761d0",
+      "sha256": "23e79f0a1dbbfc33a8b22210ba85cdbea00993bfe607755a12eac17ded5bc351",
       "normalization": "lf",
-      "bytes": 12560
+      "bytes": 12667
     },
     {
       "path": "scripts/compliance-collect.test.py",
@@ -2475,9 +2487,9 @@
     },
     {
       "path": "scripts/package-compliance.py",
-      "sha256": "96206a3cc3f936c9b3adca51e820be0b0584b01053dc5084c85c6e7c68c72b48",
+      "sha256": "6c6a66c50198db075e2015ac948a467bafa84cd024a00ac407acb3a14c47d4b4",
       "normalization": "lf",
-      "bytes": 3616
+      "bytes": 3641
     },
     {
       "path": "scripts/patch-novnc.mjs",
@@ -2613,9 +2625,9 @@
     },
     {
       "path": "src-tauri/Cargo.toml",
-      "sha256": "4adb9169ef19a022841619330a0e4d00470237d8a4fa642f767738e6082148f4",
+      "sha256": "a07c7cec951abe167c3bc4c27dcb72f28bc2ca982e90fca334ad61ecf8ff431e",
       "normalization": "lf",
-      "bytes": 2043
+      "bytes": 2046
     },
     {
       "path": "src-tauri/icons/128x128.png",
@@ -2881,21 +2893,21 @@
     },
     {
       "path": "src-tauri/resources/APPLICATION_LICENSES.txt",
-      "sha256": "8218f4598ef4a8a742da30761f35a900c097f093a6d9f22271d82c4276088672",
+      "sha256": "e5663678501843dcd2175ed53dd795b8a8d987dd3b3663c2deba98d95e447453",
       "normalization": "lf",
-      "bytes": 6728209
+      "bytes": 6728460
     },
     {
       "path": "src-tauri/resources/RUNTIME_LICENSES.txt",
-      "sha256": "d4740a67f719dc7ad07f664c15f01daa73ae811a1ec0d588a39249594b7c9030",
+      "sha256": "0d2a4bbf6125163fa13588089acf526867dc92210c224c70dc4a5a99f2fc19cc",
       "normalization": "lf",
-      "bytes": 5356408
+      "bytes": 5367874
     },
     {
       "path": "src-tauri/resources/THIRD_PARTY_NOTICES.md",
-      "sha256": "6532cd4a080a8614dad754ae76d29fb58dd27ca6bdbdec3d8e37b3d7697a4568",
+      "sha256": "cf3c5cf90f6613cfdea9106a30cd8bfb2ab752799963ded5b22fa5d6ebe35e28",
       "normalization": "lf",
-      "bytes": 11066
+      "bytes": 11250
     },
     {
       "path": "src-tauri/resources/WORKSPACE_LICENSES.txt",
@@ -2905,27 +2917,27 @@
     },
     {
       "path": "src-tauri/tauri.conf.json",
-      "sha256": "0d4873b6dbeed897d907dbbb5c4cc8909df1bc9e8346ed69c8b0e14655587cac",
+      "sha256": "6a98ab22999805d9a89670cdf5e98f9f3fc45351a16debefe9d11609d2b6df26",
       "normalization": "lf",
-      "bytes": 1657
+      "bytes": 1660
     },
     {
       "path": "src-tauri/tauri.linux.conf.json",
-      "sha256": "818db56cd5755c33a81b5df4cf6ef2c4f8c4a798bc2db21b1d07b1c570d30027",
+      "sha256": "81e1f6476b89ef992bcb3d42e7132a0e63384d43964fa47a38251b8a25214eed",
       "normalization": "lf",
-      "bytes": 984
+      "bytes": 1043
     },
     {
       "path": "src-tauri/tauri.macos.conf.json",
-      "sha256": "2f8a262fcaf78ec60cde03f4fec087ae9420e1e15a018b3e0373870e9deb5e66",
+      "sha256": "81da51ef775ab1e803e61bab506d61564240ac0589fe2b546c6a929099509ca8",
       "normalization": "lf",
-      "bytes": 1028
+      "bytes": 1087
     },
     {
       "path": "src-tauri/tauri.windows.conf.json",
-      "sha256": "41e24573e74e8242a803d344ce2d767d985ad421bba3f3cfd3792b35f06ff928",
+      "sha256": "b12c0bbf9f7b2bd5b154202aec2c24102472c07cf31f8eda3e999f88e191f56e",
       "normalization": "lf",
-      "bytes": 1280
+      "bytes": 1339
     },
     {
       "path": "src/api/cloud-api.ts",
@@ -3445,9 +3457,9 @@
     },
     {
       "path": "src/components/ui/LICENSE.txt",
-      "sha256": "f75cc053f623a1585301f421014a7e0f2c723beea75ae3be28584653e36423a4",
+      "sha256": "2ae7c9d3587bc619f682b3c9985e09720b01ac01547bdaaf0aafb39a0392ab48",
       "normalization": "lf",
-      "bytes": 2019
+      "bytes": 2270
     },
     {
       "path": "src/components/ui/alert-dialog.tsx",
@@ -5237,8 +5249,8 @@
     },
     {
       "file": "yougori-runtime-build-material.tar.gz",
-      "sha256": "e1c5bc1056545e330b185c46122b0b41f171392162e004fa0c73166eee02438c",
-      "bytes": 1454390
+      "sha256": "87155e8ebf238daf036d0108822617efc674a8e927bddcf43d96509dbbc9606d",
+      "bytes": 1463781
     }
   ],
   "components": [
@@ -5486,8 +5498,8 @@
       "id": "local-build-material",
       "status": "collected",
       "file": "yougori-runtime-build-material.tar.gz",
-      "sha256": "e1c5bc1056545e330b185c46122b0b41f171392162e004fa0c73166eee02438c",
-      "bytes": 1454390
+      "sha256": "87155e8ebf238daf036d0108822617efc674a8e927bddcf43d96509dbbc9606d",
+      "bytes": 1463781
     },
     {
       "id": "alpine/alpine-baselayout/60a7585bbab2fa0f762504eb617dbca90216e31f",
@@ -9802,7 +9814,7 @@
     "evidence": "docs/compliance-status.md; compliance/evidence; docs/rebuilding-third-party.md",
     "scope": "Current staging source/notices and exact recorded Windows/appliance runtime, including the rebuilt D3D11-only ANGLE graphics closure. Matching public source availability is verified separately. Main and older installers are outside this staging approval.",
     "decisions": [
-      "Original Yougori code uses the owner's selected Apache-2.0 plus NOTICE; separately licensed components retain their licenses.",
+      "Original Yougori code uses the owner's selected AGPL-3.0-only plus NOTICE, with a separate paid commercial option limited to rights Yougori LLC can grant. Third-party licenses and earlier Apache grants remain valid. This license choice does not establish compatibility of an otherwise incompatible combination.",
       "QEMU is built from the supplied pinned upstream source and GPL-compatible local modifications; the retired JACK/Berkeley DB import chain is absent.",
       "QEMU exchanges TPM wire commands with a separate BSD helper; no QEMU internal objects or OpenSSL library are linked into QEMU through that helper.",
       "GMP, Nettle and libunistring use their upstream GPL-2.0-or-later library option; original license declarations and full GPLv2 text are retained.",
@@ -9810,7 +9822,7 @@
       "Linux/appliance packages have exact aports recipes and checked distfiles. Firmware source revisions, build configuration and unchanged shipped bytes are recorded.",
       "Static OCI libraries have corresponding Debian source/patches and application sources/build procedures for relinking; the musl-linked local helper rebuilt byte-for-byte.",
       "NoVNC and other copyleft source materials and third-party attribution are retained independently of Yougori's root license.",
-      "Copied Coss UI components and the shared class-name helper retain MIT, with explicit file mapping, upstream attribution and pinned MIT declarations. Original Yougori modifications retain Apache-2.0.",
+      "Copied Coss UI components and the shared class-name helper retain MIT, with explicit file mapping, upstream attribution and pinned MIT declarations. Current original Yougori modifications are offered under AGPL-3.0-only; earlier Apache grants are not withdrawn.",
       "Tailwind 4.3.3 is included in shipped dependency notices despite its npm development flag because its generated CSS and Preflight form part of the application.",
       "QEMU modification notices cover all ten changed upstream files. Applying the supplemental comment patch preserves all twelve original build-source hashes after removing only the new headers; existing build records are retained.",
       "Frontend source/assets, copied-code notices and production CSS/module imports are checked. Source index/checksum mismatches and publication evidence for an older index are rejected.",
@@ -9822,22 +9834,12 @@
       "GCC Runtime Library Exception, LLVM exception and Bison output exception apply to the recorded compilation/output; full terms and supplementary MinGW/Boost/zlib notices are retained. The build uses the unmodified standard GCC toolchain.",
       "All 77 Windows PE identities/imports are explicitly pinned for native license review. The checker includes libepoxy -> EGL bridge -> ANGLE EGL -> GLES dynamic loads, exact ANGLE build identity, per-component decisions and full embedded notices.",
       "Eight diskless GPU initialization/selection checks passed for ordinary and secure QEMU. Alpine and Ubuntu non-root hardware rendering tests passed, including physical-adapter switching. The excluded native implementation literal matches fell to zero for SPIRV-Tools, Vulkan Loader and VMA.",
-      "Twenty JavaScript compliance regressions and thirteen Python collector/native-source regressions passed; source/archive, full payload and staging CI results are recorded with the remediation evidence."
+      "Twenty JavaScript compliance regressions and thirteen Python collector/native-source regressions passed; source/archive, full payload and staging CI results are recorded with the remediation evidence.",
+      "The AGPL/commercial change affects licensing text, package metadata and corresponding-source records. Native executable and DLL bytes are unchanged; paid terms cannot remove third-party GPL/LGPL/MPL obligations. A commercial license requires a separate written agreement and sufficient ownership/contributor rights."
     ]
   },
   "publication": {
-    "status": "verified",
-    "manifestUrl": "https://github.com/Yougori/yougori/releases/download/staging-sources-8b963b73fd16eb22/SOURCE_INDEX.json",
-    "manifestSha256": "5c6d6d4100d5dc5c17a21678a1ee78ef7feb3b18e7886e0198d1bb399c953b9d",
-    "verifiedAt": "2026-09-14T11:05:49.121595+00:00",
-    "evidence": "Anonymous HTTPS download of the complete ZIP matched its SHA-256 and byte length. Public and embedded source indexes and checksum lists, all ZIP CRCs, and the packaged Copyright 2026 Yougori LICENSE were verified.",
-    "releaseUrl": "https://github.com/Yougori/yougori/releases/tag/staging-sources-8b963b73fd16eb22",
-    "sourceTag": "staging-sources-8b963b73fd16eb22",
-    "sourceCommit": "fc92854405c27a008cab311fba3c7cefd287895d",
-    "bundleUrl": "https://github.com/Yougori/yougori/releases/download/staging-sources-8b963b73fd16eb22/Yougori-corresponding-source-8b963b73fd16eb22.zip",
-    "bundleSha256": "e159e3aab0d886db92d005858f3db6983241d6bf4a10e644e91079acc890d933",
-    "bundleBytes": 1147140865,
-    "scope": "Current staging sources with the requested copyright notice; application and runtime code unchanged."
+    "status": "not-published"
   },
   "historicalReleaseIssues": [
     {

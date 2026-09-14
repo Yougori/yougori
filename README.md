@@ -10,10 +10,12 @@
 
 Create and manage containers, microVMs and virtual machines from one desktop workspace.
 
-Yougori's original code is **open source under [Apache-2.0](LICENSE)**.
-You can use, modify and redistribute it, including commercially, while preserving
-the required license and [Yougori attribution notices](NOTICE). Third-party
-components retain their own licenses. See the [licensing guide](docs/licensing.md)
+Yougori's original code is **open source under [AGPL-3.0-only](LICENSE)**,
+with a **[separate paid commercial licensing option](COMMERCIAL_LICENSE.md)**
+from Yougori LLC. Commercial use is allowed under AGPL when its conditions are
+met; payment is not required just because a use is commercial. Third-party
+components retain their own licenses, and earlier Apache grants remain valid.
+See the [licensing guide](docs/licensing.md), [attribution notices](NOTICE)
 and [source-distribution status](docs/compliance-status.md).
 
 Download Yougori from **[yougori.com](https://yougori.com/)**, use a direct download below, or [clone this GitHub repository](https://github.com/Yougori/yougori) and run it from source.

@@ -5,8 +5,10 @@ frontend notices and runtime bytes in `compliance/release.json`.
 
 ## Changes completed
 
-- Original Yougori code uses Apache-2.0 with Yougori LLC attribution in NOTICE,
-  as selected by the project owner. Third-party components keep their licenses.
+- Original Yougori code uses AGPL-3.0-only with attribution in NOTICE and a
+  separate paid commercial licensing option for rights Yougori LLC can grant,
+  as selected by the project owner. Third-party components keep their licenses,
+  and previously granted Apache permissions remain valid. See COMMERCIAL_LICENSE.md.
 - Both Windows QEMU runtimes are built from exact revision
   `84f07211cc5b4fc6a371559bf8a5de4fb068e648`, with the recorded local patches.
   The previous stock runtime's JACK/Berkeley DB chain and unknown DLLs are gone.
@@ -38,7 +40,8 @@ frontend notices and runtime bytes in `compliance/release.json`.
 - All 26 copied Coss UI components and the shared class-name helper have explicit
   attribution and MIT terms. The upstream `apps/ui/` MIT exception is recorded
   at a pinned revision. Both declarations and license text are included in the
-  application notice collection; Yougori's original changes retain Apache-2.0.
+  application notice collection; original Yougori changes in the current version
+  are offered under AGPL-3.0-only, without withdrawing earlier Apache grants.
 - A supplementary QEMU patch adds dated modification notices to all ten changed
   upstream source files. It retains the original functional patch bytes and
   binary build records. Verification against exported upstream sources confirms
@@ -76,7 +79,7 @@ and the applicable compiler/output exceptions are retained.
 
 `ANGLE-NOTICES.txt` accompanies each runtime and is included in
 `RUNTIME_LICENSES.txt`. The omitted AMD VMA MIT notice is retained for the retired
-package, even though VMA is absent from the new build. There are 207 runtime
+package, even though VMA is absent from the new build. There are 208 runtime
 source/package notice entries with recognized texts.
 
 The compliance gate now pins all 77 Windows PE identities/imports and the
