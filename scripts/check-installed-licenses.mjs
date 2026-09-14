@@ -4,8 +4,9 @@ import { basename, join, resolve } from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
 import { checkedFile } from "./compliance-check.mjs"
 
-const noticeName = name => /^(?:LICEN[CS]E|COPYING|COPYRIGHT|NOTICE)(?:[._-]|$)/i.test(name)
+const noticeName = name => /^(?:LICEN[CS]E|COPYING|COPYRIGHT|NOTICE)(?:[0-9._-]|$)/i.test(name)
   || /[._-](?:LICENSES?|NOTICES?)\.(?:md|txt)$/i.test(name)
+  || /[._-](?:COPYING|COPYRIGHT)(?:[0-9._-].*)?$/i.test(name)
 const normalized = text => text.replace(/\r\n?/g, "\n")
 
 export async function checkInstalledLicenses(root, installed, platform) {

@@ -26,9 +26,14 @@ test("installed notices must exist and match, including nested GPL text", async 
   for (const directory of [join(root, "src-tauri/resources/runtime"), join(installed, "runtime")]) {
     await mkdir(directory, { recursive: true })
     await writeFile(join(directory, "COPYING"), "GPL component notice\n")
+    await writeFile(join(directory, "COPYING3"), "GPL version 3 notice\n")
+    await writeFile(join(directory, "p11-kit-COPYING"), "p11-kit notice\n")
   }
   await writeFile(join(root, "src-tauri/tauri.windows.conf.json"), JSON.stringify({ bundle: { resources } }))
-  assert.equal(await checkInstalledLicenses(root, installed, "windows"), 9)
+  assert.equal(await checkInstalledLicenses(root, installed, "windows"), 11)
+  await writeFile(join(installed, "runtime/COPYING3"), "wrong GPL version")
+  await assert.rejects(checkInstalledLicenses(root, installed, "windows"), /differs/)
+  await writeFile(join(installed, "runtime/COPYING3"), "GPL version 3 notice\n")
   await writeFile(join(installed, "runtime/COPYING"), "wrong license")
   await assert.rejects(checkInstalledLicenses(root, installed, "windows"), /differs/)
   await writeFile(join(installed, "runtime/COPYING"), "GPL component notice\n")
