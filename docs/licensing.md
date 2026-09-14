@@ -6,6 +6,12 @@ notice. A [separate paid commercial license](../COMMERCIAL_LICENSE.md) is
 available by written agreement for material Yougori LLC has authority to cover.
 [NOTICE](../NOTICE) carries the Yougori attribution.
 
+[LICENSE](../LICENSE) contains the completed Yougori copyright and license
+notice, project contact and source links. [COPYING](../COPYING) preserves the
+complete, unmodified AGPL text. Placeholders in its how-to appendix are
+generic examples, not missing project details. The project notice specifies
+version 3 only; the appendix example does not grant a later-version option.
+
 ## Choosing a license
 
 The AGPL route allows use, modification and redistribution, including commercial

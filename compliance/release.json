@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "sourceCommit": "3b4791c6dff0c374ef1fd38e13512825501f598e",
+  "sourceCommit": "d5fae63d2284228a4553118c0c8e5ac78bde76e9",
   "scope": "Current checkout runtime bytes; not a blanket certification of previous releases",
   "inputs": [
     {
@@ -1437,10 +1437,16 @@
       "bytes": 2264
     },
     {
-      "path": "LICENSE",
-      "sha256": "54fc636d04b1238b32a80dd972849c3a71047b784f2c64095ab2d8850df57f59",
+      "path": "COPYING",
+      "sha256": "d8a6cc31abc16b6748c7a21f21611f5a1ec33f67d22ca23d7da1c19b95496bee",
       "normalization": "lf",
-      "bytes": 34901
+      "bytes": 34020
+    },
+    {
+      "path": "LICENSE",
+      "sha256": "f126781cad218b9b2f9bf68925189ff3a00ed4d39d0522ae2f39511a17e66283",
+      "normalization": "lf",
+      "bytes": 1972
     },
     {
       "path": "NOTICE",
@@ -1971,9 +1977,9 @@
     },
     {
       "path": "docs/licensing.md",
-      "sha256": "be39e8f10aded1fb8d5f12f6168f1e14e53f21194813974865a5f6f2035ae2dd",
+      "sha256": "0919814385e9b0d374228db889a84c341d99b1dd5571fe6ffca6a5311c4ebd11",
       "normalization": "lf",
-      "bytes": 9895
+      "bytes": 10273
     },
     {
       "path": "docs/rebuilding-third-party.md",
@@ -2355,9 +2361,9 @@
     },
     {
       "path": "scripts/collect-compliance.py",
-      "sha256": "c611a4b9d14c0567eb2cc0450f453e4164390d95e137795dae04a02c8b4c55af",
+      "sha256": "442dd157e5b791247bf5263168bdd170a2d2a7e9e7c18d56d413ae97acbfb929",
       "normalization": "lf",
-      "bytes": 61262
+      "bytes": 61284
     },
     {
       "path": "scripts/compliance-angle.py",
@@ -2379,9 +2385,9 @@
     },
     {
       "path": "scripts/compliance-check.test.mjs",
-      "sha256": "23e79f0a1dbbfc33a8b22210ba85cdbea00993bfe607755a12eac17ded5bc351",
+      "sha256": "13e02303d59398a7836c0a2ed31af4321e3a91816493e51e5a9ead61ed22522f",
       "normalization": "lf",
-      "bytes": 12667
+      "bytes": 12720
     },
     {
       "path": "scripts/compliance-collect.test.py",
@@ -2487,9 +2493,9 @@
     },
     {
       "path": "scripts/package-compliance.py",
-      "sha256": "6c6a66c50198db075e2015ac948a467bafa84cd024a00ac407acb3a14c47d4b4",
+      "sha256": "466402c8cf529157fb7d53d6b128baccc84355ded73610dcfda56cbe0ee7a27a",
       "normalization": "lf",
-      "bytes": 3641
+      "bytes": 3652
     },
     {
       "path": "scripts/patch-novnc.mjs",
@@ -2923,21 +2929,21 @@
     },
     {
       "path": "src-tauri/tauri.linux.conf.json",
-      "sha256": "81e1f6476b89ef992bcb3d42e7132a0e63384d43964fa47a38251b8a25214eed",
+      "sha256": "5dfe4ebe828f9add29ad3e2dce05ef48652c32a2522ae62bd54158a8389de818",
       "normalization": "lf",
-      "bytes": 1043
+      "bytes": 1074
     },
     {
       "path": "src-tauri/tauri.macos.conf.json",
-      "sha256": "81da51ef775ab1e803e61bab506d61564240ac0589fe2b546c6a929099509ca8",
+      "sha256": "954f7d69f5e74397c10b0d5328e103066247501e81bba3c95c997b2d8721d122",
       "normalization": "lf",
-      "bytes": 1087
+      "bytes": 1118
     },
     {
       "path": "src-tauri/tauri.windows.conf.json",
-      "sha256": "b12c0bbf9f7b2bd5b154202aec2c24102472c07cf31f8eda3e999f88e191f56e",
+      "sha256": "d6aaa3a4ce3a611ee518e0903c0d2e1c59b98a4aec824d2298327a5d8992d7d3",
       "normalization": "lf",
-      "bytes": 1339
+      "bytes": 1370
     },
     {
       "path": "src/api/cloud-api.ts",
@@ -5249,8 +5255,8 @@
     },
     {
       "file": "yougori-runtime-build-material.tar.gz",
-      "sha256": "87155e8ebf238daf036d0108822617efc674a8e927bddcf43d96509dbbc9606d",
-      "bytes": 1463781
+      "sha256": "22de8ab3d4867a732ee6e5e19c270df4a998e64b3d9e4ccfeea59981ce889608",
+      "bytes": 1464145
     }
   ],
   "components": [
@@ -5498,8 +5504,8 @@
       "id": "local-build-material",
       "status": "collected",
       "file": "yougori-runtime-build-material.tar.gz",
-      "sha256": "87155e8ebf238daf036d0108822617efc674a8e927bddcf43d96509dbbc9606d",
-      "bytes": 1463781
+      "sha256": "22de8ab3d4867a732ee6e5e19c270df4a998e64b3d9e4ccfeea59981ce889608",
+      "bytes": 1464145
     },
     {
       "id": "alpine/alpine-baselayout/60a7585bbab2fa0f762504eb617dbca90216e31f",
@@ -9839,19 +9845,7 @@
     ]
   },
   "publication": {
-    "status": "verified",
-    "manifestUrl": "https://github.com/Yougori/yougori/releases/download/staging-sources-a64f452d86f33d66/SOURCE_INDEX.json",
-    "manifestSha256": "1e32aaaad01ed906bb3d10ffba1482e2b356fbc249fff3cbac69237b68377635",
-    "verifiedAt": "2026-09-14T11:46:06.965244+00:00",
-    "evidence": "GitHub's uploaded-asset SHA-256 matches the locally verified complete ZIP. Anonymous source-index and checksum downloads match local records. Anonymous bounded ZIP range reads verified the packaged LICENSE, COMMERCIAL_LICENSE.md, source index and checksum list. The full remote ZIP was not re-downloaded.",
-    "releaseUrl": "https://github.com/Yougori/yougori/releases/tag/staging-sources-a64f452d86f33d66",
-    "sourceTag": "staging-sources-a64f452d86f33d66",
-    "sourceCommit": "0593181be727ec4cbb424c8dfd4933d6e0f8659a",
-    "bundleUrl": "https://github.com/Yougori/yougori/releases/download/staging-sources-a64f452d86f33d66/Yougori-corresponding-source-a64f452d86f33d66.zip",
-    "bundleSha256": "185424f596aef14c20b3d8824fede62c3020f5ed9679203f3c085449d72fff75",
-    "bundleBytes": 1147164711,
-    "anonymousZipBytesRead": 284711,
-    "scope": "Staging AGPL-3.0-only with separate paid commercial licensing; 77 Windows PE identities unchanged. Full CI intentionally skipped for licensing metadata."
+    "status": "not-published"
   },
   "historicalReleaseIssues": [
     {

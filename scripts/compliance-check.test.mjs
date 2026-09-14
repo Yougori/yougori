@@ -224,6 +224,7 @@ test("all installer configurations carry the AGPL license, commercial option and
   for (const platform of ["windows", "linux", "macos"]) {
     const { resources } = (await json(`src-tauri/tauri.${platform}.conf.json`)).bundle
     assert.equal(resources["../LICENSE"], "LICENSE")
+    assert.equal(resources["../COPYING"], "COPYING")
     assert.equal(resources["../COMMERCIAL_LICENSE.md"], "COMMERCIAL_LICENSE.md")
     assert.equal(resources["../NOTICE"], "NOTICE")
     for (const file of ["APPLICATION_LICENSES.txt", "RUNTIME_LICENSES.txt", "WORKSPACE_LICENSES.txt"]) {
