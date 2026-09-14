@@ -2,7 +2,7 @@ name: Verify (no publishing)
 
 on:
   push:
-    branches: [staging]
+    branches: [main, staging]
   workflow_dispatch:
 
 permissions:
