@@ -8,8 +8,6 @@
   <a href="https://x.com/withYougori"><img src="https://raw.githubusercontent.com/Yougori/yougori/677bc5244d2f998e57bc3810b52a314135b88b59/xcom.webp" width="112" height="112" align="absmiddle" alt="X"></a>
 </p>
 
-Create and manage containers, microVMs and virtual machines from one desktop workspace.
-
 ## What can you do with Yougori?
 
 - **Run AI agents in containers and VMs**, with control over their access to your files and network.
