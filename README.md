@@ -10,6 +10,8 @@
 
 Create and manage containers, microVMs and virtual machines from one desktop workspace.
 
+![Yougori app showing containers, a GPU environment, a virtual machine and their connections](yougori1.png)
+
 Yougori's original code is **open source under [AGPL-3.0-only](LICENSE)**,
 with a **[separate paid commercial licensing option](COMMERCIAL_LICENSE.md)**
 from Yougori LLC. Commercial use is allowed under AGPL when its conditions are
@@ -27,8 +29,6 @@ installers are not covered by the current source inventory; see
 The [source publication record](compliance/release.json) identifies the current
 source-only release and checksums. Its ZIP contains the application source in
 `bundle/yougori-application-source.tar.gz` and the matching third-party archives.
-
-![Yougori app showing containers, a GPU environment, a virtual machine and their connections](yougori1.png)
 
 ## Run from source
 
