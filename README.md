@@ -10,6 +10,14 @@
 
 Create and manage containers, microVMs and virtual machines from one desktop workspace.
 
+## What can you do with Yougori?
+
+- **Run AI agents in containers and VMs**, with control over their access to your files and network.
+- **Create containers, microVMs and full virtual machines**, including NVIDIA CUDA containers for GPU workloads.
+- **Host websites, apps, browser games and databases** on your own computer.
+- **Share web services from your containers and VMs** through public HTTPS tunnels.
+- **Connect your own domain** using a configured Cloudflare Tunnel.
+
 ![Yougori app showing containers, a GPU environment, a virtual machine and their connections](yougori1.png)
 
 Yougori's original code is **open source under [AGPL-3.0-only](LICENSE)**,
