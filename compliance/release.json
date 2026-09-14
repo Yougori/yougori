@@ -9892,7 +9892,22 @@
     ]
   },
   "publication": {
-    "status": "not-published"
+    "status": "verified",
+    "manifestUrl": "https://github.com/Yougori/yougori/releases/download/staging-sources-79a4f8c80f10117e/SOURCE_INDEX.json",
+    "manifestSha256": "04a6382b87132cfd4f574172ace1986ba3fd208267b0214998fb775973d8860f",
+    "verifiedAt": "2026-09-14T12:48:13.169599+00:00",
+    "evidence": "GitHub's uploaded-asset SHA-256 matches the locally verified complete ZIP. Anonymous source-index and checksum downloads match local records. The application tar was downloaded completely without authentication and matches its recorded checksum. Anonymous bounded ZIP range reads verified the same complete application tar embedded in the combined ZIP, plus LICENSE, COPYING, COMMERCIAL_LICENSE.md, source index and checksum list. The full remote ZIP was not re-downloaded.",
+    "releaseUrl": "https://github.com/Yougori/yougori/releases/tag/staging-sources-79a4f8c80f10117e",
+    "sourceTag": "staging-sources-79a4f8c80f10117e",
+    "sourceCommit": "ee868390257bcb83008112695a79c0b6888df610",
+    "bundleUrl": "https://github.com/Yougori/yougori/releases/download/staging-sources-79a4f8c80f10117e/Yougori-corresponding-source-79a4f8c80f10117e.zip",
+    "bundleSha256": "1a1ecb9b71e25f471814a5b600087499cdb6459f5fed168e3bd8320b39db271a",
+    "bundleBytes": 1150780236,
+    "applicationSourceUrl": "https://github.com/Yougori/yougori/releases/download/staging-sources-79a4f8c80f10117e/yougori-application-source.tar.gz",
+    "applicationSourceSha256": "64ea1f0a470397574b0704ccb82680e290b290ee80e0083e4444a2c5e5936394",
+    "applicationSourceFileCount": 656,
+    "anonymousZipBytesRead": 5735244,
+    "scope": "Complete tracked application source and 238 matching application/component archives. Actual new installer inspection remains pending until installers are built. Full application CI intentionally skipped for compliance packaging."
   },
   "historicalReleaseIssues": [
     {
