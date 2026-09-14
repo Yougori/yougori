@@ -74,12 +74,21 @@ separate release steps.
 
 Original contributions are supplied under AGPL-3.0-only unless the affected
 files carry a separate license. Retain existing component notices and attribution.
-Contributors keep ownership of their work. Because Yougori LLC also offers paid
-commercial licenses, contributions intended for that offering need a separate
-written grant allowing the necessary commercial licensing. Do not include
-third-party contributions in a commercial offering without documenting those
-rights. Submitting a pull request alone does not assign copyright or supply
-additional commercial permissions. See [commercial licensing](COMMERCIAL_LICENSE.md).
+Acceptance of original contributions requires a separate signed copyright
+assignment to Yougori LLC covering the contributed work and allowing Yougori LLC
+to modify, distribute and license it under both AGPL and proprietary commercial
+terms. This requirement applies to outside contributors, contractors and
+freelancers. Maintainers must verify the executed assignment before merging
+their original contributions. Contractors and freelancers must sign the
+applicable agreement before starting work.
+
+This policy and submission of a pull request do not themselves transfer
+copyright. Previously contributed work requires a separate assignment if one
+is not already in place. Contributors must identify any third-party or
+pre-existing material and its applicable license; they must not assign rights
+they do not hold. Third-party components retain their ownership and licenses.
+Existing license grants remain valid. See
+[commercial licensing](COMMERCIAL_LICENSE.md).
 Read [licensing and source distribution](docs/licensing.md) before changing a
 bundled dependency. Run `npm run compliance:check` after updating the evidence.
 Local installer preparation additionally requires `npm run release:package`;

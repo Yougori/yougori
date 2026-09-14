@@ -26,8 +26,11 @@ conditions. QEMU, its GPL-covered modifications, and separately licensed project
 components retain their own terms. Their source, notice, replacement/relinking
 and other applicable obligations remain in force.
 
-Contributions owned by others require documented permission for the proposed
-commercial licensing. Publication under AGPL alone is not such permission.
+New original contributions require a separate signed copyright assignment to
+Yougori LLC before acceptance. This policy does not transfer ownership of
+earlier contributions or third-party components. Any contributions still owned
+by others require documented permission for the proposed commercial licensing;
+publication under AGPL alone is not such permission.
 See [CONTRIBUTING.md](CONTRIBUTING.md#licenses-and-source-materials).
 
 ## Existing licenses
