@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "sourceCommit": "eb4297e967761df71889b21844575a6d88c976af",
+  "sourceCommit": "4c0f01da508f56210129248ea2d9b890bda86785",
   "scope": "Current checkout runtime bytes; not a blanket certification of previous releases",
   "inputs": [
     {
@@ -1816,7 +1816,7 @@
     },
     {
       "path": "compliance/evidence/application-source.json",
-      "sha256": "7cf40f608162f4000e0dbf7bfb7adf7eb2b1a6f9fbfa294e5b938639481d2751",
+      "sha256": "cb69a316847e6aa31dfa0df88552c592bb6cba50d33f052123945153203f30bf",
       "normalization": "lf",
       "bytes": 124081
     },
@@ -2361,15 +2361,15 @@
     },
     {
       "path": "scripts/check-installed-licenses.mjs",
-      "sha256": "ea93c9a2261132101eafb00ad9dd2b2f6450c8c6c9f6d1aa3fd51ca4e2ec7e7e",
+      "sha256": "04ba988da3a21caa6382260ed3f2652f3a54b1f60a108f25b940dd39417bb8e0",
       "normalization": "lf",
-      "bytes": 2729
+      "bytes": 2794
     },
     {
       "path": "scripts/check-installed-licenses.test.mjs",
-      "sha256": "cfff1e7631a5a635abb1cf5aa6c308fd3027da9f135739decf8c41637bbb63b3",
+      "sha256": "f5e32e6ea7a98c0f8af59fd820844e8c284a69a086dc5faccac5d5c2e78921d3",
       "normalization": "lf",
-      "bytes": 2101
+      "bytes": 2496
     },
     {
       "path": "scripts/check-windows-test-prerequisites.ps1",
@@ -5285,13 +5285,13 @@
     },
     {
       "file": "yougori-application-source.tar.gz",
-      "sha256": "08adf34e462a8f11f3368b2bc364d807335d58e220104153e10f6d2277304cce",
-      "bytes": 3568828
+      "sha256": "64ea1f0a470397574b0704ccb82680e290b290ee80e0083e4444a2c5e5936394",
+      "bytes": 3568859
     },
     {
       "file": "yougori-runtime-build-material.tar.gz",
-      "sha256": "ab402c7828ca4612873b64ddc8606be63adfff32d3b4431943d0c5034bdad772",
-      "bytes": 1470103
+      "sha256": "ab9c4347375d0eab047c05cc4fb51754fa26d7f28ad1d62c82c2cb79d96c823d",
+      "bytes": 1470148
     }
   ],
   "components": [
@@ -5539,17 +5539,17 @@
       "id": "local-build-material",
       "status": "collected",
       "file": "yougori-runtime-build-material.tar.gz",
-      "sha256": "ab402c7828ca4612873b64ddc8606be63adfff32d3b4431943d0c5034bdad772",
-      "bytes": 1470103
+      "sha256": "ab9c4347375d0eab047c05cc4fb51754fa26d7f28ad1d62c82c2cb79d96c823d",
+      "bytes": 1470148
     },
     {
       "id": "yougori-application-source",
       "status": "collected",
       "file": "yougori-application-source.tar.gz",
-      "sha256": "08adf34e462a8f11f3368b2bc364d807335d58e220104153e10f6d2277304cce",
-      "bytes": 3568828,
+      "sha256": "64ea1f0a470397574b0704ccb82680e290b290ee80e0083e4444a2c5e5936394",
+      "bytes": 3568859,
       "manifest": "compliance/evidence/application-source.json",
-      "manifestSha256": "7cf40f608162f4000e0dbf7bfb7adf7eb2b1a6f9fbfa294e5b938639481d2751",
+      "manifestSha256": "cb69a316847e6aa31dfa0df88552c592bb6cba50d33f052123945153203f30bf",
       "fileCount": 656
     },
     {

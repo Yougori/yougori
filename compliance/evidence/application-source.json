@@ -1548,14 +1548,14 @@
     },
     {
       "path": "scripts/check-installed-licenses.mjs",
-      "sha256": "ea93c9a2261132101eafb00ad9dd2b2f6450c8c6c9f6d1aa3fd51ca4e2ec7e7e",
-      "bytes": 2729,
+      "sha256": "04ba988da3a21caa6382260ed3f2652f3a54b1f60a108f25b940dd39417bb8e0",
+      "bytes": 2794,
       "mode": 420
     },
     {
       "path": "scripts/check-installed-licenses.test.mjs",
-      "sha256": "cfff1e7631a5a635abb1cf5aa6c308fd3027da9f135739decf8c41637bbb63b3",
-      "bytes": 2101,
+      "sha256": "f5e32e6ea7a98c0f8af59fd820844e8c284a69a086dc5faccac5d5c2e78921d3",
+      "bytes": 2496,
       "mode": 420
     },
     {
