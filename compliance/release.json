@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "sourceCommit": "5be80b54a167c66940b771d51c13aced2ea1b8d2",
+  "sourceCommit": "d16624bb9fc6ebe56690691684b4ea802cabc622",
   "scope": "Current checkout runtime bytes; not a blanket certification of previous releases",
   "inputs": [
     {
@@ -1432,9 +1432,9 @@
     },
     {
       "path": "LICENSE",
-      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "sha256": "95889e89cdb08d5fd858fc1d8e0dc9030be8549ce84f35b969f88633c5e02e16",
       "normalization": "lf",
-      "bytes": 11358
+      "bytes": 11338
     },
     {
       "path": "NOTICE",
@@ -5237,8 +5237,8 @@
     },
     {
       "file": "yougori-runtime-build-material.tar.gz",
-      "sha256": "8e214e1ff954a33cce82edc2ef110503a9e7c90e0af33e2afa88307988414203",
-      "bytes": 1454420
+      "sha256": "e1c5bc1056545e330b185c46122b0b41f171392162e004fa0c73166eee02438c",
+      "bytes": 1454390
     }
   ],
   "components": [
@@ -5486,8 +5486,8 @@
       "id": "local-build-material",
       "status": "collected",
       "file": "yougori-runtime-build-material.tar.gz",
-      "sha256": "8e214e1ff954a33cce82edc2ef110503a9e7c90e0af33e2afa88307988414203",
-      "bytes": 1454420
+      "sha256": "e1c5bc1056545e330b185c46122b0b41f171392162e004fa0c73166eee02438c",
+      "bytes": 1454390
     },
     {
       "id": "alpine/alpine-baselayout/60a7585bbab2fa0f762504eb617dbca90216e31f",
@@ -9826,18 +9826,7 @@
     ]
   },
   "publication": {
-    "status": "verified",
-    "manifestUrl": "https://github.com/Yougori/yougori/releases/download/staging-sources-9b13340292f535bc/SOURCE_INDEX.json",
-    "manifestSha256": "23850a070dafe18353546fcfbde0eca99f9a34edb42d94fb94340ff31b824198",
-    "verifiedAt": "2026-09-13T23:37:35.640641+00:00",
-    "evidence": "Anonymous HTTPS download of the complete ZIP matched its recorded SHA-256 and byte length; public and embedded source indexes, archive checksum list and ZIP CRCs matched. Reproducible check: output/license-audit-2026-09-14/verify-current-source-download.py.",
-    "releaseUrl": "https://github.com/Yougori/yougori/releases/tag/staging-sources-9b13340292f535bc",
-    "sourceTag": "staging-sources-9b13340292f535bc",
-    "sourceCommit": "46bc2677e0b4e5a85da3122750c760577d6bdc44",
-    "bundleUrl": "https://github.com/Yougori/yougori/releases/download/staging-sources-9b13340292f535bc/Yougori-corresponding-source-9b13340292f535bc.zip",
-    "bundleSha256": "3d47cccfa14bf7b17a0b5d649f82aa4ac9ab94d45c44ee1e59352089fcbcc3a2",
-    "bundleBytes": 1147140870,
-    "scope": "Matching current staging sources; no application installer publication or main promotion."
+    "status": "not-published"
   },
   "historicalReleaseIssues": [
     {
