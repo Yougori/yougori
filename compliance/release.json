@@ -9839,7 +9839,19 @@
     ]
   },
   "publication": {
-    "status": "not-published"
+    "status": "verified",
+    "manifestUrl": "https://github.com/Yougori/yougori/releases/download/staging-sources-a64f452d86f33d66/SOURCE_INDEX.json",
+    "manifestSha256": "1e32aaaad01ed906bb3d10ffba1482e2b356fbc249fff3cbac69237b68377635",
+    "verifiedAt": "2026-09-14T11:46:06.965244+00:00",
+    "evidence": "GitHub's uploaded-asset SHA-256 matches the locally verified complete ZIP. Anonymous source-index and checksum downloads match local records. Anonymous bounded ZIP range reads verified the packaged LICENSE, COMMERCIAL_LICENSE.md, source index and checksum list. The full remote ZIP was not re-downloaded.",
+    "releaseUrl": "https://github.com/Yougori/yougori/releases/tag/staging-sources-a64f452d86f33d66",
+    "sourceTag": "staging-sources-a64f452d86f33d66",
+    "sourceCommit": "0593181be727ec4cbb424c8dfd4933d6e0f8659a",
+    "bundleUrl": "https://github.com/Yougori/yougori/releases/download/staging-sources-a64f452d86f33d66/Yougori-corresponding-source-a64f452d86f33d66.zip",
+    "bundleSha256": "185424f596aef14c20b3d8824fede62c3020f5ed9679203f3c085449d72fff75",
+    "bundleBytes": 1147164711,
+    "anonymousZipBytesRead": 284711,
+    "scope": "Staging AGPL-3.0-only with separate paid commercial licensing; 77 Windows PE identities unchanged. Full CI intentionally skipped for licensing metadata."
   },
   "historicalReleaseIssues": [
     {
