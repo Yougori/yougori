@@ -9826,7 +9826,18 @@
     ]
   },
   "publication": {
-    "status": "not-published"
+    "status": "verified",
+    "manifestUrl": "https://github.com/Yougori/yougori/releases/download/staging-sources-8b963b73fd16eb22/SOURCE_INDEX.json",
+    "manifestSha256": "5c6d6d4100d5dc5c17a21678a1ee78ef7feb3b18e7886e0198d1bb399c953b9d",
+    "verifiedAt": "2026-09-14T11:05:49.121595+00:00",
+    "evidence": "Anonymous HTTPS download of the complete ZIP matched its SHA-256 and byte length. Public and embedded source indexes and checksum lists, all ZIP CRCs, and the packaged Copyright 2026 Yougori LICENSE were verified.",
+    "releaseUrl": "https://github.com/Yougori/yougori/releases/tag/staging-sources-8b963b73fd16eb22",
+    "sourceTag": "staging-sources-8b963b73fd16eb22",
+    "sourceCommit": "fc92854405c27a008cab311fba3c7cefd287895d",
+    "bundleUrl": "https://github.com/Yougori/yougori/releases/download/staging-sources-8b963b73fd16eb22/Yougori-corresponding-source-8b963b73fd16eb22.zip",
+    "bundleSha256": "e159e3aab0d886db92d005858f3db6983241d6bf4a10e644e91079acc890d933",
+    "bundleBytes": 1147140865,
+    "scope": "Current staging sources with the requested copyright notice; application and runtime code unchanged."
   },
   "historicalReleaseIssues": [
     {
